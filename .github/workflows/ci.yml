@@ -1,0 +1,54 @@
+name: ProofStack CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Isolated, disposable CI database. No production credentials or data.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: proofstack_ci
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d proofstack_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres@localhost:5432/proofstack_ci
+      NODE_ENV: test
+      PORT: 8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @workspace/db run migrate:dev
+      - run: pnpm --filter @workspace/api-spec run codegen
+      - run: pnpm audit --audit-level moderate
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test:all
+      - run: pnpm --filter @workspace/api-server run build
+      - run: pnpm --filter @workspace/proofstack run build
+        env:
+          NODE_ENV: production

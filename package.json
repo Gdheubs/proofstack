@@ -1,0 +1,41 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck && tsc -p tests/tsconfig.json --noEmit",
+    "lint": "eslint artifacts/api-server/src artifacts/proofstack/app artifacts/proofstack/components artifacts/proofstack/hooks artifacts/proofstack/lib artifacts/proofstack/proxy.ts lib/db/src tests lib/db/tests",
+    "format": "prettier --write docs tests artifacts/api-server/src artifacts/proofstack/app artifacts/proofstack/components artifacts/proofstack/hooks artifacts/proofstack/lib artifacts/proofstack/proxy.ts lib/db/src lib/db/tests .github eslint.config.mjs vitest.config.ts vitest.embedded.config.ts",
+    "format:check": "prettier --check docs tests artifacts/api-server/src artifacts/proofstack/app artifacts/proofstack/components artifacts/proofstack/hooks artifacts/proofstack/lib artifacts/proofstack/proxy.ts lib/db/src lib/db/tests .github eslint.config.mjs vitest.config.ts vitest.embedded.config.ts",
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:all": "RUN_DB_TESTS=1 vitest run",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
+    "test:embedded": "RUN_DB_TESTS=1 vitest run --config vitest.embedded.config.ts"
+  },
+  "private": true,
+  "dependencies": {
+    "@replit/connectors-sdk": "^0.4.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@eslint/js": "^9.39.5",
+    "@types/node": "catalog:",
+    "@types/supertest": "^7.2.1",
+    "@workspace/db": "workspace:*",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.6",
+    "supertest": "^7.3.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3",
+    "zod": "catalog:"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

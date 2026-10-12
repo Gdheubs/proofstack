@@ -1,0 +1,150 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Operations",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/operations": {
+      "get": {
+        "operationId": "getOperations",
+        "responses": {
+          "200": {
+            "description": "Private administrator operations snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationsData"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OperationsData": {
+        "type": "object",
+        "properties": {
+          "checkedAt": {
+            "type": "string"
+          },
+          "runtime": {
+            "type": "object",
+            "properties": {
+              "uptimeSeconds": {
+                "type": "integer"
+              },
+              "memoryMb": {
+                "type": "integer"
+              },
+              "requests": {
+                "type": "integer"
+              },
+              "inFlight": {
+                "type": "integer"
+              },
+              "errors": {
+                "type": "integer"
+              },
+              "latencyP95Ms": {
+                "type": "integer"
+              },
+              "dbWaiting": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "uptimeSeconds",
+              "memoryMb",
+              "requests",
+              "inFlight",
+              "errors",
+              "latencyP95Ms",
+              "dbWaiting"
+            ],
+            "additionalProperties": false
+          },
+          "queue": {
+            "type": "object",
+            "properties": {
+              "queued": {
+                "type": "integer"
+              },
+              "running": {
+                "type": "integer"
+              },
+              "failed": {
+                "type": "integer"
+              },
+              "oldestQueuedSeconds": {
+                "type": "integer"
+              },
+              "workers": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "queued",
+              "running",
+              "failed",
+              "oldestQueuedSeconds",
+              "workers"
+            ],
+            "additionalProperties": false
+          },
+          "configuration": {
+            "type": "object",
+            "properties": {
+              "maintenance": {
+                "type": "boolean"
+              },
+              "gitEnabled": {
+                "type": "boolean"
+              },
+              "intelligenceEnabled": {
+                "type": "boolean"
+              },
+              "aiEnabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "maintenance",
+              "gitEnabled",
+              "intelligenceEnabled",
+              "aiEnabled"
+            ],
+            "additionalProperties": false
+          },
+          "alerts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "checkedAt",
+          "runtime",
+          "queue",
+          "configuration",
+          "alerts"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

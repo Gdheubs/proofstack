@@ -1,0 +1,457 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Repositories",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/repositories": {
+      "get": {
+        "operationId": "getRepositories",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branch",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryData"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repositories/action": {
+      "post": {
+        "operationId": "runRepositoryAction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepositoryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositoryResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Repository": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "projectTitle",
+          "projectSlug",
+          "visibility",
+          "defaultBranch",
+          "createdAt",
+          "quotaBytes",
+          "canManage",
+          "canWrite"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "projectTitle": {
+            "type": "string"
+          },
+          "projectSlug": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "quotaBytes": {
+            "type": "integer"
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "canWrite": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RepositoryBranch": {
+        "type": "object",
+        "required": [
+          "name",
+          "head"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "head": {
+            "type": "string"
+          }
+        }
+      },
+      "RepositoryEntry": {
+        "type": "object",
+        "required": [
+          "name",
+          "path",
+          "kind",
+          "oid"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "directory"
+            ]
+          },
+          "oid": {
+            "type": "string"
+          }
+        }
+      },
+      "RepositoryFile": {
+        "type": "object",
+        "required": [
+          "path",
+          "content",
+          "size",
+          "previewable"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "previewable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RepositoryCommit": {
+        "type": "object",
+        "required": [
+          "sha",
+          "author",
+          "date",
+          "message"
+        ],
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RepositoryToken": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "expiresAt",
+          "revoked"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "revoked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RepositoryProject": {
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "RepositoryData": {
+        "type": "object",
+        "required": [
+          "enabled",
+          "repositories",
+          "projects",
+          "branches",
+          "branch",
+          "head",
+          "folder",
+          "entries",
+          "file",
+          "commits",
+          "tokens",
+          "usedBytes",
+          "hasMore",
+          "offset"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Repository"
+            }
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepositoryProject"
+            }
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepositoryBranch"
+            }
+          },
+          "branch": {
+            "type": "string"
+          },
+          "head": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepositoryEntry"
+            }
+          },
+          "file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RepositoryFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "commits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepositoryCommit"
+            }
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepositoryToken"
+            }
+          },
+          "usedBytes": {
+            "type": "integer"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "RepositoryInput": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "branch",
+              "commit",
+              "token-create",
+              "token-revoke"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "expectedHead": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tokenId": {
+            "type": "string"
+          },
+          "remove": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RepositoryResult": {
+        "type": "object",
+        "required": [
+          "message",
+          "id"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

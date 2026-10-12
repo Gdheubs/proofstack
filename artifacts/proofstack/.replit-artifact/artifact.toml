@@ -1,0 +1,35 @@
+kind = "web"
+previewPath = "/"
+title = "ProofStack"
+description = "ProofStack Phase 1, built with Next.js: a responsive foundation, live dependency checks, reusable UI, PostgreSQL, API services, and documented security and testing."
+version = "1.0.0"
+id = "artifacts/proofstack"
+router = "path"
+
+[[services]]
+name = "web"
+paths = ["/"]
+localPort = 20064
+
+[services.development]
+run = "pnpm --filter @workspace/proofstack run dev"
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/proofstack", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/proofstack", "run", "serve"]
+
+[services.production.run.env]
+PORT = "20064"
+NODE_ENV = "production"
+
+[services.production.health.startup]
+path = "/"
+
+[services.env]
+PORT = "20064"
+BASE_PATH = "/"

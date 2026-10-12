@@ -1,0 +1,695 @@
+openapi: 3.1.0
+info: { title: Community, version: 1.0.0 }
+paths:
+  /community/assets/{id}:
+    get:
+      operationId: getCommunityImage
+      tags: [community]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Ready PNG JPEG or WebP image subject to reference visibility
+          content:
+            image/png: { schema: { type: string, format: binary } }
+  /community:
+    get:
+      operationId: getCommunity
+      tags: [community]
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum:
+                  [
+                    feed,
+                    profile,
+                    post,
+                    projects,
+                    project,
+                    organizations,
+                    organization,
+                    search,
+                    notifications,
+                    bookmarks,
+                  ],
+              },
+          }
+        - { name: handle, in: query, schema: { type: string } }
+        - { name: id, in: query, schema: { type: string, format: uuid } }
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - {
+            name: type,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [all, developers, projects, organizations, posts, skills],
+              },
+          }
+        - {
+            name: filter,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [discover, following, followers, following-list, mine],
+              },
+          }
+        - {
+            name: offset,
+            in: query,
+            schema: { type: integer, minimum: 0, maximum: 10000, default: 0 },
+          }
+      responses:
+        "200":
+          {
+            description: "Real community data with bounded pages, content and viewer permissions",
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/CommunityData" } },
+              },
+          }
+  /community/action:
+    post:
+      operationId: runCommunityAction
+      tags: [community]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/CommunityInput" } },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Saved,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/CommunityResult" } },
+              },
+          }
+  /community/assist:
+    post:
+      operationId: assistCommunity
+      tags: [community]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema: { $ref: "#/components/schemas/CommunityAssistInput" },
+                },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Unverified assistance for user review,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/CommunityDraft" } },
+              },
+          }
+  /community/uploads:
+    post:
+      operationId: requestCommunityUpload
+      tags: [community]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema: { $ref: "#/components/schemas/CommunityUploadInput" },
+                },
+            },
+        }
+      responses:
+        "200":
+          {
+            description: Direct image upload,
+            content:
+              {
+                application/json:
+                  { schema: { $ref: "#/components/schemas/CommunityUpload" } },
+              },
+          }
+components:
+  schemas:
+    CommunityEntryKind:
+      type: string
+      enum:
+        [
+          experience,
+          repository,
+          contribution,
+          achievement,
+          challenge,
+          evidence,
+          release,
+          documentation,
+        ]
+    CommunityPerson:
+      type: object
+      required:
+        [
+          id,
+          handle,
+          displayName,
+          kind,
+          avatarPath,
+          bio,
+          location,
+          skills,
+          followers,
+          following,
+          followingByMe,
+          isMe,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        handle: { type: string }
+        displayName: { type: string }
+        kind: { type: string, enum: [developer, company, recruiter] }
+        avatarPath: { type: string }
+        bio: { type: string }
+        location: { type: string }
+        skills: { type: array, items: { type: string } }
+        followers: { type: integer }
+        following: { type: integer }
+        followingByMe: { type: boolean }
+        isMe: { type: boolean }
+    CommunityEntry:
+      type: object
+      required:
+        [
+          id,
+          kind,
+          title,
+          description,
+          url,
+          subtitle,
+          technologies,
+          startDate,
+          endDate,
+          version,
+          aiAssisted,
+          sourceLabel,
+          canEdit,
+          createdAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/CommunityEntryKind" }
+        title: { type: string }
+        description: { type: string }
+        url: { type: string }
+        subtitle: { type: string }
+        technologies: { type: array, items: { type: string } }
+        startDate: { type: string }
+        endDate: { type: string }
+        version: { type: string }
+        aiAssisted: { type: boolean }
+        sourceLabel:
+          { type: string, enum: [Self-reported, Linked evidence, AI-assisted] }
+        canEdit: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    CommunityReaction:
+      type: object
+      required: [kind, count, active]
+      properties:
+        kind: { type: string, enum: [like, insightful, celebrate] }
+        count: { type: integer }
+        active: { type: boolean }
+    CommunityComment:
+      type: object
+      required:
+        [
+          id,
+          postId,
+          author,
+          body,
+          createdAt,
+          updatedAt,
+          canEdit,
+          reactions,
+          mentions,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        postId: { type: string, format: uuid }
+        author: { $ref: "#/components/schemas/CommunityPerson" }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        canEdit: { type: boolean }
+        reactions:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityReaction" },
+          }
+        mentions:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityPerson" },
+          }
+    CommunityPost:
+      type: object
+      required:
+        [
+          id,
+          author,
+          body,
+          tags,
+          createdAt,
+          updatedAt,
+          canEdit,
+          bookmarked,
+          reactions,
+          commentCount,
+          comments,
+          mentions,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        author: { $ref: "#/components/schemas/CommunityPerson" }
+        body: { type: string }
+        tags: { type: array, items: { type: string } }
+        projectId: { type: [string, "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        canEdit: { type: boolean }
+        bookmarked: { type: boolean }
+        reactions:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityReaction" },
+          }
+        commentCount: { type: integer }
+        comments:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityComment" },
+          }
+        mentions:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityPerson" },
+          }
+    CommunityContributor:
+      type: object
+      required: [person, status]
+      properties:
+        person: { $ref: "#/components/schemas/CommunityPerson" }
+        status: { type: string, enum: [pending, active] }
+    CommunityProject:
+      type: object
+      required:
+        [
+          id,
+          slug,
+          title,
+          description,
+          technologies,
+          screenshots,
+          demoUrl,
+          repositoryUrl,
+          visibility,
+          owner,
+          organizationId,
+          contributors,
+          entries,
+          canEdit,
+          canContribute,
+          bookmarked,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string }
+        technologies: { type: array, items: { type: string } }
+        screenshots: { type: array, items: { type: string } }
+        demoUrl: { type: string }
+        repositoryUrl: { type: string }
+        visibility: { type: string, enum: [public, organization] }
+        owner: { $ref: "#/components/schemas/CommunityPerson" }
+        organizationId: { type: [string, "null"], format: uuid }
+        contributors:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityContributor" },
+          }
+        entries:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityEntry" },
+          }
+        canEdit: { type: boolean }
+        canContribute: { type: boolean }
+        bookmarked: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CommunityMember:
+      type: object
+      required: [person, role]
+      properties:
+        person: { $ref: "#/components/schemas/CommunityPerson" }
+        role:
+          {
+            type: string,
+            enum: [organization_owner, organization_admin, organization_member],
+          }
+    CommunityTeam:
+      type: object
+      required: [id, name, description, members]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        members:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityPerson" },
+          }
+    CommunityOrganization:
+      type: object
+      required:
+        [
+          id,
+          slug,
+          name,
+          description,
+          website,
+          visibility,
+          memberCount,
+          myRole,
+          canManage,
+          canManageRoles,
+          members,
+          teams,
+          repositories,
+          projects,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: string }
+        website: { type: string }
+        visibility: { type: string, enum: [public, private] }
+        memberCount: { type: integer }
+        myRole: { type: [string, "null"] }
+        canManage: { type: boolean }
+        canManageRoles: { type: boolean }
+        members:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityMember" },
+          }
+        teams:
+          { type: array, items: { $ref: "#/components/schemas/CommunityTeam" } }
+        repositories:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityEntry" },
+          }
+        projects:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityProject" },
+          }
+    CommunityNotification:
+      type: object
+      required: [id, title, body, href, read, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        body: { type: string }
+        href: { type: string }
+        read: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    CommunityActivity:
+      type: object
+      required: [id, type, title, href, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        title: { type: string }
+        href: { type: string }
+        createdAt: { type: string, format: date-time }
+    CommunityData:
+      type: object
+      required:
+        [
+          viewer,
+          profile,
+          project,
+          organization,
+          post,
+          people,
+          projects,
+          organizations,
+          posts,
+          entries,
+          activity,
+          notifications,
+          skills,
+          unreadCount,
+          offset,
+          hasMore,
+        ]
+      properties:
+        viewer:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/CommunityPerson" },
+                { type: "null" },
+              ],
+          }
+        profile:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/CommunityPerson" },
+                { type: "null" },
+              ],
+          }
+        project:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/CommunityProject" },
+                { type: "null" },
+              ],
+          }
+        organization:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/CommunityOrganization" },
+                { type: "null" },
+              ],
+          }
+        post:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/CommunityPost" },
+                { type: "null" },
+              ],
+          }
+        people:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityPerson" },
+          }
+        projects:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityProject" },
+          }
+        organizations:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityOrganization" },
+          }
+        posts:
+          { type: array, items: { $ref: "#/components/schemas/CommunityPost" } }
+        entries:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityEntry" },
+          }
+        activity:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityActivity" },
+          }
+        notifications:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/CommunityNotification" },
+          }
+        skills: { type: array, items: { type: string } }
+        unreadCount: { type: integer }
+        offset: { type: integer }
+        hasMore: { type: boolean }
+    CommunityInput:
+      type: object
+      required: [action]
+      additionalProperties: false
+      properties:
+        action:
+          {
+            type: string,
+            enum:
+              [
+                profile-save,
+                entry-save,
+                entry-delete,
+                follow,
+                post-save,
+                post-delete,
+                comment-save,
+                comment-delete,
+                reaction,
+                bookmark,
+                project-save,
+                project-delete,
+                contributor-invite,
+                contributor-respond,
+                contributor-remove,
+                organization-save,
+                organization-delete,
+                member-save,
+                member-remove,
+                team-save,
+                team-delete,
+                team-member,
+                notification-read,
+                asset-complete,
+                asset-delete,
+              ],
+          }
+        id: { type: string, format: uuid }
+        targetId: { type: string, format: uuid }
+        targetType: { type: string, enum: [post, comment, project] }
+        projectId: { type: [string, "null"], format: uuid }
+        organizationId: { type: [string, "null"], format: uuid }
+        handle: { type: string }
+        displayName: { type: string }
+        avatarPath: { type: string }
+        bio: { type: string }
+        location: { type: string }
+        skills: { type: array, items: { type: string } }
+        slug: { type: string }
+        title: { type: string }
+        name: { type: string }
+        body: { type: string }
+        description: { type: string }
+        technologies: { type: array, items: { type: string } }
+        screenshots: { type: array, items: { type: string } }
+        demoUrl: { type: string }
+        repositoryUrl: { type: string }
+        url: { type: string }
+        website: { type: string }
+        visibility: { type: string, enum: [public, private, organization] }
+        kind:
+          {
+            type: string,
+            enum:
+              [
+                experience,
+                repository,
+                contribution,
+                achievement,
+                challenge,
+                evidence,
+                release,
+                documentation,
+                like,
+                insightful,
+                celebrate,
+              ],
+          }
+        subtitle: { type: string }
+        startDate: { type: string }
+        endDate: { type: string }
+        version: { type: string }
+        aiAssisted: { type: boolean }
+        role:
+          {
+            type: string,
+            enum: [organization_owner, organization_admin, organization_member],
+          }
+        enabled: { type: boolean }
+        accept: { type: boolean }
+        tags: { type: array, items: { type: string } }
+    CommunityResult:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        id: { type: string, format: uuid }
+        handle: { type: string }
+        slug: { type: string }
+    CommunityAssistInput:
+      type: object
+      required: [task, text]
+      properties:
+        task:
+          {
+            type: string,
+            enum:
+              [
+                profile-summary,
+                project-summary,
+                skill-extraction,
+                project-categorization,
+                suggested-tags,
+                documentation-assistance,
+              ],
+          }
+        text: { type: string, minLength: 20, maxLength: 12000 }
+    CommunityDraft:
+      type: object
+      required: [content, skills, tags, category, disclaimer, verified]
+      properties:
+        content: { type: string }
+        skills: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string } }
+        category: { type: string }
+        disclaimer: { type: string }
+        verified: { type: boolean, const: false }
+    CommunityUploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, maxLength: 150 }
+        size: { type: integer, minimum: 1, maximum: 8388608 }
+        contentType: { type: string, enum: [image/png, image/jpeg, image/webp] }
+    CommunityUpload:
+      type: object
+      required: [id, uploadUrl, assetPath]
+      properties:
+        id: { type: string, format: uuid }
+        uploadUrl: { type: string }
+        assetPath: { type: string }

@@ -1,0 +1,509 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Intelligence",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/intelligence": {
+      "get": {
+        "operationId": "getIntelligence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntelligenceData"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intelligence/action": {
+      "post": {
+        "operationId": "runIntelligenceAction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntelligenceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntelligenceActionResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "IntelligenceMatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "organization": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "workplace": {
+            "type": "string"
+          },
+          "matchedSkills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "otherSkills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "organization",
+          "kind",
+          "workplace",
+          "matchedSkills",
+          "otherSkills"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceFinding": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "severity",
+          "path",
+          "line",
+          "title",
+          "guidance"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceStep": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          },
+          "exercise": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "objective",
+          "exercise",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceOutput": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceMatch"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceStep"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceFinding"
+            }
+          },
+          "scannedFiles": {
+            "type": "integer"
+          },
+          "skippedFiles": {
+            "type": "integer"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "engine": {
+            "type": "string"
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "matches",
+          "steps",
+          "findings",
+          "scannedFiles",
+          "skippedFiles",
+          "truncated",
+          "engine",
+          "disclaimer"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "repositoryId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "promptTokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completionTokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estimatedCostMicros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntelligenceOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "repositoryId",
+          "branch",
+          "commit",
+          "attempts",
+          "createdAt",
+          "finishedAt",
+          "reviewedAt",
+          "error",
+          "model",
+          "promptTokens",
+          "completionTokens",
+          "estimatedCostMicros",
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceData": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "aiEnabled": {
+            "type": "boolean"
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntelligenceJob"
+            }
+          },
+          "job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntelligenceJob"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "usedToday": {
+            "type": "integer"
+          },
+          "aiUsedToday": {
+            "type": "integer"
+          },
+          "dailyLimit": {
+            "type": "integer"
+          },
+          "aiDailyLimit": {
+            "type": "integer"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "aiEnabled",
+          "jobs",
+          "job",
+          "usedToday",
+          "aiUsedToday",
+          "dailyLimit",
+          "aiDailyLimit",
+          "hasMore",
+          "offset"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceInput": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "enqueue",
+              "cancel",
+              "review",
+              "delete"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "opportunities",
+              "career-plan",
+              "security-scan"
+            ]
+          },
+          "requestKey": {
+            "type": "string"
+          },
+          "repositoryId": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "expectedHead": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "consent": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "workplace": {
+            "type": "string",
+            "enum": [
+              "any",
+              "remote",
+              "hybrid",
+              "onsite"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "IntelligenceActionResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

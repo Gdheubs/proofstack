@@ -1,0 +1,321 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+paths:
+  /operations:
+    $ref: "./operations.yaml#/paths/~1operations"
+  /intelligence:
+    $ref: "./intelligence.yaml#/paths/~1intelligence"
+  /intelligence/action:
+    $ref: "./intelligence.yaml#/paths/~1intelligence~1action"
+  /pulls:
+    $ref: './pulls.yaml#/paths/~1pulls'
+  /pulls/action:
+    $ref: './pulls.yaml#/paths/~1pulls~1action'
+  /repositories:
+    $ref: './repositories.yaml#/paths/~1repositories'
+  /repositories/action:
+    $ref: './repositories.yaml#/paths/~1repositories~1action'
+  /careers:
+    $ref: './careers.yaml#/paths/~1careers'
+  /careers/action:
+    $ref: './careers.yaml#/paths/~1careers~1action'
+  /community:
+    $ref: './community.yaml#/paths/~1community'
+  /community/assets/{id}:
+    $ref: './community.yaml#/paths/~1community~1assets~1{id}'
+  /community/action:
+    $ref: './community.yaml#/paths/~1community~1action'
+  /community/assist:
+    $ref: './community.yaml#/paths/~1community~1assist'
+  /community/uploads:
+    $ref: './community.yaml#/paths/~1community~1uploads'
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        default:
+          $ref: "#/components/responses/StandardError"
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /readyz:
+    get:
+      operationId: readinessCheck
+      tags: [health]
+      summary: Readiness check
+      description: Reports whether required application dependencies are ready.
+      responses:
+        default:
+          $ref: "#/components/responses/StandardError"
+        "200":
+          description: Application is ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+        "503":
+          description: One or more required dependencies are unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+  /auth/context:
+    get:
+      operationId: getAuthContext
+      tags: [auth]
+      responses:
+        "200":
+          description: Session, CSRF token, and live provider readiness. No credentials.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthContext" }
+        default: { $ref: "#/components/responses/StandardError" }
+  /auth/action:
+    post:
+      operationId: runAuthAction
+      tags: [auth]
+      description: Server-owned authentication operations. Requires the context CSRF token and same-origin cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuthActionInput" }
+      responses:
+        "200":
+          description: Operation completed or provider-issued verification requested.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthActionResult" }
+        default: { $ref: "#/components/responses/StandardError" }
+  /auth/account:
+    get:
+      operationId: getAccount
+      tags: [auth]
+      responses:
+        "200":
+          description: Verified account with user-scoped sessions, activity and organization memberships.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountDetails" }
+        default: { $ref: "#/components/responses/StandardError" }
+  /auth/admin/users:
+    get:
+      operationId: getAccountUsers
+      tags: [auth]
+      responses:
+        "200":
+          description: Privileged account management, requires provider AAL2.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AccountUser" }
+        default: { $ref: "#/components/responses/StandardError" }
+components:
+  responses:
+    StandardError:
+      description: Safe API error with a correlation identifier.
+      headers:
+        X-Request-ID:
+          description: Server-generated request identifier.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    AccountUser:
+      type: object
+      required: [id, displayName, kind, emailVerified, phoneVerified, platformRole, status]
+      properties:
+        id: { type: string }
+        displayName: { type: string }
+        kind: { type: string, enum: [developer, company, recruiter] }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        emailVerified: { type: boolean }
+        phoneVerified: { type: boolean }
+        platformRole: { type: [string, "null"], enum: [moderator, admin, super_admin, null] }
+        status: { type: string, enum: [active, disabled] }
+        mfaRecoveryRequired: { type: boolean }
+    AuthFactor:
+      type: object
+      required: [id, type, status]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [totp, phone] }
+        status: { type: string, enum: [verified, unverified] }
+        name: { type: string }
+    AuthCapabilities:
+      type: object
+      required: [password, emailOtp, phoneOtp, google, github, totp, phoneMfa, emailDelivery, pendingSetup]
+      properties:
+        password: { type: boolean }
+        emailOtp: { type: boolean }
+        phoneOtp: { type: boolean }
+        google: { type: boolean }
+        github: { type: boolean }
+        totp: { type: boolean }
+        phoneMfa: { type: boolean }
+        emailDelivery: { type: string, enum: [development-limited, configured] }
+        pendingSetup: { type: array, items: { type: string } }
+    AuthContext:
+      type: object
+      required: [csrfToken, authenticated, user, mfaRequired, factors, capabilities]
+      properties:
+        csrfToken: { type: string }
+        authenticated: { type: boolean }
+        user: { anyOf: [{ $ref: "#/components/schemas/AccountUser" }, { type: "null" }] }
+        mfaRequired: { type: boolean }
+        factors: { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
+        capabilities: { $ref: "#/components/schemas/AuthCapabilities" }
+    AuthActionInput:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [signup, password-login, email-otp, phone-otp, verify-otp, oauth, password-reset, update-password, logout, revoke-session, update-profile, send-phone-verification, mfa-enroll, mfa-challenge, mfa-verify, mfa-remove, recovery-codes, recover-mfa, create-organization, organization-role, user-role, user-status]
+        email: { type: string }
+        phone: { type: string }
+        password: { type: string }
+        displayName: { type: string }
+        kind: { type: string, enum: [developer, company, recruiter] }
+        code: { type: string }
+        handle: { type: string }
+        provider: { type: string, enum: [google, github] }
+        scope: { type: string, enum: [local, global] }
+        sessionId: { type: string }
+        factorId: { type: string }
+        challengeId: { type: string }
+        factorType: { type: string, enum: [totp, phone] }
+        name: { type: string }
+        slug: { type: string }
+        userId: { type: string }
+        organizationId: { type: string }
+        role: { type: [string, "null"], enum: [organization_owner, organization_admin, moderator, admin, super_admin, null] }
+        status: { type: string, enum: [active, disabled] }
+    AuthActionResult:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+        handle: { type: string }
+        requiresVerification: { type: boolean }
+        authorizationUrl: { type: string }
+        signedIn: { type: boolean }
+        signedOut: { type: boolean }
+        challengeId: { type: string }
+        factor:
+          type: object
+          required: [id, type]
+          properties:
+            id: { type: string }
+            type: { type: string, enum: [totp, phone] }
+            qrCode: { type: string }
+            secret: { type: string }
+        recoveryCodes: { type: array, items: { type: string } }
+    DeviceSession:
+      type: object
+      required: [id, deviceLabel, createdAt, lastSeenAt, expiresAt, current]
+      properties:
+        id: { type: string }
+        deviceLabel: { type: string }
+        createdAt: { type: string }
+        lastSeenAt: { type: string }
+        expiresAt: { type: string }
+        current: { type: boolean }
+    AccountMembership:
+      type: object
+      required: [organizationId, name, slug, role, members]
+      properties:
+        organizationId: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        role: { type: string }
+        members:
+          type: array
+          items:
+            type: object
+            required: [userId, displayName, role]
+            properties:
+              userId: { type: string }
+              displayName: { type: string }
+              role: { type: string }
+    SecurityActivity:
+      type: object
+      required: [id, action, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        createdAt: { type: string }
+    AccountDetails:
+      type: object
+      required: [user, sessions, memberships, activity, factors, recoveryCodesRemaining, passwordRecovery]
+      properties:
+        user: { $ref: "#/components/schemas/AccountUser" }
+        sessions: { type: array, items: { $ref: "#/components/schemas/DeviceSession" } }
+        memberships: { type: array, items: { $ref: "#/components/schemas/AccountMembership" } }
+        activity: { type: array, items: { $ref: "#/components/schemas/SecurityActivity" } }
+        factors: { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
+        recoveryCodesRemaining: { type: integer }
+        passwordRecovery: { type: boolean }
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+        requestId:
+          type: string
+      required: [error, requestId]
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ReadinessStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [ready, unavailable]
+          required:
+            - database
+      required:
+        - status
+        - checks
+

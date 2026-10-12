@@ -1,0 +1,3 @@
+- [Next.js workspace constraints](next-workspace-constraints.md) — exact development origins, consistent router roots, and directly resolvable augmentation types.
+- [Identity provider boundary](identity-provider-boundary.md) — Supabase Auth owns identity and OTP verification; MSG91 delivers provider-issued codes.
+- [Browser test runtime](browser-test-runtime.md) — testing notebook modules are restricted; native MFA tests need test-only authenticator tooling and async reads.

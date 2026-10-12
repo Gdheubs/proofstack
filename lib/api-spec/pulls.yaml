@@ -1,0 +1,600 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Pull requests",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/pulls": {
+      "get": {
+        "operationId": "getPulls",
+        "parameters": [
+          {
+            "name": "repositoryId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PullData"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pulls/action": {
+      "post": {
+        "operationId": "runPullAction",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PullInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PullResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PullRepository": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "projectId",
+          "projectSlug",
+          "defaultBranch",
+          "canWrite",
+          "canManage"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "projectSlug": {
+            "type": "string"
+          },
+          "defaultBranch": {
+            "type": "string"
+          },
+          "canWrite": {
+            "type": "boolean"
+          },
+          "canManage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PullBranch": {
+        "type": "object",
+        "required": [
+          "name",
+          "head"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "head": {
+            "type": "string"
+          }
+        }
+      },
+      "PullIssue": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "PullRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "repositoryId",
+          "title",
+          "body",
+          "authorName",
+          "status",
+          "sourceBranch",
+          "targetBranch",
+          "sourceHead",
+          "targetHead",
+          "createdAt",
+          "updatedAt",
+          "number",
+          "authorId",
+          "issueId",
+          "mergeHead",
+          "canManage",
+          "isAuthor",
+          "canReview"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "repositoryId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "sourceBranch": {
+            "type": "string"
+          },
+          "targetBranch": {
+            "type": "string"
+          },
+          "sourceHead": {
+            "type": "string"
+          },
+          "targetHead": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "authorId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "issueId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mergeHead": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "isAuthor": {
+            "type": "boolean"
+          },
+          "canReview": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PullReview": {
+        "type": "object",
+        "required": [
+          "id",
+          "reviewerId",
+          "reviewerName",
+          "decision",
+          "body",
+          "sourceHead",
+          "targetHead",
+          "createdAt",
+          "current"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reviewerId": {
+            "type": "string"
+          },
+          "reviewerName": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "sourceHead": {
+            "type": "string"
+          },
+          "targetHead": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PullComment": {
+        "type": "object",
+        "required": [
+          "id",
+          "authorName",
+          "body",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "PullCheck": {
+        "type": "object",
+        "required": [
+          "status",
+          "details",
+          "createdAt"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "PullFile": {
+        "type": "object",
+        "required": [
+          "status",
+          "path"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "PullRelease": {
+        "type": "object",
+        "required": [
+          "id",
+          "tag",
+          "title",
+          "notes",
+          "commit",
+          "authorName",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "PullData": {
+        "type": "object",
+        "required": [
+          "repository",
+          "branches",
+          "issues",
+          "pulls",
+          "pull",
+          "reviews",
+          "comments",
+          "check",
+          "approvalCount",
+          "changesRequested",
+          "canMerge",
+          "patch",
+          "patchTruncated",
+          "files",
+          "releases",
+          "hasMore",
+          "offset"
+        ],
+        "properties": {
+          "repository": {
+            "$ref": "#/components/schemas/PullRepository"
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullBranch"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullIssue"
+            }
+          },
+          "pulls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullRequest"
+            }
+          },
+          "pull": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PullRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullReview"
+            }
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullComment"
+            }
+          },
+          "check": {
+            "$ref": "#/components/schemas/PullCheck"
+          },
+          "approvalCount": {
+            "type": "integer"
+          },
+          "changesRequested": {
+            "type": "boolean"
+          },
+          "canMerge": {
+            "type": "boolean"
+          },
+          "patch": {
+            "type": "string"
+          },
+          "patchTruncated": {
+            "type": "boolean"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullFile"
+            }
+          },
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullRelease"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "PullInput": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "open",
+              "state",
+              "comment",
+              "review",
+              "check",
+              "merge",
+              "release"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "repositoryId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "sourceBranch": {
+            "type": "string"
+          },
+          "targetBranch": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "sourceHead": {
+            "type": "string"
+          },
+          "targetHead": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string"
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "issueId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PullResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "repositoryId",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "repositoryId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

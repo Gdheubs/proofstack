@@ -1,0 +1,845 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Careers",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/careers": {
+      "get": {
+        "operationId": "getCareers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "view",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "jobs",
+                "job",
+                "talent",
+                "dashboard",
+                "applications",
+                "application",
+                "project-work"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "id",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mine",
+                "received"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "job",
+                "internship",
+                "contract",
+                "collaboration"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "workplace",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "remote",
+                "hybrid",
+                "onsite"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareerData"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/careers/action": {
+      "post": {
+        "operationId": "runCareerAction",
+        "description": "Authenticated, CSRF-protected actions. Strict action-specific validation and server-side authorization. No automated candidate ranking.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareerInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareerResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "requestId"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CareerProfile": {
+        "type": "object",
+        "required": [
+          "headline",
+          "roles",
+          "availability",
+          "discoverable",
+          "featuredProjects"
+        ],
+        "properties": {
+          "headline": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "open",
+              "exploring",
+              "closed"
+            ]
+          },
+          "discoverable": {
+            "type": "boolean"
+          },
+          "featuredProjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CareerProof": {
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "repositoryUrl",
+          "demoUrl",
+          "relationship"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "repositoryUrl": {
+            "type": "string"
+          },
+          "demoUrl": {
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "contributor"
+            ]
+          }
+        }
+      },
+      "CareerCandidate": {
+        "type": "object",
+        "required": [
+          "id",
+          "handle",
+          "displayName",
+          "avatarPath",
+          "bio",
+          "skills",
+          "headline",
+          "roles",
+          "availability",
+          "projects"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarPath": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "headline": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availability": {
+            "type": "string"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerProof"
+            }
+          }
+        }
+      },
+      "CareerJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "organizationId",
+          "organizationName",
+          "organizationSlug",
+          "title",
+          "description",
+          "skills",
+          "kind",
+          "workplace",
+          "location",
+          "compensation",
+          "status",
+          "canManage",
+          "applied",
+          "applicationCount",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "organizationSlug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "job",
+              "internship",
+              "contract",
+              "collaboration"
+            ]
+          },
+          "workplace": {
+            "type": "string",
+            "enum": [
+              "remote",
+              "hybrid",
+              "onsite"
+            ]
+          },
+          "location": {
+            "type": "string"
+          },
+          "compensation": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "open",
+              "closed"
+            ]
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "applied": {
+            "type": "boolean"
+          },
+          "applicationCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "CareerApplication": {
+        "type": "object",
+        "required": [
+          "id",
+          "jobId",
+          "jobTitle",
+          "organizationId",
+          "organizationName",
+          "applicantId",
+          "displayName",
+          "handle",
+          "note",
+          "status",
+          "projects",
+          "canManage",
+          "isMine",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "applicantId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "handle": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "submitted",
+              "reviewing",
+              "shortlisted",
+              "interview",
+              "offered",
+              "rejected",
+              "withdrawn"
+            ]
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerProof"
+            }
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "isMine": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "CareerMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "authorId",
+          "displayName",
+          "body",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "CareerIssue": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "authorId",
+          "authorName",
+          "assigneeId",
+          "assigneeName",
+          "title",
+          "description",
+          "status",
+          "evidenceUrl",
+          "canEdit",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "assigneeName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in-progress",
+              "done"
+            ]
+          },
+          "evidenceUrl": {
+            "type": "string"
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "CareerData": {
+        "type": "object",
+        "required": [
+          "jobs",
+          "candidates",
+          "applications",
+          "messages",
+          "issues",
+          "organizations",
+          "ownProjects",
+          "assignees",
+          "profile",
+          "projectTitle",
+          "canManageProject",
+          "canContribute",
+          "hasMore",
+          "offset"
+        ],
+        "properties": {
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerJob"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerCandidate"
+            }
+          },
+          "applications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerApplication"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerMessage"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerIssue"
+            }
+          },
+          "organizations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "ownProjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareerProof"
+            }
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "displayName"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CareerProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projectTitle": {
+            "type": "string"
+          },
+          "canManageProject": {
+            "type": "boolean"
+          },
+          "canContribute": {
+            "type": "boolean"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "CareerInput": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "career-save",
+              "job-save",
+              "apply",
+              "application-status",
+              "message",
+              "issue-save"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
+          "workplace": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "compensation": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "projectIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "body": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidenceUrl": {
+            "type": "string"
+          },
+          "headline": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availability": {
+            "type": "string"
+          },
+          "discoverable": {
+            "type": "boolean"
+          },
+          "featuredProjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CareerResult": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

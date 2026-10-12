@@ -1,0 +1,1 @@
+ALTER TABLE "auth_hook_receipts" ADD COLUMN "status" text DEFAULT 'pending' NOT NULL;

@@ -1,0 +1,42 @@
+# Operations and recovery
+
+Phase 7 provides operational controls, not a provisioned production environment. Keep secrets in deployment configuration. Apply the tracked schema through the documented Replit Publish workflow, including `0009_orange_firelord.sql`, before starting the new API/worker. Do not run development migrations or integration tests against production. New indexes can lock busy tables during creation; schedule schema changes during a controlled maintenance window and review the publish diff.
+
+## Deployment checks
+
+1. Configure exact HTTPS `AUTH_APP_ORIGIN`, managed identity, a random session secret, database TLS and least-privileged credentials. Review `.env.example`, `identity.md`, `database.md` and feature setup documents.
+2. Set `TRUST_PROXY_CIDRS` only to the actual trusted proxy IPs/CIDRs. Default blank ignores forwarded client IPs. Verify separate clients receive separate limits through the deployed proxy and that client-supplied forwarding headers cannot change their effective identity. Never use a universal CIDR or hop-count trust.
+3. Provision private durable Git storage before setting `REPOSITORY_ROOT`. It must not be a public web directory or ephemeral autoscale filesystem. Restrict its OS mode to 0700 and run all Git processes under the intended service user. Do not horizontally scale Git writers across uncoordinated/local volumes.
+4. Start web/API and, when enabled, the separately supervised intelligence worker. API pools allow ten connections per process; each worker has its own pool. Budget the total against PostgreSQL connection limits before adding replicas. Set termination grace to at least 85 seconds; API/worker drain is bounded at 80 seconds.
+5. Run `pnpm --filter @workspace/api-server run ops:preflight` with the exact production environment. It is read-only, emits no configuration values and exits nonzero on failed checks. It checks configuration presence, key tables, Phase 7 indexes and recent worker heartbeat when enabled. It does not validate every schema column, provider entitlement, TLS topology, randomness, storage durability or backups. Review the complete schema Publish diff separately.
+6. Run CI with native PostgreSQL and perform the role-based acceptance matrix below. The local embedded database suite is useful evidence but does not establish native concurrent transaction behavior.
+
+## Monitoring and performance
+
+`/api/healthz` is liveness; `/api/readyz` verifies the database. Neither proves identity, AI, email/SMS or object storage availability. `/account/operations` and `GET /api/operations` require an active admin/super-admin session and fresh verified native MFA. Roles/session revocation are rechecked in the database. Responses are private/no-store and the endpoint is limited to ten requests per minute.
+
+The dashboard exposes process uptime, RSS, request/in-flight/5xx counts, recent p95 latency (last 256 requests on that process), database pool waiters, queue depth/age, recent failed jobs and worker liveness. It deliberately contains no provider keys, connection strings or user payloads. A worker is considered live after a heartbeat within 180 seconds; this is a liveness signal, not a guarantee of progress. Counts restart with the process and are not aggregated across replicas. Alerts appear in the dashboard; external paging/email alert delivery is not configured.
+
+Set external uptime alerts for readiness failure, sustained 5xx errors, oldest queued job over five minutes, absent worker heartbeat, pool saturation, storage exhaustion and backup failure. Choose thresholds after measuring actual traffic. Restrict external metric access and do not put user content in log labels.
+
+Run `pnpm --filter @workspace/api-server run ops:benchmark -- http://127.0.0.1:8080` on local staging. The script sends 40 requests per endpoint with concurrency four, uses timeouts and reports failures/p50/p95. It accepts loopback targets only and does not establish a throughput SLO. For launch, seed representative project/contributor/application volumes and measure database plans, latency, memory and queue lag under expected concurrent roles. Project-card reads are batched into four queries for a page; other lists and bounded offset pagination still require scale evaluation. Do not describe the included fixture timing as a production load test.
+
+## Maintenance and rollback
+
+Set `MAINTENANCE_MODE=true` on **every API and worker** and restart/redeploy them. This rejects new product mutations with 503 and stops new worker claims. Authentication, read-only requests and Git clone/fetch remain available. In-flight work may finish; this is not an instantaneous transaction or backup barrier. Wait for running jobs and API mutations to drain before stopping services for a consistent backup. Maintenance does not make auth/session/audit/rate-limit tables read-only.
+
+For an incident, preserve safe request IDs and timestamps, disable the affected optional feature, revoke compromised sessions/tokens with the existing account controls and rotate provider secrets through the secret store. Do not log tokens or export user data to issue trackers. Investigate any external AI charge before manually retrying a job with uncertain completion.
+
+Keep the previous verified application artifact, its configuration names and matching schema release. Prefer backward-compatible additive migrations. On failed release, enable maintenance, drain workers, restore the previous application only if it is schema-compatible, then validate readiness and role-based smoke flows. Do not blindly reverse database migrations. Restore to a separate environment if destructive schema/data changes prevent safe rollback, reconcile writes, and plan the cutover explicitly. This rollback procedure has not yet been rehearsed on a deployed environment.
+
+## Backup and restore drill
+
+Back up PostgreSQL, the durable Git volume and object storage together with a documented consistency point. Configure encrypted off-host retention, access controls and provider point-in-time recovery where supported. Never store backups or credentials in the source ZIP. Choose and record an acceptable recovery point/time objective before launch.
+
+During the first drill, drain/stop writers and workers; obtain a provider database snapshot (or `pg_dump --format=custom` using secret-managed credentials), snapshot Git storage, and record object versions. Restore **into isolated staging**, using the same database major version and service UID. Use `pg_restore --no-owner --no-acl` where appropriate for the target privilege model. Restore Git paths/permissions and object versions; do not connect restored staging to production email/SMS/AI credentials. Verify schema, counts, private tenant boundaries, repository branches/commit objects/tags, release snapshots, upload references and queue states. Check an actual clone and file read. Measure elapsed restore time and document any lost writes. Test deletion/retention policies against backup obligations. No native backup or restore drill was possible in this local checkpoint.
+
+## Required staging acceptance
+
+Use independent owner, admin, member, seeker, employer and outsider accounts. Verify sign-up, native MFA, recovery, renewal, revocation; public/private profile/project/org reads; role changes; uploads; job applications and employer-only conversations; repository web commits, clone, reviews, merge conflicts/protected main and releases; intelligence consent, quotas, cancellation, provider failure and worker restart; admin-only operations and stale-MFA denial. Confirm keyboard/mobile behavior, production cookies/CSP and secret-free logs in a real browser.
+
+External Git push/SSH/import, isolated executable CI/CD and conflict-resolution tooling remain unimplemented. Static scan findings are limited heuristics and cannot certify a repository as safe. These are explicit product gaps, not environment settings that can be enabled.
