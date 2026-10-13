@@ -365,7 +365,7 @@ export async function tokenUser(raw: string | undefined, id: string) {
   if (!/^psr_[A-Za-z0-9_-]{43}$/.test(token))
     throw repoError("Invalid or expired repository credential.", 401);
   const r = await pool.query(
-    `SELECT t.user_id FROM repository_tokens t JOIN users u ON u.id=t.user_id AND u.status='active' WHERE t.repository_id=$1 AND t.token_hash=$2 AND t.revoked_at IS NULL AND t.expires_at>now()`,
+    `SELECT t.user_id FROM repository_tokens t JOIN users u ON u.id=t.user_id AND u.status='active' AND u.mfa_recovery_required=false WHERE t.repository_id=$1 AND t.token_hash=$2 AND t.revoked_at IS NULL AND t.expires_at>now()`,
     [id, createHash("sha256").update(token).digest("hex")],
   );
   if (!r.rows[0])

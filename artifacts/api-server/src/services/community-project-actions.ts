@@ -199,12 +199,7 @@ export async function projectAction(
   if (input.action === "entry-save") {
     let manager = false;
     if (input.projectId) {
-      const p = await authorizeProject(db, s, input.projectId, "contribute");
-      manager =
-        p.owner_id === uid ||
-        ["organization_owner", "organization_admin"].includes(
-          (await orgRole(p.organization_id, uid, db)) || "",
-        );
+      await authorizeProject(db, s, input.projectId, "contribute");
       if (
         !["release", "documentation", "evidence", "repository"].includes(
           input.kind,
@@ -245,7 +240,11 @@ export async function projectAction(
         existing.organization_id !== (input.organizationId || null))
     )
       throw denied();
-    if (existing && existing.user_id !== uid && !manager) throw denied();
+    if (existing && existing.user_id !== uid && !manager) {
+      if (input.projectId)
+        await authorizeProject(db, s, input.projectId, "edit");
+      else throw denied();
+    }
     if (!existing) {
       const n = (
         await db.query(
@@ -310,18 +309,9 @@ export async function projectAction(
     ).rows[0];
     if (!existing) throw missing();
     if (existing.project_id) {
-      const p = await authorizeProject(
-        db,
-        s,
-        existing.project_id,
-        "contribute",
-      );
-      const manager =
-        p.owner_id === uid ||
-        ["organization_owner", "organization_admin"].includes(
-          (await orgRole(p.organization_id, uid, db)) || "",
-        );
-      if (existing.user_id !== uid && !manager) throw denied();
+      await authorizeProject(db, s, existing.project_id, "contribute");
+      if (existing.user_id !== uid)
+        await authorizeProject(db, s, existing.project_id, "edit");
     } else if (existing.organization_id)
       await authorizeOrg(db, s, existing.organization_id, "manage");
     else if (existing.user_id !== uid) throw denied();

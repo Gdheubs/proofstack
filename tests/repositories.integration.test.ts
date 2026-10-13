@@ -32,7 +32,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     afterAll(async () => {
       await pool.end();
     });
-    it("protects main, rejects stale edits, restores refs and checks token revocation and project privacy", async () => {
+    it("protects main, rejects stale edits, restores refs and checks token revocation, recovery lockdown, disabled users and project privacy", async () => {
       const folder = await mkdtemp(join(tmpdir(), "proofstack-repo-db-"));
       vi.stubEnv("REPOSITORY_ROOT", folder);
       vi.stubEnv(
@@ -206,6 +206,71 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         expect(
           await readFile(join(folder, "private-clone", "README.md"), "utf8"),
         ).toContain("Build something");
+        // Existing, unexpired credentials must follow the current account state.
+        const basic = "Basic " + Buffer.from("git:" + token).toString("base64");
+        const credentialState = async () =>
+          (
+            await pool.query(
+              `SELECT u.status,u.mfa_recovery_required,t.revoked_at IS NULL AS unrevoked,t.expires_at>now() AS unexpired FROM repository_tokens t JOIN users u ON u.id=t.user_id WHERE t.repository_id=$1 AND t.user_id=$2`,
+              [id, owner],
+            )
+          ).rows[0];
+        await pool.query(
+          "UPDATE users SET mfa_recovery_required=true WHERE id=$1",
+          [owner],
+        );
+        expect(await credentialState()).toMatchObject({
+          status: "active",
+          mfa_recovery_required: true,
+          unrevoked: true,
+          unexpired: true,
+        });
+        await expect(tokenUser("Bearer " + token, id)).rejects.toMatchObject({
+          status: 401,
+        });
+        await expect(tokenUser(basic, id)).rejects.toMatchObject({
+          status: 401,
+        });
+        const recoveryAdvertisement = await fetch(
+          `http://127.0.0.1:${address.port}/api/git/${id}/info/refs?service=git-upload-pack`,
+          { headers: { Authorization: basic } },
+        );
+        expect(recoveryAdvertisement.status).toBe(401);
+        await expect(clone(id, "recovery-clone", token)).rejects.toBeDefined();
+
+        // Recovery suspends access; clearing it does not silently revoke tokens.
+        await pool.query(
+          "UPDATE users SET mfa_recovery_required=false WHERE id=$1",
+          [owner],
+        );
+        expect(await tokenUser("Bearer " + token, id)).toBe(owner);
+        expect(await tokenUser(basic, id)).toBe(owner);
+        await clone(id, "recovered-clone", token);
+        expect(
+          await readFile(join(folder, "recovered-clone", "README.md"), "utf8"),
+        ).toContain("Build something");
+
+        // Clearing recovery must not bypass the existing disabled-user policy.
+        await pool.query("UPDATE users SET status='disabled' WHERE id=$1", [
+          owner,
+        ]);
+        expect(await credentialState()).toMatchObject({
+          status: "disabled",
+          mfa_recovery_required: false,
+          unrevoked: true,
+          unexpired: true,
+        });
+        await expect(tokenUser("Bearer " + token, id)).rejects.toMatchObject({
+          status: 401,
+        });
+        await expect(tokenUser(basic, id)).rejects.toMatchObject({
+          status: 401,
+        });
+        await expect(clone(id, "disabled-clone", token)).rejects.toBeDefined();
+        await pool.query("UPDATE users SET status='active' WHERE id=$1", [
+          owner,
+        ]);
+        expect(await tokenUser("Bearer " + token, id)).toBe(owner);
         const owned = await getRepositories({ id }, owner);
         await act(owner, {
           action: "token-revoke",

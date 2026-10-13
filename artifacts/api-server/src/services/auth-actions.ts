@@ -211,7 +211,7 @@ export async function runAction(
           "OAUTH_SETUP_REQUIRED",
           "This social provider has not been configured",
         );
-      await authLimit(req, "oauth", input.provider, 10, 600);
+      await authLimit(req, `oauth:${input.provider}`, undefined, 10, 600);
       const storage: Record<string, string> = {};
       const result = await providerClient(storage).auth.signInWithOAuth({
         provider: input.provider,

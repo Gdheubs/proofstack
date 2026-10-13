@@ -3,8 +3,8 @@ import { uuid, branchSchema, headSchema, repoError } from "./repository-input";
 const text = (max: number) => z.string().trim().max(max);
 export const releaseTag = z
   .string()
-  .max(80)
-  .regex(/^v?[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*)?$/);
+  .regex(/^v?[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*)?$/)
+  .pipe(branchSchema);
 export const pullActionSchema = z.discriminatedUnion("action", [
   z
     .object({

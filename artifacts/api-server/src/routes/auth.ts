@@ -60,7 +60,7 @@ authRouter.post("/auth/action", async (req, res) => {
       parsed.error.issues[0]?.message || "Invalid authentication input",
     );
   const session = await readSession(req, res);
-  await authLimit(req, "actions", session?.user.id || "anonymous", 60, 60);
+  await authLimit(req, "actions", session?.user.id, 60, 60);
   res.json(await runAction(req, res, parsed.data, session));
 });
 authRouter.get("/auth/account", async (req, res) => {

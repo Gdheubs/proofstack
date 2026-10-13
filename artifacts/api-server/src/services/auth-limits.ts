@@ -8,14 +8,25 @@ import { writeAuditEvent } from "./audit";
 export async function authLimit(
   req: Request,
   purpose: string,
-  identifier = "anonymous",
+  identifier?: string,
   max = 10,
   seconds = 600,
 ) {
-  for (const [key, count] of [
-    [`auth:ip:${purpose}:${digest(req.ip || "unknown", "rate-ip")}`, max * 3],
-    [`auth:id:${purpose}:${digest(identifier.toLowerCase(), "rate-id")}`, max],
-  ] as const) {
+  // Without an account identifier, the budget belongs to this client alone.
+  // Named accounts retain both their cross-IP budget and the broader IP cap.
+  const limits: [string, number][] = [
+    [
+      `auth:ip:${purpose}:${digest(req.ip || "unknown", "rate-ip")}`,
+      identifier === undefined ? max : max * 3,
+    ],
+  ];
+  if (identifier !== undefined) {
+    limits.push([
+      `auth:id:${purpose}:${digest(identifier.toLowerCase(), "rate-id")}`,
+      max,
+    ]);
+  }
+  for (const [key, count] of limits) {
     const result = await consumeRateLimit(key, seconds, count);
     if (!result.allowed)
       throw new ApiError(

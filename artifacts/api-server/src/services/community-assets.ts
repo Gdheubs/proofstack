@@ -186,7 +186,7 @@ export async function assetAccess(id: string, uid: string | null) {
   const isPublic = !!publicRef.rows[0];
   if (!isPublic && row.user_id !== uid) {
     const allowed = await pool.query(
-      `SELECT 1 FROM community_projects p LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id
+      `SELECT 1 FROM community_projects p JOIN users owner ON owner.id=p.owner_id AND owner.status='active' LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id
    WHERE ${projectReadWhere()} AND p.screenshots @> $2::jsonb LIMIT 1`,
       [uid, JSON.stringify([path])],
     );

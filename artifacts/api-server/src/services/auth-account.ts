@@ -1,6 +1,8 @@
 import { pool } from "@workspace/db";
 import type { Request } from "express";
 import { ApiError } from "../lib/errors";
+import { adminClient, providerFailure } from "./auth-provider";
+import { hasPermission } from "./authorization";
 import {
   requireFresh,
   factors,
@@ -208,8 +210,16 @@ export async function organizationRole(
       [organizationId, session.user.id],
     );
     if (
-      actor.rows[0]?.key !== "organization_owner" &&
-      session.user.platformRole !== "super_admin"
+      session.user.platformRole !== "super_admin" &&
+      (actor.rows[0]?.key !== "organization_owner" ||
+        !(await hasPermission(
+          {
+            userId: session.user.id,
+            organizationId,
+            permission: "community.organization.members",
+          },
+          (text, values) => tx.query(text, values),
+        )))
     ) {
       throw new ApiError(
         403,
@@ -224,12 +234,25 @@ export async function organizationRole(
     );
     const owners = await tx.query(
       `SELECT count(*)::int AS n FROM organization_members m JOIN roles r ON r.id=m.role_id
+      JOIN users u ON u.id=m.user_id AND u.status='active'
       WHERE m.organization_id=$1 AND m.status='active' AND r.key='organization_owner'`,
       [organizationId],
     );
     assertLastOwner(member.rows[0]?.key || "", role, owners.rows[0].n);
+    if (!member.rows[0]) {
+      const count = await tx.query(
+        "SELECT count(*)::int AS n FROM organization_members WHERE organization_id=$1 AND status='active'",
+        [organizationId],
+      );
+      if (count.rows[0].n >= 500)
+        throw new ApiError(
+          409,
+          "MEMBER_LIMIT",
+          "The organization has reached its member limit",
+        );
+    }
     const target = await tx.query(
-      "SELECT id FROM users WHERE id=$1 AND status='active'",
+      "SELECT id,auth_subject FROM users WHERE id=$1 AND status='active'",
       [userId],
     );
     if (!target.rows[0])
@@ -238,12 +261,30 @@ export async function organizationRole(
         "USER_NOT_FOUND",
         "An active existing ProofStack account is required",
       );
+    const native = await adminClient().auth.admin.getUserById(
+      target.rows[0].auth_subject,
+    );
+    providerFailure(native.error);
+    if (
+      !native.data.user ||
+      !factors(native.data.user).some((f) => f.status === "verified")
+    )
+      throw new ApiError(
+        409,
+        "TARGET_MFA_REQUIRED",
+        "The developer must enroll and verify MFA before receiving an owner or admin role",
+      );
     await tx.query(
       `INSERT INTO organization_members(organization_id,user_id,role_id)
       SELECT $1,$2,id FROM roles WHERE key=$3 ON CONFLICT(organization_id,user_id)
       DO UPDATE SET role_id=EXCLUDED.role_id,status='active',updated_at=now()`,
       [organizationId, userId, role],
     );
+    if (member.rows[0]?.key !== role)
+      await tx.query(
+        "UPDATE sessions SET revoked_at=now(),encrypted_credentials=NULL WHERE user_id=$1",
+        [userId],
+      );
     await writeMembershipAudit(
       req,
       session.user.id,
