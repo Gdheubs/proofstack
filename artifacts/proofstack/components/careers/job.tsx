@@ -168,7 +168,10 @@ export function Opportunity({ id }: { id: string }) {
               <button className="underline" onClick={() => setEdit(!edit)}>
                 Edit listing
               </button>
-              <Link className="block underline" href={`/career?job=${j.id}`}>
+              <Link
+                className="block underline"
+                href={`/career/applications?job=${encodeURIComponent(j.id)}`}
+              >
                 Review {j.applicationCount} applications →
               </Link>
               {edit && (
@@ -184,7 +187,7 @@ export function Opportunity({ id }: { id: string }) {
           ) : j.applied ? (
             <div className={card}>
               You have applied.{" "}
-              <Link className="underline" href="/career">
+              <Link className="underline" href="/career/applications">
                 Track your application
               </Link>
             </div>

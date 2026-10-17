@@ -15,6 +15,7 @@ import {
 } from "@/components/careers/shared";
 import { ActionForm } from "@/components/repositories/action-form";
 import { usePullRun } from "@/hooks/use-pulls";
+import { RepositoryNavigation } from "../repositories/repository-navigation";
 export function PullList({ repositoryId }: { repositoryId: string }) {
   const [offset, setOffset] = useState(0),
     [status, setStatus] = useState("all");
@@ -28,17 +29,12 @@ export function PullList({ repositoryId }: { repositoryId: string }) {
   if (!d) return null;
   return (
     <>
-      <PageHead eyebrow={d.repository.title} title="Pull requests">
-        <Link className="underline" href={`/repositories/${repositoryId}`}>
-          Source
-        </Link>
-        <Link
-          className="underline"
-          href={`/repositories/${repositoryId}/releases`}
-        >
-          Releases
-        </Link>
-      </PageHead>
+      <PageHead eyebrow={d.repository.title} title="Pull requests" />
+      <RepositoryNavigation
+        repositoryId={repositoryId}
+        canManage={d.repository.canManage}
+        active="pulls"
+      />
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <section className="space-y-4">
           <label className="block text-sm">

@@ -12,6 +12,7 @@ import { card, field } from "@/components/careers/shared";
 import { ActionForm } from "@/components/repositories/action-form";
 import { useIntelligenceRun } from "@/hooks/use-intelligence";
 import { IntelligenceGate, useIntelligenceData } from "./shared";
+import { RepositoryNavigation } from "../repositories/repository-navigation";
 export function LearningPlanRequest({ jobId }: { jobId: string }) {
   const q = useGetCareers({ view: "job", id: jobId }),
     { query: config, session } = useIntelligenceData(),
@@ -117,13 +118,15 @@ export function SecurityScanRequest({
         eyebrow="Bounded static analysis"
         title="Repository security review"
       >
-        <Link className="underline" href={`/repositories/${repositoryId}`}>
-          Source
-        </Link>
         <Link className="underline" href="/intelligence">
           Your analysis history
         </Link>
       </PageHead>
+      <RepositoryNavigation
+        repositoryId={repositoryId}
+        canManage={r.canManage}
+        active="security"
+      />
       {!r.canManage ? (
         <p className={card}>
           Only current project managers can request or view their private

@@ -15,6 +15,31 @@ import { Empty, PagedList, PersonAvatar, QueryError, Tags } from "./ui";
 import { FollowButton, PersonCard } from "./people";
 import { EntryList } from "./entry-list";
 import { ProjectCard } from "./project-card";
+import { ProfileAssessmentResults } from "../assessments/profile-assessment-results";
+
+function ProjectsTab({ handle, isMe }: { handle: string; isMe: boolean }) {
+  const list = useCommunityList({ view: "profile", handle });
+  return (
+    <PagedList
+      list={list}
+      pick={(page) => page.projects}
+      className="grid gap-4 sm:grid-cols-2"
+      render={(project) => <ProjectCard project={project} />}
+      empty={
+        <Empty
+          title="No public projects yet"
+          action={
+            isMe ? (
+              <Button asChild>
+                <Link href="/projects">Create a project</Link>
+              </Button>
+            ) : undefined
+          }
+        />
+      }
+    />
+  );
+}
 
 function PeopleTab({
   handle,
@@ -146,6 +171,12 @@ export function ProfileView({ handle }: { handle: string }) {
         </div>
       </section>
 
+      <ProfileAssessmentResults
+        handle={p.handle || (p.isMe ? "me" : "")}
+        ownerId={p.id}
+        isMe={p.isMe}
+      />
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="evidence">Evidence & experience</TabsTrigger>
@@ -167,24 +198,7 @@ export function ProfileView({ handle }: { handle: string }) {
           />
         </TabsContent>
         <TabsContent value="projects" className="mt-5">
-          {data.projects.length ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {data.projects.map((pr) => (
-                <ProjectCard key={pr.id} project={pr} />
-              ))}
-            </div>
-          ) : (
-            <Empty
-              title="No public projects yet"
-              action={
-                p.isMe ? (
-                  <Button asChild>
-                    <Link href="/projects">Create a project</Link>
-                  </Button>
-                ) : undefined
-              }
-            />
-          )}
+          <ProjectsTab handle={p.handle || handle} isMe={p.isMe} />
         </TabsContent>
         <TabsContent value="activity" className="mt-5">
           {data.activity.length ? (

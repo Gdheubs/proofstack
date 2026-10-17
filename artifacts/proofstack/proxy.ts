@@ -8,6 +8,7 @@ export function proxy(request: NextRequest) {
   const policy = buildContentSecurityPolicy(
     nonce,
     process.env.NODE_ENV !== "production",
+    process.env.FIREBASE_WEB_AUTH_DOMAIN,
   );
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);

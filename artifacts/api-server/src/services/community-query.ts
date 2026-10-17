@@ -9,6 +9,7 @@ import {
   memberAccessWhere,
   postReadWhere,
   projectReadWhere,
+  notificationReadWhere,
 } from "./community-policy";
 import { ApiError } from "../lib/errors";
 export async function getCommunity(
@@ -46,7 +47,7 @@ export async function getCommunity(
   if (uid)
     data.unreadCount = (
       await pool.query(
-        "SELECT count(*)::int AS n FROM notifications WHERE user_id=$1 AND read_at IS NULL",
+        `SELECT count(*)::int AS n FROM notifications n WHERE ${notificationReadWhere()} AND n.read_at IS NULL`,
         [uid],
       )
     ).rows[0].n;
@@ -177,7 +178,7 @@ export async function getCommunity(
   } else if (q.view === "notifications") {
     const uid = needsUser();
     const r = await pool.query(
-      'SELECT id,title,body,href,read_at IS NOT NULL AS read,created_at AS "createdAt" FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 21 OFFSET $2',
+      `SELECT n.id,n.title,n.body,n.href,n.read_at IS NOT NULL AS read,n.created_at AS "createdAt" FROM notifications n WHERE ${notificationReadWhere()} ORDER BY n.created_at DESC,n.id DESC LIMIT 21 OFFSET $2`,
       [uid, offset],
     );
     data.notifications = page(
@@ -203,7 +204,7 @@ export async function getCommunity(
     const needle = (q.q || "").trim().replace(/[\\%_]/g, "\\$&");
     const term = `%${needle}%`;
     const type = q.type || "all";
-    if (type === "all" || type === "developers" || type === "skills") {
+    if (type === "all" || type === "developers") {
       const ids = await pool.query(
         "SELECT p.user_id FROM profiles p JOIN users u ON u.id=p.user_id AND u.status='active' WHERE p.handle IS NOT NULL AND (p.handle ILIKE $1 OR p.display_name ILIKE $1 OR p.bio ILIKE $1 OR p.skills::text ILIKE $1) ORDER BY p.display_name LIMIT 21 OFFSET $2",
         [term, offset],
@@ -213,6 +214,8 @@ export async function getCommunity(
         ids.rows.map((r) => reader.person(r.user_id)),
       );
       data.people = page(people.filter((p): p is NonNullable<typeof p> => !!p));
+    }
+    if (type === "all" || type === "skills") {
       const skills = await pool.query(
         "SELECT DISTINCT s.skill FROM profiles p JOIN users u ON u.id=p.user_id AND u.status='active' CROSS JOIN LATERAL jsonb_array_elements_text(p.skills) AS s(skill) WHERE p.handle IS NOT NULL AND s.skill ILIKE $1 ORDER BY s.skill LIMIT 50",
         [term],

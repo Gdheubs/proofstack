@@ -42,7 +42,7 @@ export function JobCard({ job: j }: { job: CareerJob }) {
       {j.applied && (
         <p className="text-sm">
           Application submitted ·{" "}
-          <Link href="/career" className="underline">
+          <Link href="/career/applications" className="underline">
             Track progress
           </Link>
         </p>

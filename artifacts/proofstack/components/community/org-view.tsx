@@ -105,7 +105,7 @@ export function OrgView({ slug }: { slug: string }) {
           <TabsTrigger value="projects">Projects</TabsTrigger>
           {member && <TabsTrigger value="members">Members</TabsTrigger>}
           {member && <TabsTrigger value="teams">Teams</TabsTrigger>}
-          {member && <TabsTrigger value="repos">Repositories</TabsTrigger>}
+          {member && <TabsTrigger value="repos">Repository links</TabsTrigger>}
         </TabsList>
         <TabsContent value="projects" className="mt-5 space-y-4">
           {member && (
@@ -140,6 +140,10 @@ export function OrgView({ slug }: { slug: string }) {
         )}
         {member && (
           <TabsContent value="repos" className="mt-5">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Manual repository links are organization records, not hosted Git
+              repositories on ProofStack.
+            </p>
             <EntryList
               entries={o.repositories}
               kinds={ENTRY_KINDS.organization}

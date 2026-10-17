@@ -1,0 +1,29 @@
+title = "ProofStack reviewed non-secret exceptions"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+# Supabase documents this exact prefix as public routing configuration, never
+# the privileged sb_secret_ format. Default detectors remain enabled elsewhere.
+[[rules.allowlists]]
+description = "Public Supabase publishable-key format only"
+regexes = ['''^sb_publishable_[A-Za-z0-9_-]+$''']
+
+# RFC6238's published SHA1 test vector is permitted only in its explicit test.
+# A matching seed in application/configuration code must still be detected.
+[[rules.allowlists]]
+description = "Exact published RFC6238 fixture, not user factor material"
+condition = "AND"
+paths = ['''(^|[/\\])tests[/\\]totp-authenticator\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''^\s*const secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";\s*$''']
+
+[[rules.allowlists]]
+description = "Exact historical review sentence misdetected as an API key"
+condition = "AND"
+paths = ['''(^|[/\\])docs[/\\]review-phase5-2026-10-06\.md$''']
+regexTarget = "match"
+regexes = ['''^API proxy responses, anonymous/private\s*$''']

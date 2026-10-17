@@ -10,7 +10,11 @@ import {
   signedNonce,
   validNonce,
 } from "../lib/auth-crypto";
-import { authOrigin } from "../lib/auth-config";
+import { authOrigin, authenticationProvider } from "../lib/auth-config";
+import {
+  readFirebaseAppSession,
+  type FirebaseAppSession,
+} from "./firebase-sessions";
 import { env } from "../lib/env";
 import { ApiError } from "../lib/errors";
 import {
@@ -61,10 +65,30 @@ export type SessionRow = {
   last_mfa_at: Date | null;
   password_recovery: boolean;
 };
-export type AuthSession = {
+// The shared identity is structural; Firebase must not fabricate a Supabase User.
+export type ProviderIdentity = Pick<
+  User,
+  | "id"
+  | "email"
+  | "phone"
+  | "email_confirmed_at"
+  | "phone_confirmed_at"
+  | "user_metadata"
+> & {
+  factors?: Array<
+    Pick<
+      NonNullable<User["factors"]>[number],
+      "id" | "factor_type" | "status" | "friendly_name"
+    >
+  >;
+};
+export type AuthSession = SupabaseAppSession | FirebaseAppSession;
+export type SupabaseAppSession = {
+  // Optional only for backwards-compatible Supabase fixtures. Runtime sessions set it.
+  provider?: "supabase";
   row: SessionRow;
   user: AccountUser;
-  providerUser: User;
+  providerUser: ProviderIdentity;
   client: SupabaseClient;
   credentials: Credentials;
   aal: string;
@@ -137,7 +161,7 @@ export function requireCsrf(req: Request) {
     );
   }
 }
-export function factors(user: User) {
+export function factors(user: ProviderIdentity) {
   return (user.factors || [])
     .filter((f) => f.factor_type === "totp" || f.factor_type === "phone")
     .map((f) => ({
@@ -160,6 +184,18 @@ export function requireAccount(session: AuthSession | null): AuthSession {
       403,
       "MFA_REQUIRED",
       "Verify a security factor before continuing",
+    );
+  return session;
+}
+export function requireSupabase(session: AuthSession): SupabaseAppSession {
+  if (
+    session.provider === "firebase" ||
+    authenticationProvider() !== "supabase"
+  )
+    throw new ApiError(
+      409,
+      "AUTH_METHOD_UNAVAILABLE",
+      "This security operation is pending Firebase-native support",
     );
   return session;
 }
@@ -191,7 +227,7 @@ export function requireFresh(session: AuthSession, mfa = false) {
   }
 }
 export async function upsertProviderUser(
-  user: User,
+  user: ProviderIdentity,
   tx: PoolClient,
 ): Promise<AccountUser> {
   if (!user.email_confirmed_at && !user.phone_confirmed_at) {
@@ -352,6 +388,9 @@ export async function readSession(
   req: Request,
   res: Response,
 ): Promise<AuthSession | null> {
+  delete res.locals?.principal;
+  if (authenticationProvider() === "firebase")
+    return readFirebaseAppSession(req, res);
   const handle: unknown = req.cookies?.[SESSION_COOKIE];
   if (typeof handle !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(handle))
     return null;
@@ -361,6 +400,8 @@ export async function readSession(
       [digest(handle)],
     );
     const row = rows[0];
+    // Refuse other-provider rows before decrypting, mutating or contacting Supabase.
+    if (row?.provider_session_id.startsWith("firebase:")) return null;
     if (
       !row ||
       row.revoked_at ||
@@ -436,6 +477,7 @@ export async function readSession(
       user.mfaRecoveryRequired ||
       factors(providerUser).some((f) => f.status === "verified");
     return {
+      provider: "supabase" as const,
       row,
       user,
       providerUser,
@@ -463,6 +505,7 @@ export async function saveCredentials(
   credentials: Credentials,
   mfa = false,
 ) {
+  requireSupabase(session);
   const checked = await providerClient().auth.getUser(credentials.access_token);
   providerFailure(checked.error);
   if (!checked.data.user || checked.data.user.id !== session.providerUser.id)
@@ -514,12 +557,28 @@ export async function revokeSessions(
       tx,
     );
   });
+  // Clear the local cookie even when native global revocation is unavailable.
+  res.clearCookie(SESSION_COOKIE, cookieOptions);
+  if (session.provider === "firebase") {
+    if (global) {
+      const { getFirebaseAdminAuth, mapFirebaseAdminError } =
+        await import("./firebase-provider");
+      try {
+        await (
+          await getFirebaseAdminAuth()
+        ).revokeRefreshTokens(session.firebase.uid);
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw mapFirebaseAdminError(error);
+      }
+    }
+    return;
+  }
   // Local revocation is immediate; native revocation failure is explicit.
   const result = await adminClient().auth.admin.signOut(
     session.credentials.access_token,
     global ? "global" : "local",
   );
-  res.clearCookie(SESSION_COOKIE, cookieOptions);
   if (
     result.error &&
     result.error.status !== 401 &&

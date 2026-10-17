@@ -175,8 +175,8 @@ export async function getRepositories(
   const projects = uid
     ? (
         await pool.query(
-          `SELECT p.id,p.title FROM community_projects p LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id WHERE ${manager} AND NOT EXISTS(SELECT 1 FROM repositories r WHERE r.project_id=p.id) ORDER BY p.updated_at DESC LIMIT 50`,
-          [uid],
+          `SELECT p.id,p.title FROM community_projects p LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id WHERE ${manager} AND ($2::uuid IS NULL OR p.id=$2) AND NOT EXISTS(SELECT 1 FROM repositories r WHERE r.project_id=p.id) ORDER BY p.updated_at DESC LIMIT 50`,
+          [uid, d.projectId ?? null],
         )
       ).rows
     : [];

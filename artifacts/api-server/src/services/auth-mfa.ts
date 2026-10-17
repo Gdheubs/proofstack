@@ -9,6 +9,7 @@ import {
   factors,
   requireFresh,
   requirePrimary,
+  requireSupabase,
   requireAccount,
   revokeSessions,
   saveCredentials,
@@ -23,7 +24,7 @@ export async function mfaAction(
   input: MfaInput,
   optional: AuthSession | null,
 ) {
-  const session = requirePrimary(optional);
+  const session = requireSupabase(requirePrimary(optional));
   await authLimit(req, "mfa", session.user.id, 10, 600);
   const existing = factors(session.providerUser);
   if (input.action === "mfa-enroll") {

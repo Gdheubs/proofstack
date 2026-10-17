@@ -7,13 +7,17 @@ import {
   requireCsrf,
 } from "../services/auth-sessions";
 import { capabilities } from "../services/auth-provider";
-import { authActionSchema } from "../services/auth-input";
+import {
+  authActionSchema,
+  firebaseSessionSchema,
+} from "../services/auth-input";
+import { createFirebaseAppSession } from "../services/firebase-sessions";
 import { runAction, authCallback } from "../services/auth-actions";
 import { getAccount, listUsers } from "../services/auth-account";
 import { authLimit } from "../services/auth-limits";
 import { ApiError } from "../lib/errors";
 import { cleanupAuthState } from "../services/auth-cleanup";
-import { authOrigin } from "../lib/auth-config";
+import { authOrigin, authenticationProvider } from "../lib/auth-config";
 
 const authRouter: IRouter = Router();
 authRouter.use("/auth", (req, res, next) => {
@@ -26,6 +30,39 @@ authRouter.use("/auth", (req, res, next) => {
     );
   }
   next();
+});
+authRouter.get("/auth/firebase/config", async (_req, res) => {
+  const provider = authenticationProvider();
+  if (provider === "supabase") return res.json({ provider });
+  const { getFirebasePublicConfig } =
+    await import("../services/firebase-provider");
+  return res.json({
+    provider,
+    firebase: getFirebasePublicConfig(),
+    providers: {
+      google: process.env.FIREBASE_GOOGLE_ENABLED === "true",
+      github: process.env.FIREBASE_GITHUB_ENABLED === "true",
+    },
+  });
+});
+authRouter.post("/auth/firebase/session", async (req, res) => {
+  requireCsrf(req);
+  if (authenticationProvider() !== "firebase")
+    throw new ApiError(
+      409,
+      "AUTH_METHOD_UNAVAILABLE",
+      "Firebase authentication is not selected",
+    );
+  const parsed = firebaseSessionSchema.safeParse(req.body);
+  if (!parsed.success)
+    throw new ApiError(
+      400,
+      "INVALID_AUTH_INPUT",
+      "Provide only a valid Firebase ID token",
+    );
+  await authLimit(req, "firebase-session", undefined, 10, 600);
+  await createFirebaseAppSession(req, res, parsed.data.idToken);
+  res.json({ signedIn: true });
 });
 authRouter.get("/auth/context", async (req, res) => {
   const csrfToken = csrfContext(req, res);

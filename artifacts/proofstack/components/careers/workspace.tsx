@@ -148,7 +148,7 @@ export function Applications({ jobId }: { jobId?: string }) {
     </section>
   );
 }
-export function CareerWorkspace({ jobId }: { jobId?: string }) {
+export function CareerWorkspace() {
   const r = useGetCareers({ view: "dashboard" });
   const [create, setCreate] = useState(false);
   if (r.isPending) return <p>Loading career workspace…</p>;
@@ -158,6 +158,9 @@ export function CareerWorkspace({ jobId }: { jobId?: string }) {
   return (
     <>
       <PageHead eyebrow="Your next chapter" title="Career workspace">
+        <Link className="underline" href="/career/applications">
+          Applications & hiring inbox
+        </Link>
         <Link className="underline" href="/intelligence">
           Intelligence workspace
         </Link>
@@ -194,7 +197,6 @@ export function CareerWorkspace({ jobId }: { jobId?: string }) {
           )}
         </div>
         <div className="space-y-8">
-          <Applications jobId={jobId} />
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold">Your latest listings</h2>
             {d.jobs.map((j) => (
@@ -238,8 +240,8 @@ export function ApplicationThread({ id }: { id: string }) {
   return (
     <>
       <PageHead eyebrow="Private application" title={app.jobTitle}>
-        <Link className="underline" href="/career">
-          Career workspace
+        <Link className="underline" href="/career/applications">
+          Applications & hiring inbox
         </Link>
       </PageHead>
       <div className="grid gap-6 lg:grid-cols-2">

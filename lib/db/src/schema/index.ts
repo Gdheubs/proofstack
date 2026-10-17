@@ -20,6 +20,7 @@ export * from "./community-social";
 export * from "./community-contributors";
 export * from "./community-organizations";
 export * from "./community-assets";
+export * from "./asset-cleanup";
 
 export * from "./careers";
 
@@ -29,3 +30,4 @@ export * from "./pull-requests";
 
 export * from "./intelligence";
 export * from "./operations";
+export * from "./assessments";

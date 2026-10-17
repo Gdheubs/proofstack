@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import communityRouter from "./community";
 
 import careersRouter from "./careers";
+import assessmentsRouter from "./assessments";
 
 import repositoriesRouter from "./repositories";
 
@@ -20,6 +21,7 @@ router.use(operationsRouter);
 router.use(authRouter);
 router.use(communityRouter);
 router.use(careersRouter);
+router.use(assessmentsRouter);
 router.use(repositoriesRouter);
 router.use(pullsRouter);
 router.use(intelligenceRouter);

@@ -25,6 +25,16 @@ const code = z
   .string()
   .trim()
   .regex(/^\d{6,10}$/, "Enter the provider-issued code");
+export const firebaseSessionSchema = z
+  .object({
+    idToken: z
+      .string()
+      .min(1)
+      .max(16_384)
+      .refine((value) => value.trim() === value && !/\s/.test(value)),
+  })
+  .strict();
+
 export const authActionSchema = z.discriminatedUnion("action", [
   z
     .object({

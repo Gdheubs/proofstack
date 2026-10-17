@@ -1,5 +1,11 @@
 "use client";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { createAuthReturn, type AuthReturn } from "../../lib/auth-return";
+import { useQuery } from "@tanstack/react-query";
+import {
+  BrowserAuthSelection,
+  fetchBrowserAuthConfig,
+} from "./browser-firebase-auth";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink } from "lucide-react";
@@ -29,7 +35,13 @@ const TABS: [Tab, string][] = [
   ["social", "Google / GitHub"],
 ];
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  firebase = false,
+}: {
+  children: React.ReactNode;
+  firebase?: boolean;
+}) {
   return (
     <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:grid-cols-[1fr_30rem] md:py-20">
       <div className="rise">
@@ -47,13 +59,17 @@ function Shell({ children }: { children: React.ReactNode }) {
         </p>
         <ul className="mt-8 space-y-3 text-sm text-muted-foreground">
           <li className="border-l-2 border-accent pl-3">
-            New passwords need 12+ characters.
+            {firebase
+              ? "Sign in with your existing Google or GitHub account."
+              : "New passwords need 12+ characters."}
           </li>
           <li className="border-l-2 border-accent pl-3">
             Privileged roles always require a second factor.
           </li>
           <li className="border-l-2 border-accent pl-3">
-            Codes are checked by the server. Provider credentials stay there.
+            {firebase
+              ? "Only a Firebase identity token is sent to this app. Provider access tokens are never retained."
+              : "Codes are checked by the server. Provider credentials stay there."}
           </li>
         </ul>
       </div>
@@ -305,7 +321,13 @@ function OtpTab({
   );
 }
 
-function SocialTab({ caps }: { caps: AuthCapabilities }) {
+function SocialTab({
+  caps,
+  returnTo,
+}: {
+  caps: AuthCapabilities;
+  returnTo: AuthReturn;
+}) {
   const s = useSend();
   const [framed, setFramed] = useState(false);
   useEffect(() => {
@@ -329,7 +351,11 @@ function SocialTab({ caps }: { caps: AuthCapabilities }) {
           own tab, then continue.
           <div className="mt-2">
             <Button asChild size="sm" variant="outline">
-              <a href="/auth" target="_blank" rel="noopener noreferrer">
+              <a
+                href={`/auth?next=${encodeURIComponent(returnTo.destination)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <ExternalLink className="h-4 w-4" /> Open /auth in a new tab
               </a>
             </Button>
@@ -423,17 +449,18 @@ function BackupRecover({ act }: { act: ReturnType<typeof useAct>["act"] }) {
   );
 }
 
-function AuthInner() {
+function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   const q = useSession();
   const router = useRouter();
   const params = useSearchParams();
   const { act } = useAct();
   const [tab, setTab] = useState<Tab>("password");
   const ctx = q.data;
-  const ready = !!ctx?.authenticated && !ctx.mfaRequired;
+  const ready =
+    !q.isLoading && !q.isError && !!ctx?.authenticated && !ctx.mfaRequired;
   useEffect(() => {
-    if (ready) router.replace("/account");
-  }, [ready, router]);
+    if (ready) returnTo.complete(ctx, (path) => router.replace(path));
+  }, [ready, ctx, router, returnTo]);
 
   if (q.isLoading)
     return (
@@ -455,9 +482,9 @@ function AuthInner() {
   if (ready)
     return (
       <Shell>
-        <p className="text-sm">Signed in. Taking you to your account...</p>
+        <p className="text-sm">Signed in. Taking you to your destination...</p>
         <Button asChild className="mt-3">
-          <Link href="/account">Open account</Link>
+          <Link href={returnTo.destination}>Continue</Link>
         </Button>
       </Shell>
     );
@@ -525,7 +552,7 @@ function AuthInner() {
       {tab === "password" && <PasswordTab caps={caps} />}
       {tab === "email" && <OtpTab via="email" caps={caps} />}
       {tab === "phone" && <OtpTab via="phone" caps={caps} />}
-      {tab === "social" && <SocialTab caps={caps} />}
+      {tab === "social" && <SocialTab caps={caps} returnTo={returnTo} />}
       {caps.pendingSetup.length > 0 && (
         <p className="mt-5 font-mono text-[11px] text-muted-foreground">
           Pending setup: {caps.pendingSetup.join(", ")}
@@ -535,10 +562,56 @@ function AuthInner() {
   );
 }
 
-export function AuthView() {
+function LegacyAuthView({ returnTo }: { returnTo: AuthReturn }) {
   return (
     <Suspense fallback={null}>
-      <AuthInner />
+      <AuthInner returnTo={returnTo} />
     </Suspense>
   );
+}
+
+export function AuthView() {
+  const capturedReturn = useRef<AuthReturn | null>(null);
+  const [returnTo, setReturnTo] = useState<AuthReturn | null>(null);
+  useEffect(() => {
+    if (!capturedReturn.current) {
+      let storage: Storage | undefined;
+      try {
+        storage = window.sessionStorage;
+      } catch {
+        /* Private browsing may deny access to sessionStorage. */
+      }
+      capturedReturn.current = createAuthReturn(
+        window.location.search,
+        storage,
+      );
+    }
+    setReturnTo(capturedReturn.current);
+  }, []);
+  const query = useQuery({
+    queryKey: ["/api/auth/firebase/config"],
+    queryFn: ({ signal }) => fetchBrowserAuthConfig(signal),
+    staleTime: 0,
+    retry: 1,
+  });
+  // Capture the URL once before mounting either flow: callbacks may omit next,
+  // and already-authenticated users must not race the initial capture effect.
+  if (!returnTo)
+    return (
+      <Shell>
+        <p role="status">Loading sign-in options...</p>
+      </Shell>
+    );
+  const content = (
+    <BrowserAuthSelection
+      query={query}
+      returnTo={returnTo}
+      legacy={<LegacyAuthView returnTo={returnTo} />}
+    />
+  );
+  // The legacy view owns its original shell. Failed/stale configuration must
+  // never render it, even if an earlier request selected Supabase.
+  if (!query.isPending && !query.isError && query.data?.provider === "supabase")
+    return content;
+  return <Shell firebase>{content}</Shell>;
 }

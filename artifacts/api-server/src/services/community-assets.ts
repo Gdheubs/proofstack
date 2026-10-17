@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { pool } from "@workspace/db";
 import {
   ObjectStorageService,
-  ObjectNotFoundError,
+  StorageConfigurationError,
 } from "../lib/objectStorage";
 import { ApiError } from "../lib/errors";
 import {
@@ -15,6 +15,19 @@ import type { CommunityAction } from "./community-input";
 import { transaction, type AuthSession } from "./auth-sessions";
 import { z } from "zod";
 export const storage = new ObjectStorageService();
+function privateAssetDirectory() {
+  try {
+    return storage.getPrivateObjectDir();
+  } catch (error) {
+    if (error instanceof StorageConfigurationError)
+      throw new ApiError(
+        503,
+        "STORAGE_CONFIGURATION_REQUIRED",
+        "Image storage is not configured",
+      );
+    throw error;
+  }
+}
 const uploadSchema = z
   .object({
     name: z.string().trim().min(1).max(150),
@@ -42,6 +55,7 @@ export async function requestUpload(body: unknown, uid: string) {
       "INVALID_UPLOAD",
       "Use a PNG, JPEG or WebP image up to 8 MiB",
     );
+  privateAssetDirectory();
   const uploadUrl = await storage.getObjectEntityUploadURL();
   return transaction(async (db) => {
     // Serialize quota reservations per account, including concurrent uploads.
@@ -77,11 +91,11 @@ export async function assertOwnedAssets(
   existing: string[] = [],
 ) {
   for (const path of paths) {
-    if (!path || existing.includes(path)) continue;
+    if (!path) continue;
     const id = path.split("/").at(-1);
     const r = await db.query(
-      "SELECT 1 FROM community_assets WHERE id=$1 AND user_id=$2 AND status='ready' FOR SHARE",
-      [id, uid],
+      "SELECT 1 FROM community_assets WHERE id=$1 AND (user_id=$2 OR $3::boolean) AND status='ready' FOR SHARE",
+      [id, uid, existing.includes(path)],
     );
     if (!r.rows[0])
       throw new ApiError(
@@ -117,16 +131,60 @@ export async function assetAction(
         "IMAGE_IN_USE",
         "Remove this image from its profile or project before deleting it",
       );
-    try {
-      const file = await storage.getObjectEntityFile(row.object_path);
-      await file.delete({ ignoreNotFound: true });
-    } catch (error) {
-      // An abandoned upload may never have reached storage. Still release its quota.
-      if (!(error instanceof ObjectNotFoundError)) throw error;
+    // Only SQL is allowed here: runCommunityAction still has to append its audit
+    // and COMMIT. Keep the reservation until a supervised worker deletes bytes.
+    if (row.status === "deleting") {
+      const job = (
+        await db.query(
+          "SELECT state FROM asset_cleanup_jobs WHERE asset_id=$1",
+          [row.id],
+        )
+      ).rows[0];
+      return {
+        message:
+          job?.state === "failed"
+            ? "Image cleanup needs operator attention; quota remains reserved"
+            : "Image deletion pending; quota remains reserved",
+      };
     }
-    await db.query("DELETE FROM community_assets WHERE id=$1", [row.id]);
-    return { message: "Unused image deleted" };
+    const directory = privateAssetDirectory();
+    if (
+      !/^\/objects\/(ready|uploads)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+        row.object_path,
+      )
+    )
+      throw new ApiError(
+        409,
+        "INVALID_ASSET_LOCATION",
+        "Image location requires operator review",
+      );
+    const [, bucket, ...prefix] = directory.split("/");
+    const namespace = prefix.join("/");
+    await db.query(
+      `INSERT INTO asset_cleanup_jobs(asset_id,object_path,bucket,namespace,object_name,available_at)
+       VALUES($1,$2,$3,$4,$5,CASE WHEN $6::text='pending' THEN $7::timestamptz + interval '1 hour' ELSE now() END)`,
+      [
+        row.id,
+        row.object_path,
+        bucket,
+        namespace,
+        `${namespace}/${row.object_path.slice(9)}`,
+        row.status,
+        row.created_at,
+      ],
+    );
+    await db.query(
+      "UPDATE community_assets SET status='deleting' WHERE id=$1",
+      [row.id],
+    );
+    return { message: "Image deletion pending; quota remains reserved" };
   }
+  if (row.status === "deleting")
+    throw new ApiError(
+      409,
+      "ASSET_DELETING",
+      "Image deletion is pending; request a new upload",
+    );
   if (row.status === "ready")
     return { message: "Image upload already completed", id: row.id as string };
   if (Date.now() - new Date(row.created_at).getTime() > 3600000)

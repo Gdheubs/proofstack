@@ -1,5 +1,7 @@
 # Phase 2 — identity, accounts and security
 
+The Supabase-specific flows below apply only in `AUTH_PROVIDER=supabase` (the default). Firebase Google/GitHub identity, session wiring, supported account operations, and deliberately pending MFA/credential operations are documented separately in [Firebase authentication](firebase-auth.md). Do not treat Supabase enrollment/recovery instructions as Firebase support.
+
 ## Implemented boundaries
 
 Supabase Auth verifies primary identity, email/phone codes, OAuth and native MFA. The app has no password database and never accepts a locally generated authentication OTP. MSG91 is transport only.

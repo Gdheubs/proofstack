@@ -6,6 +6,7 @@ import { PageHead, QueryError, Empty } from "@/components/community/ui";
 import { card, Field, values, val, Pager } from "@/components/careers/shared";
 import { ActionForm } from "@/components/repositories/action-form";
 import { usePullRun } from "@/hooks/use-pulls";
+import { RepositoryNavigation } from "../repositories/repository-navigation";
 export function Releases({ repositoryId }: { repositoryId: string }) {
   const [offset, setOffset] = useState(0);
   const q = useGetPulls({ repositoryId, view: "releases", offset });
@@ -17,17 +18,12 @@ export function Releases({ repositoryId }: { repositoryId: string }) {
   const main = d.branches.find((b) => b.name === d.repository.defaultBranch);
   return (
     <>
-      <PageHead eyebrow={d.repository.title} title="Releases">
-        <Link className="underline" href={`/repositories/${repositoryId}`}>
-          Source
-        </Link>
-        <Link
-          className="underline"
-          href={`/repositories/${repositoryId}/pulls`}
-        >
-          Pull requests
-        </Link>
-      </PageHead>
+      <PageHead eyebrow={d.repository.title} title="Releases" />
+      <RepositoryNavigation
+        repositoryId={repositoryId}
+        canManage={d.repository.canManage}
+        active="releases"
+      />
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <section className="space-y-4">
           {d.releases.map((r) => (

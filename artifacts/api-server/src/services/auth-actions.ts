@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { authOrigin } from "../lib/auth-config";
+import { authenticationProvider, authOrigin } from "../lib/auth-config";
 import { ApiError } from "../lib/errors";
 import {
   authLimit,
@@ -14,6 +14,7 @@ import {
   requireAccount,
   requireFresh,
   requirePrimary,
+  requireSupabase,
   revokeSessions,
   transaction,
   SESSION_COOKIE,
@@ -35,6 +36,23 @@ export async function runAction(
   input: AuthInput,
   optional: AuthSession | null,
 ) {
+  if (
+    authenticationProvider() === "firebase" &&
+    ![
+      "logout",
+      "revoke-session",
+      "update-profile",
+      "create-organization",
+      "organization-role",
+      "user-role",
+      "user-status",
+    ].includes(input.action)
+  )
+    throw new ApiError(
+      409,
+      "AUTH_METHOD_UNAVAILABLE",
+      "This authentication operation is pending Firebase-native support",
+    );
   if (
     input.action.startsWith("mfa-") ||
     input.action === "recovery-codes" ||
@@ -250,7 +268,7 @@ export async function runAction(
       };
     }
     case "update-password": {
-      const session = requireAccount(optional);
+      const session = requireSupabase(requireAccount(optional));
       requireFresh(session, session.mfaRequired);
       const result = await session.client.auth.updateUser({
         password: input.password,
@@ -326,7 +344,7 @@ export async function runAction(
       return { message: "Profile updated" };
     }
     case "send-phone-verification": {
-      const session = requireAccount(optional);
+      const session = requireSupabase(requireAccount(optional));
       requireFresh(session, session.mfaRequired);
       if (!(await capabilities()).phoneOtp)
         throw new ApiError(
@@ -421,7 +439,9 @@ export async function authCallback(req: Request, res: Response) {
       flow.type === "recovery",
     );
     await consumeFlow(handle, res);
-    res.redirect(303, "/account");
+    // The auth UI consumes its tab-local allowlisted destination after context is ready.
+    // Never accept a callback query parameter as a server redirect target.
+    res.redirect(303, "/auth");
   } catch {
     await audit(req, "auth.callback_failed");
     res.redirect(303, "/auth?error=callback_failed");

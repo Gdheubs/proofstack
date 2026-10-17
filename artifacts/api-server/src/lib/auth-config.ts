@@ -1,6 +1,18 @@
 import { env } from "./env";
 import { ApiError } from "./errors";
 
+export function authenticationProvider(): "supabase" | "firebase" {
+  const provider = process.env.AUTH_PROVIDER ?? "supabase";
+  if (provider !== "supabase" && provider !== "firebase") {
+    throw new ApiError(
+      503,
+      "AUTH_CONFIGURATION_REQUIRED",
+      "Unsupported authentication provider",
+    );
+  }
+  return provider;
+}
+
 export function authOrigin() {
   const value =
     process.env.AUTH_APP_ORIGIN ||
@@ -25,6 +37,13 @@ export function authOrigin() {
 }
 
 export function providerConfig() {
+  if (authenticationProvider() !== "supabase") {
+    throw new ApiError(
+      409,
+      "AUTH_METHOD_UNAVAILABLE",
+      "Supabase authentication is not selected",
+    );
+  }
   const url = process.env.SUPABASE_URL;
   const publicKey = process.env.SUPABASE_PUBLISHABLE_KEY;
   const adminKey = process.env.SUPABASE_SECRET_KEY;

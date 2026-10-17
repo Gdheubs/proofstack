@@ -29,6 +29,27 @@ pnpm --filter @workspace/api-server run build
 pnpm --filter @workspace/proofstack run build
 ```
 
-Set DATABASE_URL before migrations. Only run test:all against a disposable test database. No production migrations run at startup. See setup for separate web/API processes and provider requirements.
+Set DATABASE_URL before migrations. Only run test:all against a disposable test database. No production migrations run at startup.
+
+## Local full-stack development
+
+Use the root `pnpm dev` command rather than starting Next alone. Configure ignored
+`.env.local` from `.env.example`: a **local-only** database with migrations already
+applied, the selected identity provider, an exact HTTPS `AUTH_APP_ORIGIN`, and
+external `DEV_TLS_KEY_FILE`/`DEV_TLS_CERT_FILE`. Reference the existing stable API
+session key through `SESSION_SECRET_FILE`; do not put secret values in source.
+
+Run `pnpm dev:check` first, then `pnpm dev`. The launcher builds/starts the API,
+verifies database/schema/auth/CSRF readiness, and only then starts HTTPS Next.
+It stops its own stack if a child fails and refuses production/remote databases.
+The default ports are web 3011 and API 8089. Certificate trust is user-managed;
+the launcher never modifies the OS trust store or disables TLS verification.
+See [setup](docs/setup.md) for provider/storage requirements and production's
+separate supervised web/API/worker topology.
+
+See the [current evidence-backed audit](docs/production-audit.md) for executed
+checks and outstanding release blockers; a working local login is not production
+approval. Run `pnpm test:coverage` for the measured unit coverage/policy gate,
+in addition to isolated database integration and browser tests.
 
 See [operations and recovery](docs/operations.md) for deployment checks, maintenance, monitoring, backup and rollback procedures.

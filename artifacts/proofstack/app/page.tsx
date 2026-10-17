@@ -18,9 +18,9 @@ const paths = [
   {
     icon: GitPullRequest,
     title: "Make progress together",
-    body: "Invite contributors, define tasks, assign ownership, and attach evidence of completed work to your project board.",
-    href: "/community",
-    cta: "Join the build log",
+    body: "Explore projects and open a project’s Work board to define tasks, assign ownership, and attach evidence of completed work.",
+    href: "/projects",
+    cta: "Explore project boards",
   },
   {
     icon: Briefcase,

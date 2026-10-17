@@ -1,8 +1,13 @@
 // Read-only checks. Run with the exact deployment environment after schema publish.
 import pg from "pg";
-import { access, stat } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import { constants } from "node:fs";
 import { isAbsolute } from "node:path";
+import {
+  inspectCommunityGrants,
+  inspectMigrationHistory,
+  inspectProductSchema,
+} from "./preflight-schema.mjs";
 const results = [];
 const check = (name, ok) => results.push({ check: name, ok: Boolean(ok) });
 const httpsOrigin = (value) => {
@@ -15,11 +20,45 @@ const httpsOrigin = (value) => {
 };
 check("Production runtime", process.env.NODE_ENV === "production");
 check("HTTPS application origin", httpsOrigin(process.env.AUTH_APP_ORIGIN));
+const provider = process.env.AUTH_PROVIDER ?? "supabase";
+let identityConfigured = false;
+if (provider === "supabase") {
+  identityConfigured =
+    httpsOrigin(process.env.SUPABASE_URL) &&
+    new URL(process.env.SUPABASE_URL).hostname.endsWith(".supabase.co") &&
+    Boolean(
+      process.env.SUPABASE_PUBLISHABLE_KEY && process.env.SUPABASE_SECRET_KEY,
+    );
+} else if (provider === "firebase") {
+  try {
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const web = process.env.FIREBASE_WEB_CONFIG_FILE
+      ? JSON.parse(await readFile(process.env.FIREBASE_WEB_CONFIG_FILE, "utf8"))
+      : {
+          apiKey: process.env.FIREBASE_WEB_API_KEY,
+          projectId: process.env.FIREBASE_WEB_PROJECT_ID,
+          authDomain: process.env.FIREBASE_WEB_AUTH_DOMAIN,
+          appId: process.env.FIREBASE_WEB_APP_ID,
+        };
+    identityConfigured =
+      typeof projectId === "string" &&
+      /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(projectId) &&
+      web.projectId === projectId &&
+      web.authDomain === `${projectId}.firebaseapp.com` &&
+      typeof web.apiKey === "string" &&
+      Boolean(web.apiKey.trim()) &&
+      typeof web.appId === "string" &&
+      Boolean(web.appId.trim()) &&
+      process.env.FIREBASE_AUTH_EMULATOR_HOST === undefined;
+  } catch {}
+}
+check("Managed identity configuration", identityConfigured);
+const objectDir = process.env.PRIVATE_OBJECT_DIR ?? "";
 check(
-  "Managed identity configuration",
-  httpsOrigin(process.env.SUPABASE_URL) &&
-    process.env.SUPABASE_PUBLISHABLE_KEY &&
-    process.env.SUPABASE_SECRET_KEY,
+  "Private object storage namespace",
+  /^\/[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(
+    objectDir,
+  ) && !objectDir.split("/").some((part) => part === "." || part === ".."),
 );
 check(
   "Session encryption secret configured",
@@ -34,6 +73,9 @@ for (const name of [
   "MAINTENANCE_MODE",
   "AUTH_EMAIL_SMTP_READY",
   "AUTH_PHONE_MFA_READY",
+  "FIREBASE_GOOGLE_ENABLED",
+  "FIREBASE_GITHUB_ENABLED",
+  "FIREBASE_TOTP_ENABLED",
 ]) {
   check(
     `${name} is a boolean flag`,
@@ -80,31 +122,15 @@ try {
   const client = await pool.connect();
   try {
     await client.query("BEGIN READ ONLY");
-    const tables = [
-      "users",
-      "sessions",
-      "community_projects",
-      "career_jobs",
-      "repositories",
-      "repository_pull_requests",
-      "intelligence_jobs",
-      "service_heartbeats",
-    ];
-    const rows = await client.query(
-      "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",
-      [tables],
+    const schema = await inspectProductSchema(client);
+    check("Required product schema", schema.requiredProductSchema);
+    check("Required product indexes", schema.requiredIndexes);
+    check("Required product constraints", schema.requiredConstraints);
+    check("Tracked migration history", await inspectMigrationHistory(client));
+    check(
+      "Required community role grants",
+      schema.requiredProductSchema && (await inspectCommunityGrants(client)),
     );
-    check("Required product tables", rows.rows.length === tables.length);
-    const indexes = [
-      "service_heartbeat_seen_idx",
-      "community_projects_created_idx",
-      "intelligence_finished_idx",
-    ];
-    const found = await client.query(
-      "SELECT indexname FROM pg_indexes WHERE schemaname='public' AND indexname=ANY($1::text[])",
-      [indexes],
-    );
-    check("Phase 7 indexes", found.rows.length === indexes.length);
     if (process.env.INTELLIGENCE_ENABLED === "true") {
       const heartbeat = await client.query(
         "SELECT 1 FROM service_heartbeats WHERE service='intelligence' AND last_seen_at>now()-interval '180 seconds' LIMIT 1",
@@ -123,11 +149,20 @@ try {
 } finally {
   await pool.end();
 }
+for (const name of [
+  "Required product schema",
+  "Required product indexes",
+  "Required product constraints",
+  "Tracked migration history",
+  "Required community role grants",
+]) {
+  if (!results.some((result) => result.check === name)) check(name, false);
+}
 console.log(
   JSON.stringify(
     {
       results,
-      note: "Configuration/schema checks only. Provider delivery, proxy trust, complete schema diff, durable storage, backup restore and browser acceptance require staging verification.",
+      note: "Read-only configuration, schema coverage, exact migration ledger and role-grant checks only. Firebase ADC/token verification, provider delivery/MFA, proxy trust, complete schema/type diff, private object storage, durable Git storage, backup restore and browser acceptance still require staging verification. Schema-only publication needs a separately reviewed migration-history and system-data plan; this command never repairs them.",
     },
     null,
     2,

@@ -15,7 +15,7 @@ beforeEach(() => {
   queryMock.mockImplementation(async (text: string) => ({
     rows: text.includes("rate_limit_buckets")
       ? [{ hits: 1, window_start: new Date() }]
-      : [{ healthy: 1 }],
+      : [{ healthy: true }],
   }));
 });
 
@@ -144,6 +144,16 @@ describe("ProofStack API boundary", () => {
     expect(JSON.stringify(failed.body)).not.toContain(
       "private-database-details",
     );
+  });
+
+  it("refuses readiness when a connected database is missing product schema", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ healthy: false }] });
+    const response = await request(app).get("/api/readyz");
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      status: "not_ready",
+      checks: { database: "unavailable" },
+    });
   });
 
   it("allows only explicitly configured cross-origin requests", async () => {

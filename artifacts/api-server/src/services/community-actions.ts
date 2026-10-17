@@ -1,7 +1,10 @@
 import type { Request } from "express";
 import { parseCommunityAction } from "./community-input";
 import { transaction, audit, type AuthSession } from "./auth-sessions";
-import { requireCommunityProfile } from "./community-policy";
+import {
+  requireCommunityProfile,
+  notificationReadWhere,
+} from "./community-policy";
 import { socialAction } from "./community-social-actions";
 import { projectAction } from "./community-project-actions";
 import { organizationAction } from "./community-org-actions";
@@ -46,7 +49,7 @@ export async function runCommunityAction(
       result = { message: "Public profile saved", handle: input.handle };
     } else if (input.action === "notification-read") {
       await db.query(
-        `UPDATE notifications SET read_at=coalesce(read_at,now()) WHERE user_id=$1 ${input.id ? "AND id=$2" : ""}`,
+        `UPDATE notifications n SET read_at=coalesce(n.read_at,now()) WHERE ${notificationReadWhere()} ${input.id ? "AND n.id=$2" : ""}`,
         [s.user.id, ...(input.id ? [input.id] : [])],
       );
       result = {

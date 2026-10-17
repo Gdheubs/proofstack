@@ -5,7 +5,7 @@ import { env } from "./lib/env";
 import { pool } from "@workspace/db";
 import { pruneRateLimitBuckets } from "./services/rate-limit";
 
-const server = app.listen(env.PORT, "0.0.0.0", (err) => {
+const server = app.listen(env.PORT, env.BIND_HOST, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);

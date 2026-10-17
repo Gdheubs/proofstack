@@ -65,7 +65,9 @@ export function ProjectView({ slug }: { slug: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href={`/repositories?project=${p.id}`}>Repository</Link>
+              <Link href={`/repositories?project=${p.id}`}>
+                Hosted repository
+              </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link href={`/work/${p.id}`}>Work board</Link>
@@ -167,10 +169,10 @@ export function ProjectView({ slug }: { slug: string }) {
       )}
       <Tabs defaultValue="releases">
         <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="releases">Releases</TabsTrigger>
+          <TabsTrigger value="releases">Release records</TabsTrigger>
           <TabsTrigger value="docs">Documentation</TabsTrigger>
           <TabsTrigger value="evidence">Evidence</TabsTrigger>
-          <TabsTrigger value="repos">Repositories</TabsTrigger>
+          <TabsTrigger value="repos">Repository links</TabsTrigger>
           <TabsTrigger value="people">Contributors</TabsTrigger>
         </TabsList>
         {(
@@ -184,6 +186,19 @@ export function ProjectView({ slug }: { slug: string }) {
           const [v, kind] = t.split(":");
           return (
             <TabsContent key={v} value={v} className="mt-5">
+              {kind === "release" && (
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Manual release records describe this project&apos;s
+                  milestones. Git releases are managed separately in the hosted
+                  repository.
+                </p>
+              )}
+              {kind === "repository" && (
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Manual repository links point to source hosted elsewhere; they
+                  are not hosted Git repositories on ProofStack.
+                </p>
+              )}
               <EntryList
                 entries={p.entries}
                 kinds={[kind]}

@@ -5,6 +5,7 @@ import { adminClient, providerFailure } from "./auth-provider";
 import { hasPermission } from "./authorization";
 import {
   requireFresh,
+  requireSupabase,
   factors,
   transaction,
   audit,
@@ -191,6 +192,8 @@ export async function organizationRole(
   userId: string,
   role: "organization_owner" | "organization_admin",
 ) {
+  // Target native-factor verification is not yet implemented for Firebase.
+  requireSupabase(session);
   requireFresh(session, true);
   await ensureOrganizationRoles();
   await transaction(async (tx) => {

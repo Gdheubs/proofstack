@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Folder, FileCode, GitBranch, Lock } from "lucide-react";
 import { Editor, BranchForm } from "./repository-forms";
 import { ClonePanel } from "./clone-panel";
+import { RepositoryNavigation } from "./repository-navigation";
 const location = (id: string, branch: string, path = "", revision = "") =>
   `/repositories/${id}?${new URLSearchParams({ branch, ...(path ? { path } : {}), ...(revision ? { revision } : {}) })}`;
 export function RepositoryView({
@@ -51,21 +52,15 @@ export function RepositoryView({
         <Link className="underline" href={`/projects/${r.projectSlug}`}>
           Project →
         </Link>
-        <Link className="underline" href={`/repositories/${id}/pulls`}>
-          Pull requests
-        </Link>
-        <Link className="underline" href={`/repositories/${id}/releases`}>
-          Releases
-        </Link>
-        {r.canManage && (
-          <Link className="underline" href={`/repositories/${id}/security`}>
-            Security review
-          </Link>
-        )}
         <Link className="underline" href="/repositories">
           Repositories
         </Link>
       </PageHead>
+      <RepositoryNavigation
+        repositoryId={id}
+        canManage={r.canManage}
+        active="source"
+      />
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-sm">
           <GitBranch className="h-4 w-4" />

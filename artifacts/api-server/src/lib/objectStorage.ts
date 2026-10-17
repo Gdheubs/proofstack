@@ -30,6 +30,8 @@ export const objectStorageClient = new Storage({
   projectId: "",
 });
 
+export class StorageConfigurationError extends Error {}
+
 export class ObjectNotFoundError extends Error {
   constructor() {
     super("Object not found");
@@ -63,9 +65,21 @@ export class ObjectStorageService {
   getPrivateObjectDir(): string {
     const dir = process.env.PRIVATE_OBJECT_DIR || "";
     if (!dir) {
-      throw new Error(
+      throw new StorageConfigurationError(
         "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
           "tool and set PRIVATE_OBJECT_DIR env var.",
+      );
+    }
+    // Promotion and /objects lookup share one canonical, non-root namespace.
+    // Reject ambiguous keys instead of silently changing an existing object's name.
+    if (
+      !/^\/[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(
+        dir,
+      ) ||
+      dir.split("/").some((part) => part === "." || part === "..")
+    ) {
+      throw new StorageConfigurationError(
+        "PRIVATE_OBJECT_DIR must be a canonical /bucket/nonempty-prefix path without trailing slashes or dot segments.",
       );
     }
     return dir;
@@ -114,7 +128,7 @@ export class ObjectStorageService {
   async getObjectEntityUploadURL(): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {
-      throw new Error(
+      throw new StorageConfigurationError(
         "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
           "tool and set PRIVATE_OBJECT_DIR env var.",
       );

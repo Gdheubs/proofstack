@@ -3,8 +3,13 @@ import {
   type SupabaseClient,
   type User,
 } from "@supabase/supabase-js";
-import { providerConfig, smsConfigured } from "../lib/auth-config";
+import {
+  authenticationProvider,
+  providerConfig,
+  smsConfigured,
+} from "../lib/auth-config";
 import { ApiError } from "../lib/errors";
+import { getFirebasePublicConfig } from "./firebase-provider";
 
 export type Credentials = { access_token: string; refresh_token: string };
 export function providerClient(
@@ -114,6 +119,29 @@ export function providerFailure(
 let settingsCache:
   { value: Record<string, unknown>; until: number } | undefined;
 export async function capabilities() {
+  if (authenticationProvider() === "firebase") {
+    getFirebasePublicConfig();
+    const google = process.env.FIREBASE_GOOGLE_ENABLED === "true";
+    const github = process.env.FIREBASE_GITHUB_ENABLED === "true";
+    // Native assurance is verified, but application enrollment/recovery is not implemented.
+    const totp = false;
+    return {
+      password: false,
+      emailOtp: false,
+      phoneOtp: false,
+      google,
+      github,
+      totp,
+      phoneMfa: false,
+      emailDelivery: "development-limited" as const,
+      pendingSetup: [
+        ...(!google ? ["Firebase Google sign-in"] : []),
+        ...(!github ? ["Firebase GitHub sign-in"] : []),
+        "Firebase authenticator enrollment",
+        "Firebase factor management and recovery",
+      ],
+    };
+  }
   if (!settingsCache || settingsCache.until < Date.now()) {
     const { url, publicKey } = providerConfig();
     const response = await fetch(`${url}/auth/v1/settings`, {

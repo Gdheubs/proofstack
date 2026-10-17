@@ -17,6 +17,50 @@ import { consumeRateLimit } from "../artifacts/api-server/src/services/rate-limi
 import { buildContentSecurityPolicy } from "../artifacts/proofstack/lib/security";
 
 describe("Security and configuration foundations", () => {
+  it("supports an explicit local API bind address without accepting arbitrary hostnames", () => {
+    expect(
+      parseEnvironment({
+        PORT: "8089",
+        DATABASE_URL: "postgresql://localhost/test",
+        BIND_HOST: "127.0.0.1",
+      }).BIND_HOST,
+    ).toBe("127.0.0.1");
+    expect(() =>
+      parseEnvironment({
+        PORT: "8089",
+        DATABASE_URL: "postgresql://localhost/test",
+        BIND_HOST: "untrusted.example",
+      }),
+    ).toThrow("BIND_HOST");
+  });
+  it("allows Firebase native token/iframe traffic only for an exact configured auth domain", () => {
+    const policy = buildContentSecurityPolicy(
+      "testNonce123",
+      false,
+      "proofstack-test.firebaseapp.com",
+    );
+    expect(policy).toContain(
+      "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://proofstack-test.firebaseapp.com",
+    );
+    expect(policy).toContain(
+      "frame-src 'self' https://proofstack-test.firebaseapp.com",
+    );
+    expect(policy).not.toContain("*.firebaseapp.com");
+    expect(policy).not.toContain("'unsafe-eval'");
+    expect(buildContentSecurityPolicy("testNonce123", false)).not.toContain(
+      "identitytoolkit.googleapis.com",
+    );
+  });
+  it.each([
+    "https://evil.example",
+    "*.firebaseapp.com",
+    "proofstack-test.firebaseapp.com; connect-src *",
+    "proofstack-test.firebaseapp.com/extra",
+  ])("rejects an invalid Firebase CSP domain %s", (domain) => {
+    expect(() =>
+      buildContentSecurityPolicy("testNonce123", false, domain),
+    ).toThrow("Firebase auth domain");
+  });
   it("accepts explicit proxy networks but rejects universal ranges and hostnames", () => {
     for (const value of ["127.0.0.1", "10.1.0.0/16", "::1", "2001:db8::/64"])
       expect(validProxyRange(value)).toBe(true);

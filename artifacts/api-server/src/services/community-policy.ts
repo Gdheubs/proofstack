@@ -156,6 +156,52 @@ export async function handleUser(handle: string, db: CommunityDb = pool) {
   if (!r.rows[0]) throw missing();
   return r.rows[0].id as string;
 }
+// Internal aliases/placeholders only. A stored snapshot is never an access grant.
+// Recognize only producer-owned title/destination pairs; unknown legacy rows fail closed.
+export const notificationReadWhere = (alias = "n", viewer = "$1") => `(
+ ${alias}.user_id=${viewer}::uuid
+ AND EXISTS(SELECT 1 FROM users notification_viewer WHERE notification_viewer.id=${viewer}::uuid AND notification_viewer.status='active')
+ AND (${alias}.organization_id IS NULL OR ${memberAccessWhere(`${alias}.organization_id`, viewer)})
+ AND (
+  (${alias}.href='/account' AND (
+   ${alias}.title IN ('New device signed in','MFA account recovery')
+   OR (${alias}.title='Organization access updated' AND ${alias}.organization_id IS NOT NULL)))
+  OR (${alias}.href='/organizations' AND ${alias}.title='Organization membership updated'
+   AND ${alias}.body='Your ProofStack organization membership was updated.')
+  OR (${alias}.title='New follower' AND ${alias}.href ~ '^/profile/[a-z][a-z0-9_-]{2,31}$'
+   AND EXISTS(SELECT 1 FROM profiles notification_profile
+    JOIN users notification_person ON notification_person.id=notification_profile.user_id AND notification_person.status='active'
+    WHERE '/profile/'||notification_profile.handle=${alias}.href))
+  OR (${alias}.title IN ('You were mentioned','New comment','New reaction')
+   AND ${alias}.href ~ '^/posts/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+   AND EXISTS(SELECT 1 FROM community_posts notification_post
+    JOIN users notification_author ON notification_author.id=notification_post.author_id AND notification_author.status='active'
+    WHERE '/posts/'||notification_post.id::text=${alias}.href AND ${postReadWhere("notification_post")}))
+  OR (${alias}.title='Pull request updated'
+   AND ${alias}.href ~ '^/pulls/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+   AND EXISTS(SELECT 1 FROM repository_pull_requests notification_pull
+    JOIN repositories notification_repo ON notification_repo.id=notification_pull.repository_id
+    JOIN community_projects p ON p.id=notification_repo.project_id
+    JOIN users notification_owner ON notification_owner.id=p.owner_id AND notification_owner.status='active'
+    LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id
+    WHERE '/pulls/'||notification_pull.id::text=${alias}.href AND ${projectReadWhere(viewer)}))
+  OR (${alias}.title IN ('Project contributor invitation','New reaction')
+   AND ${alias}.href ~ '^/projects/[a-z0-9]+(-[a-z0-9]+)*$'
+   AND EXISTS(SELECT 1 FROM community_projects p
+    JOIN users notification_owner ON notification_owner.id=p.owner_id AND notification_owner.status='active'
+    LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id
+    WHERE '/projects/'||p.slug=${alias}.href AND p.created_at<=${alias}.created_at AND ${projectReadWhere(viewer)}
+    AND (${alias}.title<>'Project contributor invitation' OR (
+     ${alias}.body='You were invited to contribute to '||p.title||'. Accept or decline on the project page.'
+     AND EXISTS(SELECT 1 FROM community_contributors notification_invite
+     WHERE notification_invite.project_id=p.id AND notification_invite.user_id=${viewer}::uuid
+     AND notification_invite.status IN ('pending','active') AND notification_invite.created_at<=${alias}.created_at)))))
+  OR (${alias}.title IN ('Application updated','Application message')
+   AND ${alias}.href ~ '^/applications/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+   AND EXISTS(SELECT 1 FROM career_applications notification_application
+    WHERE '/applications/'||notification_application.id::text=${alias}.href AND notification_application.applicant_id=${viewer}::uuid))
+ )
+)`;
 export async function notify(
   db: CommunityDb,
   uid: string,
@@ -166,7 +212,11 @@ export async function notify(
 ) {
   if (uid === actor) return;
   await db.query(
-    "INSERT INTO notifications(user_id,title,body,href) SELECT $1,$2,$3,$4 WHERE NOT EXISTS(SELECT 1 FROM notifications WHERE user_id=$1 AND title=$2 AND body=$3 AND href=$4 AND created_at>now()-interval '10 minutes')",
+    `INSERT INTO notifications(user_id,title,body,href)
+     SELECT n.user_id,n.title,n.body,n.href FROM
+      (SELECT $1::uuid AS user_id,NULL::uuid AS organization_id,$2::text AS title,$3::text AS body,$4::text AS href,now() AS created_at) n
+     WHERE ${notificationReadWhere()}
+     AND NOT EXISTS(SELECT 1 FROM notifications previous WHERE previous.user_id=n.user_id AND previous.title=n.title AND previous.body=n.body AND previous.href=n.href AND previous.created_at>now()-interval '10 minutes' AND ${notificationReadWhere("previous")})`,
     [uid, title.slice(0, 200), body.slice(0, 1000), href],
   );
 }

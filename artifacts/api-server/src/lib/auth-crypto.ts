@@ -28,7 +28,9 @@ export function digest(value: string, purpose = "lookup") {
 }
 export function seal(value: unknown, purpose = "session") {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key(purpose), iv);
+  const cipher = createCipheriv("aes-256-gcm", key(purpose), iv, {
+    authTagLength: 16,
+  });
   cipher.setAAD(Buffer.from(`proofstack:${purpose}:v1`));
   const encrypted = Buffer.concat([
     cipher.update(JSON.stringify(value)),
@@ -40,10 +42,24 @@ export function seal(value: unknown, purpose = "session") {
 }
 export function unseal<T>(value: string, purpose = "session"): T {
   const parts = value.split(".");
-  if (parts.length !== 3)
+  if (
+    parts.length !== 3 ||
+    parts.some((part) => !/^[A-Za-z0-9_-]+$/.test(part))
+  )
     throw new Error("Invalid encrypted credential envelope");
   const [iv, tag, encrypted] = parts.map((p) => Buffer.from(p, "base64url"));
-  const cipher = createDecipheriv("aes-256-gcm", key(purpose), iv);
+  if (
+    iv.length !== 12 ||
+    tag.length !== 16 ||
+    encrypted.length === 0 ||
+    [iv, tag, encrypted].some(
+      (part, index) => part.toString("base64url") !== parts[index],
+    )
+  )
+    throw new Error("Invalid encrypted credential envelope");
+  const cipher = createDecipheriv("aes-256-gcm", key(purpose), iv, {
+    authTagLength: 16,
+  });
   cipher.setAAD(Buffer.from(`proofstack:${purpose}:v1`));
   cipher.setAuthTag(tag);
   return JSON.parse(

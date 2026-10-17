@@ -3,12 +3,18 @@ import {
   assetAction,
   storage,
 } from "../artifacts/api-server/src/services/community-assets";
-import { ObjectNotFoundError } from "../artifacts/api-server/src/lib/objectStorage";
+import {
+  ObjectNotFoundError,
+  objectStorageClient,
+} from "../artifacts/api-server/src/lib/objectStorage";
 import type { CommunityDb } from "../artifacts/api-server/src/services/community-policy";
 import type { AuthSession } from "../artifacts/api-server/src/services/auth-sessions";
 const uid = "cc1575d2-514f-42fb-97b4-f6b6b7503a75";
 const id = "cc1575d2-514f-42fb-97b4-f6b6b7503a76";
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 describe("Immutable image completion", () => {
   function fixture(valid = true) {
     const row = {
@@ -84,30 +90,65 @@ describe("Immutable image completion", () => {
     expect(f.source.copy).not.toHaveBeenCalled();
     expect(f.query).toHaveBeenCalledTimes(1);
   });
-  it("releases an abandoned upload reservation when no object was uploaded", async () => {
+  it("queues abandoned upload cleanup without cloud I/O or quota release before commit", async () => {
+    vi.stubEnv("PRIVATE_OBJECT_DIR", "/test-bucket/private");
+    const createdAt = new Date("2026-10-15T00:00:00Z");
+    const objectPath = `/objects/uploads/${id}`;
     const query = vi.fn().mockResolvedValue({ rows: [] });
     query.mockResolvedValueOnce({
       rows: [
         {
           id,
           user_id: uid,
-          object_path: "/objects/uploads/missing",
+          object_path: objectPath,
           status: "pending",
+          created_at: createdAt,
         },
       ],
     });
-    vi.spyOn(storage, "getObjectEntityFile").mockRejectedValue(
-      new ObjectNotFoundError(),
-    );
+    // The old implementation inspected storage and immediately released quota
+    // on 404, even though the signed PUT and enclosing transaction were live.
+    const lookup = vi
+      .spyOn(storage, "getObjectEntityFile")
+      .mockRejectedValue(new ObjectNotFoundError());
+    const bucket = vi
+      .spyOn(objectStorageClient, "bucket")
+      .mockImplementation(() => {
+        throw new Error("Cloud must not be reached before commit");
+      });
     await expect(
       assetAction(
         { query } as unknown as CommunityDb,
         { user: { id: uid } } as AuthSession,
         { action: "asset-delete", id },
       ),
-    ).resolves.toEqual({ message: "Unused image deleted" });
-    expect(query.mock.calls.at(-1)?.[0]).toBe(
-      "DELETE FROM community_assets WHERE id=$1",
+    ).resolves.toEqual({
+      message: "Image deletion pending; quota remains reserved",
+    });
+    expect(lookup).not.toHaveBeenCalled();
+    expect(bucket).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledTimes(4);
+    expect(query.mock.calls[2]?.[0]).toContain(
+      "INSERT INTO asset_cleanup_jobs",
     );
+    expect(query.mock.calls[2]?.[0]).toContain("interval '1 hour'");
+    expect(query.mock.calls[2]?.[1]).toEqual([
+      id,
+      objectPath,
+      "test-bucket",
+      "private",
+      `private/uploads/${id}`,
+      "pending",
+      createdAt,
+    ]);
+    expect(query.mock.calls[3]).toEqual([
+      "UPDATE community_assets SET status='deleting' WHERE id=$1",
+      [id],
+    ]);
+    expect(
+      query.mock.calls.some(([sql]) =>
+        /DELETE FROM community_assets/i.test(sql),
+      ),
+    ).toBe(false);
   });
 });

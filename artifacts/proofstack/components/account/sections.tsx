@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { Monitor } from "lucide-react";
 import type {
@@ -217,6 +218,113 @@ export function PhonePanel({ account, ctx, act }: Props) {
           </div>
         </form>
       )}
+    </Panel>
+  );
+}
+
+export function FirebaseCredentialsPanel() {
+  return (
+    <Panel title="Social sign-in" eyebrow="Credentials">
+      <p className="text-sm text-muted-foreground">
+        You sign in with Google or GitHub through Firebase. Your password is
+        managed by your external identity provider, not by ProofStack.
+      </p>
+    </Panel>
+  );
+}
+
+export async function restartFirebaseSignIn(
+  run: Act,
+  onSettle: (ok: boolean) => void,
+  navigate: (path: string) => void,
+) {
+  // /auth redirects authenticated users to /account. End this session first;
+  // a link alone would loop without issuing a fresh native MFA challenge.
+  const result = await run({ action: "logout", scope: "local" });
+  if (result.signedOut !== true)
+    throw new Error(
+      "Sign-out was not confirmed. Retry before verifying again.",
+    );
+  onSettle(false);
+  navigate("/auth");
+}
+
+export function FirebaseStepUpPanel({
+  run,
+  onSettle,
+}: {
+  run: Act;
+  onSettle: (ok: boolean) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Panel title="Confirm it is you" eyebrow="Native verification">
+      <p className="mb-4 text-sm text-muted-foreground">
+        This action requires a fresh native Firebase second-factor sign-in. Sign
+        out, use your original Google or GitHub identity, and verify your
+        enrolled authenticator. Then return to your account and retry the
+        action. Native enrollment and recovery are pending setup.
+      </p>
+      {error && <Notice tone="error">{error}</Notice>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await restartFirebaseSignIn(run, onSettle, (path) =>
+                window.location.assign(path),
+              );
+            } catch (err) {
+              setError(errInfo(err).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Sign out and verify again
+        </Button>
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={() => onSettle(false)}
+        >
+          Cancel verification
+        </Button>
+      </div>
+    </Panel>
+  );
+}
+
+export function FirebaseSecurityPanel({ account }: Pick<Props, "account">) {
+  return (
+    <Panel id="security" title="Two-step verification" eyebrow="Security">
+      <p className="mb-3 text-sm text-muted-foreground">
+        Native verification uses your enrolled Firebase factors during sign-in.
+      </p>
+      <ul className="divide-y">
+        {account.factors.map((factor) => (
+          <li key={factor.id} className="py-3">
+            <p className="text-sm font-medium">
+              {factor.type === "totp" ? "Authenticator app" : "Phone"}
+              {factor.name ? ` - ${factor.name}` : ""}
+            </p>
+            <p className="text-xs text-muted-foreground">{factor.status}</p>
+          </li>
+        ))}
+        {account.factors.length === 0 && (
+          <li className="py-3 text-sm text-muted-foreground">
+            No enrolled Firebase factors.
+          </li>
+        )}
+      </ul>
+      <Notice tone="warn">
+        Native MFA enrollment and recovery are pending setup. Factor management
+        and backup codes are not available here. Privileged access still
+        requires native second-factor verification.
+      </Notice>
     </Panel>
   );
 }
@@ -514,6 +622,47 @@ export function SecurityPanel({ account, ctx, act }: Props) {
           if (id) r.run({ action: "mfa-remove", factorId: id });
         }}
       />
+    </Panel>
+  );
+}
+
+export function OrganizationSummaryPanel({ account }: Pick<Props, "account">) {
+  return (
+    <Panel
+      title="Organizations"
+      eyebrow="Membership and access"
+      action={
+        <Button asChild variant="outline" size="sm">
+          <Link href="/organizations">Manage organizations</Link>
+        </Button>
+      }
+    >
+      <p className="mb-4 text-sm text-muted-foreground">
+        Your organization memberships are listed here. Organization creation,
+        settings, members, and roles belong in the Community organization
+        workspace.
+      </p>
+      <ul className="space-y-3">
+        {account.memberships.map((membership) => (
+          <li key={membership.organizationId} className="rounded-md border p-3">
+            <Link
+              href={`/organizations/${encodeURIComponent(membership.slug)}`}
+              className="font-medium underline underline-offset-4"
+            >
+              {membership.name}
+            </Link>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Your role: {membership.role.replace("organization_", "")}
+            </p>
+          </li>
+        ))}
+        {account.memberships.length === 0 && (
+          <li className="text-sm text-muted-foreground">
+            You do not belong to an organization yet. Browse organizations or
+            share your Account ID with an owner to request access.
+          </li>
+        )}
+      </ul>
     </Panel>
   );
 }
