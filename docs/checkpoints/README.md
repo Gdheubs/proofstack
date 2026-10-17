@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Deployment CI repair](2026-10-17-deployment-ci-repair.md) — root Express test dependencies and narrowly scoped CodeQL permission repaired; 615 local unit tests pass. Hosted verification and provider authorization remain separate gates.
 - [Deployment intake](2026-10-17-deployment-intake.md) — approved free-tier, India-oriented, personal/non-commercial staging with fresh Supabase; connections and CI repairs pending. No cloud deployment created yet.
 - [GitHub connection and accumulated-work checkpoint](2026-10-17-github-baseline.md) — standing task checkpoint/commit policy and initial publication preparation.
 

@@ -56,6 +56,26 @@ describe("CI workflow supply-chain policy", () => {
     );
   });
 
+  it("grants workflow-run read access only to the CodeQL job", () => {
+    const security = workflow("security.yml");
+    const codeql = security.match(/^ {2}codeql:\n(?: {4}.*\n|\n)*/m)?.[0];
+    expect(codeql).toBeDefined();
+    const permissions = codeql?.match(
+      /^ {4}permissions:\n((?: {6}.*\n)+)/m,
+    )?.[1];
+    expect(
+      permissions
+        ?.trim()
+        .split("\n")
+        .map((line) => line.trim())
+        .sort(),
+    ).toEqual(["actions: read", "contents: read", "security-events: write"]);
+    // Neither the workflow default nor the secret scanner needs Actions access.
+    expect(security.replace(codeql!, "")).not.toMatch(
+      /\bactions:\s*(?:read|write)/,
+    );
+  });
+
   it("adds a separately scoped SAST scanner without deployment credentials", () => {
     const security = workflow("security.yml");
     expect(security).toContain("security-events: write");

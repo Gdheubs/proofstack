@@ -103,6 +103,9 @@ importers:
       '@eslint/js':
         specifier: ^9.39.5
         version: 9.39.5
+      '@types/express':
+        specifier: ^5.0.6
+        version: 5.0.6
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.6
@@ -121,6 +124,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^7.1.1
         version: 7.1.1(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1(supports-color@7.2.0)
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
