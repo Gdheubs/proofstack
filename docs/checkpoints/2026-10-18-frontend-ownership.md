@@ -34,4 +34,4 @@ Consolidated frontend ownership after tracing Next.js aliases, application impor
 
 ## Remaining gates and next action
 
-The active asset-lifecycle work remains untouched in the worktree and accounts for the local full-suite test/typecheck failures above. No deployment was performed. The final evidence update must be committed and pushed; then read back the remote SHA and inspect CI for that exact SHA.
+The active asset-lifecycle work remains untouched in the worktree and accounts for the local full-suite test/typecheck failures above. No deployment was performed. Frontend ownership cleanup is complete; continue the asset-lifecycle work as a separate task.
