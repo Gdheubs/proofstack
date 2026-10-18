@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 const workspace = readFileSync(
   new URL("../pnpm-workspace.yaml", import.meta.url),
   "utf8",
-);
+).replace(/\r\n/g, "\n");
 const lock = readFileSync(
   new URL("../pnpm-lock.yaml", import.meta.url),
   "utf8",
-);
+).replace(/\r\n/g, "\n");
 
 describe("native install and security dependency policy", () => {
   it.each([

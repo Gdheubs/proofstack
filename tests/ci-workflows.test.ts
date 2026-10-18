@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const workflow = (name: string) =>
-  readFileSync(`${root}/.github/workflows/${name}`, "utf8");
+  readFileSync(`${root}/.github/workflows/${name}`, "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
 
 // Source policy checks complement, but do not replace, actionlint/hosted runs.
 describe("CI workflow supply-chain policy", () => {
