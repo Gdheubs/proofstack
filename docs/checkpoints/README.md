@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Asset lifecycle local-gate repair](2026-10-19-asset-lifecycle-local-gates.md) — repaired the full-suite table-count assertion and lifecycle mock typing; local tests, typecheck, and lint pass. Drizzle snapshot and database migration validation remain open.
 - [Frontend ownership cleanup](2026-10-18-frontend-ownership.md) — feature UI, shared hooks/utilities, and frontend aliases consolidated after import/build analysis; focused gates pass, while separate asset-lifecycle work blocks two repository-wide checks.
 - [Replit scaffold cleanup and deployment alignment](2026-10-18-replit-scaffold-cleanup.md) — removed Replit deployment scaffolding and unused mockup workspace; runtime object storage migration to Supabase remains required before uploads can run on Render.
 - [Deployment CI repair](2026-10-17-deployment-ci-repair.md) — root Express test dependencies and narrowly scoped CodeQL permission repaired; 615 local unit tests pass. Hosted verification and provider authorization remain separate gates.

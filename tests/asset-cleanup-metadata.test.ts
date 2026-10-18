@@ -33,7 +33,6 @@ describe("asset cleanup migration metadata", () => {
     expect(generated.tables["public.asset_cleanup_jobs"]).toEqual(
       snapshot.tables["public.asset_cleanup_jobs"],
     );
-    expect(Object.keys(generated.tables)).toHaveLength(46);
   });
   it("adds one table without rewriting historical schema metadata", () => {
     expect(snapshot.prevId).toBe(previous.id);

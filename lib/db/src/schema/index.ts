@@ -21,6 +21,7 @@ export * from "./community-contributors";
 export * from "./community-organizations";
 export * from "./community-assets";
 export * from "./asset-cleanup";
+export * from "./asset-lifecycle";
 
 export * from "./careers";
 

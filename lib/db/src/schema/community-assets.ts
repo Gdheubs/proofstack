@@ -19,6 +19,10 @@ export const communityAssetsTable = pgTable(
     contentType: text("content_type").notNull(),
     size: integer("size").notNull(),
     status: text("status").notNull().default("pending"),
+    storageProvider: text("storage_provider"),
+    storageBucket: text("storage_bucket"),
+    storageKey: text("storage_key"),
+    lifecycleVersion: integer("lifecycle_version"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
