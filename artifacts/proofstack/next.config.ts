@@ -26,11 +26,7 @@ const config: NextConfig = {
   agentRules: false,
   devIndicators: false,
   transpilePackages: ["@workspace/api-client-react"],
-  allowedDevOrigins: [
-    "localhost",
-    "127.0.0.1",
-    ...(process.env.REPLIT_DEV_DOMAIN ? [process.env.REPLIT_DEV_DOMAIN] : []),
-  ],
+  allowedDevOrigins: ["localhost", "127.0.0.1"],
   async headers() {
     return [
       {

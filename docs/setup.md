@@ -1,17 +1,19 @@
 # Setup and release runbook
 
-## Existing deployment architecture
+## Target deployment architecture
 
-Retain the Replit workspace: Next.js handles web routes; Express handles `/api/*`; PostgreSQL stores application data; the selected managed provider (Supabase by default, or explicitly enabled Firebase) verifies identity; Replit App Storage stores images. This application requires running servers and cannot be deployed to GitHub Pages as a static export.
+The intended hosting layout is Vercel for the dynamic Next.js frontend, Render for the Express API and separately supervised workers, Supabase for managed identity and PostgreSQL, and GitHub for source and CI. This application requires running servers and cannot be deployed as a static export. Set the server-only `API_INTERNAL_ORIGIN` to the Render API origin before building the Vercel frontend so `/api/*` is proxied same-origin.
+
+**Deployment gap:** image/object storage still uses a Replit credential sidecar and Replit-backed Google Cloud Storage adapter. It must be replaced with a Supabase Storage adapter before uploads can work on Render. Supabase identity/PostgreSQL and Vercel/Render hosting do not replace this storage integration. Optional AI accepts an OpenAI-compatible endpoint and is separately configured through server-side secrets; review its consent and spend controls before enabling it.
 
 ## Install and configure
 
 1. Install Node.js 24 and pnpm 11.25.0. Run `pnpm install --frozen-lockfile` at the repository root. The workspace explicitly permits esbuild's installation script.
 2. Configure secrets using `.env.example` as the inventory. A copied `.env` is documentation unless your process manager explicitly loads it; the API does not automatically load dotenv files.
-3. Set `DATABASE_URL` to the development PostgreSQL database. Apply reviewed tracked migrations with `pnpm --filter @workspace/db run migrate:dev`. This command intentionally refuses production mode; Replit Publish owns production schema review.
+3. Set `DATABASE_URL` to a disposable development PostgreSQL database. Apply tracked migrations with `pnpm --filter @workspace/db run migrate:dev`. Production migration execution must be an explicit reviewed release step against the chosen Supabase PostgreSQL project; never run development migrations in production.
 4. For accounts, set `AUTH_APP_ORIGIN` to the exact HTTPS browser origin and a random `SESSION_SECRET` of at least 32 characters. For default Supabase mode, set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SECRET_KEY`, following `identity.md`. For explicit `AUTH_PROVIDER=firebase`, follow [firebase-auth.md](firebase-auth.md), including Admin credentials, public Web config and `FIREBASE_WEB_AUTH_DOMAIN` on both API and Next for CSP. Do not mix providers or auto-link existing accounts. Never place server secrets in browser variables.
-5. Configure Replit App Storage and its `PRIVATE_OBJECT_DIR` as a canonical `/bucket/nonempty-prefix` path (no trailing/double slashes or dot segments). The existing adapter depends on Replit's local credential sidecar; copying this code to another host does not provision a working storage service. Upload ingress limits, cleanup reconciliation and paired backups remain release requirements; see [menu-auth-storage-audit.md](menu-auth-storage-audit.md).
-6. AI is optional. Configure the existing Replit AI integration and `COMMUNITY_AI_MODEL` only when enabled. AI credentials missing or provider failure produce a controlled error; manual community features remain available. AI requests may consume Replit credits.
+5. Do not configure uploads for Vercel/Render yet. The existing object adapter requires the Replit local credential sidecar and a private bucket; it must be replaced with a reviewed Supabase Storage adapter before enabling image upload and cleanup. Preserve signed-upload limits, private access, cleanup fencing and backup requirements.
+6. AI is optional. Set the OpenAI-compatible endpoint/key only when using a supported provider; review provider disclosure, consent and spend controls before enabling it.
 7. Leave SMTP/phone readiness flags false until actual delivery and entitlement are verified. Follow `identity.md` for SMS-hook signing and OAuth configuration.
 
 ## Processes
@@ -25,7 +27,7 @@ API_INTERNAL_ORIGIN=http://127.0.0.1:8080 PORT=3000 pnpm --filter @workspace/pro
 
 The optional server-only `API_INTERNAL_ORIGIN` lets Next.js proxy `/api/*` to Express in a local or standalone setup. It must be an exact HTTP(S) origin and must be set before `next build` for production output. It is not a browser credential. Leave it unset when the hosting platform already routes the API.
 
-Configure Replit's application router to send `/api/*` to port 8080 and all other requests to port 3000. The browser uses relative `/api` URLs. The ZIP alone does not prove that your Replit router/workflow is configured. Use HTTPS for real account journeys because session cookies are secure and the authentication origin validator requires HTTPS.
+For local development, set `API_INTERNAL_ORIGIN` to the Express API origin. For deployment, configure that variable on the Vercel build so its Next.js rewrite sends `/api/*` to the Render API. Set exact HTTPS `AUTH_APP_ORIGIN` and matching CORS origins. GitHub hosts source and CI; it does not host the dynamic application.
 
 Production build commands:
 

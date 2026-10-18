@@ -51,15 +51,10 @@ app.use(helmet());
 app.use(
   cors({
     origin: (requestOrigin, callback) => {
-      const developmentOrigin =
-        env.NODE_ENV === "development" && process.env.REPLIT_DEV_DOMAIN
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-          : "";
       if (
         !requestOrigin ||
         env.CORS_ALLOWED_ORIGINS.includes(requestOrigin) ||
-        requestOrigin === process.env.AUTH_APP_ORIGIN ||
-        requestOrigin === developmentOrigin
+        requestOrigin === process.env.AUTH_APP_ORIGIN
       ) {
         callback(null, true);
         return;

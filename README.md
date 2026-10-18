@@ -16,7 +16,7 @@ See [intelligence setup and limits](docs/intelligence.md) before enabling Phase 
 
 - Node.js 24 and pnpm 11.25.0 (pinned in package.json and CI).
 - A disposable PostgreSQL database for development and integration tests.
-- Replit for the existing same-origin routing and App Storage integration.
+- Vercel for the Next.js frontend, Render for the Express API and workers, and Supabase for managed identity and PostgreSQL.
 - Managed identity configuration for real accounts. Credentials belong in deployment secrets.
 
 ```sh
@@ -30,6 +30,10 @@ pnpm --filter @workspace/proofstack run build
 ```
 
 Set DATABASE_URL before migrations. Only run test:all against a disposable test database. No production migrations run at startup.
+
+## Deployment target
+
+The application is a dynamic Next.js frontend plus a separate Express API and optional workers. It is not a static GitHub Pages site. `API_INTERNAL_ORIGIN` can route Vercel `/api/*` requests to the Render API. Image uploads still use a Replit object-storage adapter and will remain unavailable until it is replaced with a Supabase Storage adapter. See [setup](docs/setup.md) for current deployment gaps.
 
 ## Local full-stack development
 

@@ -1,4 +1,3 @@
-import { env } from "./env";
 import { ApiError } from "./errors";
 
 export function authenticationProvider(): "supabase" | "firebase" {
@@ -14,11 +13,7 @@ export function authenticationProvider(): "supabase" | "firebase" {
 }
 
 export function authOrigin() {
-  const value =
-    process.env.AUTH_APP_ORIGIN ||
-    (env.NODE_ENV === "development" && process.env.REPLIT_DEV_DOMAIN
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-      : "");
+  const value = process.env.AUTH_APP_ORIGIN || "";
   if (!value)
     throw new ApiError(
       503,

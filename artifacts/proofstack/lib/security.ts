@@ -26,7 +26,7 @@ export function buildContentSecurityPolicy(
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    `frame-ancestors 'self'${development ? " https://replit.com https://*.replit.com https://*.replit.dev" : ""}`,
+    "frame-ancestors 'self'",
     ...(development ? [] : ["upgrade-insecure-requests"]),
   ].join("; ");
 }
