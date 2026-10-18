@@ -1,4 +1,4 @@
-import { ProfileView } from "@/components/community/profile-view";
+import { ProfileView } from "@/features/community/profile-view";
 export default async function Page({
   params,
 }: {

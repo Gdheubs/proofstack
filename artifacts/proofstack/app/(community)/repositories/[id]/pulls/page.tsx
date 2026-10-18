@@ -1,4 +1,4 @@
-import { PullList } from "@/components/pulls/pull-list";
+import { PullList } from "@/features/pulls/pull-list";
 export default async function Page({
   params,
 }: {

@@ -1,5 +1,5 @@
 import React from "react";
-import { AssessmentCatalogView } from "../../../components/assessments/assessment-catalog";
+import { AssessmentCatalogView } from "../../../features/assessments/assessment-catalog";
 
 export default function Page() {
   return <AssessmentCatalogView />;

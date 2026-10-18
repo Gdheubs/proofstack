@@ -1,4 +1,4 @@
-import { PullView } from "@/components/pulls/pull-view";
+import { PullView } from "@/features/pulls/pull-view";
 export default async function Page({
   params,
 }: {

@@ -1,4 +1,4 @@
-import { Releases } from "@/components/pulls/releases";
+import { Releases } from "@/features/pulls/releases";
 export default async function Page({
   params,
 }: {

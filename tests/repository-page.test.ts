@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
 // Inspect the actual server page's handoff without rendering client hooks.
-vi.mock("@/components/repositories/repository-view", () => ({
+vi.mock("@/features/repositories/repository-view", () => ({
   RepositoryView: () => null,
 }));
-vi.mock("@/components/repositories/repository-list", () => ({
+vi.mock("@/features/repositories/repository-list", () => ({
   RepositoryList: () => null,
 }));
-vi.mock("@/components/careers/workspace", () => ({
+vi.mock("@/features/careers/workspace", () => ({
   Applications: () => null,
 }));
-vi.mock("@/components/community/ui", () => ({
+vi.mock("@/features/community/ui", () => ({
   PageHead: () => null,
 }));
 const frontend = `${process.cwd()}/artifacts/proofstack`;

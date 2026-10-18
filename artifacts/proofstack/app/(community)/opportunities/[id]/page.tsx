@@ -1,4 +1,4 @@
-import { Opportunity } from "@/components/careers/job";
+import { Opportunity } from "@/features/careers/job";
 export default async function Page({
   params,
 }: {

@@ -1,4 +1,4 @@
-import { CareerWorkspace } from "@/components/careers/workspace";
+import { CareerWorkspace } from "@/features/careers/workspace";
 import { redirect } from "next/navigation";
 export default async function Page({
   searchParams,

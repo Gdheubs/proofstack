@@ -1,4 +1,4 @@
-import { LearningPlanRequest } from "@/components/intelligence/request-forms";
+import { LearningPlanRequest } from "@/features/intelligence/request-forms";
 export default async function Page({
   params,
 }: {

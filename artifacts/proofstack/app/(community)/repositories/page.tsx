@@ -1,4 +1,4 @@
-import { RepositoryList } from "@/components/repositories/repository-list";
+import { RepositoryList } from "@/features/repositories/repository-list";
 export default async function Page({
   searchParams,
 }: {

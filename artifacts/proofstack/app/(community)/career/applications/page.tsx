@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Applications } from "@/components/careers/workspace";
-import { PageHead } from "@/components/community/ui";
+import { Applications } from "@/features/careers/workspace";
+import { PageHead } from "@/features/community/ui";
 
 export const metadata: Metadata = { title: "Applications & hiring inbox" };
 

@@ -1,4 +1,4 @@
-import { ProjectView } from "@/components/community/project-view";
+import { ProjectView } from "@/features/community/project-view";
 export default async function Page({
   params,
 }: {

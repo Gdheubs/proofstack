@@ -1,4 +1,4 @@
-import { IntelligenceJobView } from "@/components/intelligence/job-view";
+import { IntelligenceJobView } from "@/features/intelligence/job-view";
 export default async function Page({
   params,
 }: {

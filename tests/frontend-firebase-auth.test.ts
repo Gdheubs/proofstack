@@ -117,7 +117,7 @@ describe("Firebase sign-in view", () => {
 });
 
 // Dynamic path keeps the root Node test tsconfig independent of Next's JSX config.
-const browserModule = `${process.cwd()}/artifacts/proofstack/components/auth/browser-firebase-auth.tsx`;
+const browserModule = `${process.cwd()}/artifacts/proofstack/features/auth/browser-firebase-auth.tsx`;
 const load = () => import(browserModule);
 
 it("initializes a dedicated Firebase app with memory-only persistence and a popup resolver", async () => {

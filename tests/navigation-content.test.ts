@@ -20,11 +20,11 @@ function route(path: string) {
       jsx: (type: unknown, props: unknown) => ({ type, props }),
       jsxs: (type: unknown, props: unknown) => ({ type, props }),
     },
-    "@/components/careers/workspace": {
+    "@/features/careers/workspace": {
       CareerWorkspace: "CareerWorkspace",
       Applications: "Applications",
     },
-    "@/components/community/ui": { PageHead: "PageHead" },
+    "@/features/community/ui": { PageHead: "PageHead" },
     "next/navigation": {
       redirect: (href: string) => {
         throw new Error(`REDIRECT:${href}`);
@@ -50,7 +50,7 @@ function route(path: string) {
 describe("career navigation content ownership (N1)", () => {
   const job = "5b82d3a0-e706-4c74-96ed-12c48e0ab743";
   it("renders the complete inbox only on its dedicated page, never in preferences", () => {
-    const workspace = source("components/careers/workspace.tsx");
+    const workspace = source("features/careers/workspace.tsx");
     const preferences = workspace
       .split("export function CareerWorkspace")[1]
       .split("const transitions")[0];
@@ -90,9 +90,9 @@ describe("career navigation content ownership (N1)", () => {
     },
   );
   it("sends listing review, applicant tracking and thread back links to the dedicated inbox", () => {
-    const boards = source("components/careers/boards.tsx");
-    const job = source("components/careers/job.tsx");
-    const thread = source("components/careers/workspace.tsx").split(
+    const boards = source("features/careers/boards.tsx");
+    const job = source("features/careers/job.tsx");
+    const thread = source("features/careers/workspace.tsx").split(
       "export function ApplicationThread",
     )[1];
     expect(boards).toMatch(

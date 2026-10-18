@@ -1,4 +1,4 @@
-import { SecurityScanRequest } from "@/components/intelligence/request-forms";
+import { SecurityScanRequest } from "@/features/intelligence/request-forms";
 export default async function Page({
   params,
 }: {

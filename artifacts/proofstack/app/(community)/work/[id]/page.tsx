@@ -1,4 +1,4 @@
-import { ProjectWork } from "@/components/careers/project-work";
+import { ProjectWork } from "@/features/careers/project-work";
 export default async function Page({
   params,
 }: {

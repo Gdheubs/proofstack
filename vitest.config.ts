@@ -9,15 +9,6 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "@/components/ui", replacement: `${frontend}src/components/ui` },
-      { find: "@/lib/utils", replacement: `${frontend}src/lib/utils.ts` },
-      {
-        find: "@/hooks/use-toast",
-        replacement: `${frontend}src/hooks/use-toast.ts`,
-      },
-      {
-        find: "@/hooks/use-mobile",
-        replacement: `${frontend}src/hooks/use-mobile.tsx`,
-      },
       { find: "@", replacement: frontend },
     ],
   },

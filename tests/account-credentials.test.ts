@@ -46,7 +46,7 @@ vi.mock("@/hooks/use-auth", () => ({
     message: error instanceof Error ? error.message : "Request failed.",
   }),
 }));
-vi.mock("@/components/account/use-gate", () => ({
+vi.mock("@/features/account/use-gate", () => ({
   useGate: () => ({
     ok: true,
     q: {},
@@ -58,18 +58,18 @@ vi.mock("@/components/account/use-gate", () => ({
   }),
 }));
 vi.mock(
-  "@/components/account/sections",
+  "@/features/account/sections",
   () =>
     import(
-      `${process.cwd()}/artifacts/proofstack/components/account/sections.tsx`
+      `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
     ),
 );
 vi.mock(
-  "@/components/auth/shared",
+  "@/features/auth/shared",
   () =>
-    import(`${process.cwd()}/artifacts/proofstack/components/auth/shared.tsx`),
+    import(`${process.cwd()}/artifacts/proofstack/features/auth/shared.tsx`),
 );
-vi.mock("@/components/auth/mfa", () => ({
+vi.mock("@/features/auth/mfa", () => ({
   MfaEnroll: () => null,
   StepUpDialog: () => "Legacy step-up dialog",
 }));
@@ -94,7 +94,7 @@ vi.mock(
 );
 vi.mock(
   "@/lib/utils",
-  () => import(`${process.cwd()}/artifacts/proofstack/src/lib/utils.ts`),
+  () => import(`${process.cwd()}/artifacts/proofstack/lib/utils.ts`),
 );
 
 const publicConfig = {
@@ -125,7 +125,7 @@ async function renderAccount(config: unknown = publicConfig, error?: Error) {
     `${root}/@tanstack/react-query/build/modern/index.js`
   );
   const { AccountView } = await import(
-    `${process.cwd()}/artifacts/proofstack/components/account/account-view.tsx`
+    `${process.cwd()}/artifacts/proofstack/features/account/account-view.tsx`
   );
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, retryOnMount: false } },
@@ -197,7 +197,7 @@ it("routes Firebase step-up to native provider sign-in, not the Supabase challen
   expect(html).toContain("Sign out and verify again");
   expect(html).toContain("Cancel verification");
   const { restartFirebaseSignIn } = await import(
-    `${process.cwd()}/artifacts/proofstack/components/account/sections.tsx`
+    `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
   );
   const run = vi.fn(async () => ({ signedOut: true }));
   const cancel = vi.fn();
@@ -219,7 +219,7 @@ it("does not offer legacy phone credential actions in Firebase even with stale c
 
 it("does not redirect the Firebase journey unless the server confirms sign-out", async () => {
   const { restartFirebaseSignIn } = await import(
-    `${process.cwd()}/artifacts/proofstack/components/account/sections.tsx`
+    `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
   );
   const cancel = vi.fn();
   const navigate = vi.fn();
@@ -309,7 +309,7 @@ it("does not default to legacy when a settled configuration is unrecognized", as
 
 it("keeps failed Firebase sign-out in place instead of continuing the protected action", async () => {
   const { restartFirebaseSignIn } = await import(
-    `${process.cwd()}/artifacts/proofstack/components/account/sections.tsx`
+    `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
   );
   const cancel = vi.fn();
   const navigate = vi.fn();

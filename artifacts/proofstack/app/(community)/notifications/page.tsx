@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NotificationsView } from "@/components/community/notifications-view";
+import { NotificationsView } from "@/features/community/notifications-view";
 export const metadata: Metadata = { title: "Notifications" };
 export default function Page() {
   return <NotificationsView />;

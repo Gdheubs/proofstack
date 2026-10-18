@@ -1,4 +1,4 @@
-import { ApplicationThread } from "@/components/careers/workspace";
+import { ApplicationThread } from "@/features/careers/workspace";
 export default async function Page({
   params,
 }: {

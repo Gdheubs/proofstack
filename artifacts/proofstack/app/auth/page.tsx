@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AuthView } from "@/components/auth/auth-view";
+import { AuthView } from "@/features/auth/auth-view";
 
 export const metadata: Metadata = { title: "Sign in" };
 

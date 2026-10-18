@@ -1,4 +1,4 @@
-import { PostView } from "@/components/community/post-view";
+import { PostView } from "@/features/community/post-view";
 export default async function Page({
   params,
 }: {

@@ -1,4 +1,4 @@
-import { OrgView } from "@/components/community/org-view";
+import { OrgView } from "@/features/community/org-view";
 export default async function Page({
   params,
 }: {

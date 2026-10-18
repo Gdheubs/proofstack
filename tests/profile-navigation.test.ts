@@ -21,7 +21,7 @@ vi.mock("../artifacts/proofstack/src/components/ui/tabs", async () => {
   };
 });
 
-const components = `${process.cwd()}/artifacts/proofstack/components/community`;
+const components = `${process.cwd()}/artifacts/proofstack/features/community`;
 const dependencies = `${process.cwd()}/artifacts/proofstack/node_modules`;
 
 async function connected(

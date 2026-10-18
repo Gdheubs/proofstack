@@ -27,6 +27,8 @@ export default tseslint.config(
     files: [
       "artifacts/proofstack/**/*.tsx",
       "artifacts/proofstack/hooks/**/*.ts",
+      "artifacts/proofstack/hooks/**/*.tsx",
+      "artifacts/proofstack/features/**/*.ts",
     ],
     plugins: { "react-hooks": reactHooks },
     rules: {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatusPill, type Tone } from "@/components/status-pill";
-import { useAuthSummary } from "@/components/auth-status";
+import { useAuthSummary } from "@/features/auth/status";
 import { useFoundationStatus } from "@/hooks/use-foundation-status";
 
 function Row({

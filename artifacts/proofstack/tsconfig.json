@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["next-env.d.ts", "app/**/*", "components/**/*", "hooks/**/*", "lib/**/*", "proxy.ts", "next.config.ts", "src/components/**/*", "src/hooks/**/*", "src/lib/**/*", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "include": ["next-env.d.ts", "app/**/*", "components/**/*", "features/**/*", "hooks/**/*", "lib/**/*", "proxy.ts", "next.config.ts", "src/components/**/*", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
   "exclude": ["node_modules", "build", "dist"],
   "compilerOptions": {
     "noEmit": true,
@@ -13,10 +13,7 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
-      "@/components/ui/*": ["./src/components/ui/*"],
-      "@/lib/utils": ["./src/lib/utils.ts"],
-      "@/hooks/use-toast": ["./src/hooks/use-toast.ts"],
-      "@/hooks/use-mobile": ["./src/hooks/use-mobile.tsx"]
+      "@/components/ui/*": ["./src/components/ui/*"]
     }
   },
   "references": [

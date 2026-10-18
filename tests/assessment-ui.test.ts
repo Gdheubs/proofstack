@@ -16,7 +16,7 @@ vi.mock("../artifacts/proofstack/hooks/use-community", () => ({
   useCsrf: () => session,
 }));
 
-const componentRoot = `${process.cwd()}/artifacts/proofstack/components/assessments`;
+const componentRoot = `${process.cwd()}/artifacts/proofstack/features/assessments`;
 const loadApi = () => import(`${componentRoot}/assessment-api.ts`);
 const loadPanels = () => import(`${componentRoot}/assessment-panels.tsx`);
 
@@ -38,7 +38,7 @@ describe("assessment route integration", () => {
   });
   it("uses the owner-only me fallback for an unclaimed profile and passes its identity", () => {
     const source = readFileSync(
-      `${process.cwd()}/artifacts/proofstack/components/community/profile-view.tsx`,
+      `${process.cwd()}/artifacts/proofstack/features/community/profile-view.tsx`,
       "utf8",
     );
     expect(source).toContain("ProfileAssessmentResults");

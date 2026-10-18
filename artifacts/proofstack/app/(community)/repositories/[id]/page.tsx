@@ -1,4 +1,4 @@
-import { RepositoryView } from "@/components/repositories/repository-view";
+import { RepositoryView } from "@/features/repositories/repository-view";
 export default async function Page({
   params,
   searchParams,

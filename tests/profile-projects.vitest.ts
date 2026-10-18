@@ -15,7 +15,6 @@ export default mergeConfig(
           find: "@/components/ui",
           replacement: `${frontend}src/components/ui`,
         },
-        { find: "@/lib/utils", replacement: `${frontend}src/lib/utils.ts` },
         { find: "@", replacement: frontend },
       ],
     },

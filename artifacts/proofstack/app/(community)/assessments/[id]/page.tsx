@@ -1,5 +1,5 @@
 import React from "react";
-import { AssessmentAttemptView } from "../../../../components/assessments/assessment-attempt";
+import { AssessmentAttemptView } from "../../../../features/assessments/assessment-attempt";
 
 export default async function Page({
   params,

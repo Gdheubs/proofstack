@@ -7,11 +7,11 @@ const repositoryId = "repository-one";
 // components or hooks. The root test runner does not load Next's tsconfig.
 beforeAll(async () => {
   for (const name of [
-    "components/community/ui",
-    "components/careers/shared",
-    "components/auth/shared",
-    "components/auth/mfa",
-    "components/repositories/action-form",
+    "features/community/ui",
+    "features/careers/shared",
+    "features/auth/shared",
+    "features/auth/mfa",
+    "features/repositories/action-form",
     "hooks/use-community",
     "hooks/use-auth",
     "hooks/use-repository",
@@ -19,7 +19,9 @@ beforeAll(async () => {
     "hooks/use-intelligence",
     "lib/community",
   ]) {
-    const extension = name.startsWith("components/") ? "tsx" : "ts";
+    const extension = name.startsWith("hooks/") || name.startsWith("lib/")
+      ? "ts"
+      : "tsx";
     vi.doMock(`@/${name}`, () => import(`${frontend}/${name}.${extension}`));
   }
   for (const name of [
@@ -31,9 +33,10 @@ beforeAll(async () => {
     "lib/utils",
   ]) {
     const extension = name.startsWith("components/") ? "tsx" : "ts";
+    const sourceRoot = name.startsWith("components/") ? `${frontend}/src` : frontend;
     vi.doMock(
       `@/${name}`,
-      () => import(`${frontend}/src/${name}.${extension}`),
+      () => import(`${sourceRoot}/${name}.${extension}`),
     );
   }
   Object.assign(globalThis, {
@@ -155,7 +158,7 @@ describe("repository-scoped navigation (N7)", () => {
     "keeps the same siblings on Releases (manager=%s)",
     async (canManage) => {
       const { Releases } = await import(
-        `${frontend}/components/pulls/releases.tsx`
+        `${frontend}/features/pulls/releases.tsx`
       );
       const { getGetPullsQueryKey } = await import(
         `${process.cwd()}/lib/api-client-react/src/generated/api.ts`
@@ -178,7 +181,7 @@ describe("repository-scoped navigation (N7)", () => {
     "keeps the same siblings on Security review (manager=%s)",
     async (canManage) => {
       const { SecurityScanRequest } = await import(
-        `${frontend}/components/intelligence/request-forms.tsx`
+        `${frontend}/features/intelligence/request-forms.tsx`
       );
       const { getGetRepositoriesQueryKey, getGetIntelligenceQueryKey } =
         await import(
@@ -202,7 +205,7 @@ describe("repository-scoped navigation (N7)", () => {
     "keeps the same siblings on Pull requests (manager=%s)",
     async (canManage) => {
       const { PullList } = await import(
-        `${frontend}/components/pulls/pull-list.tsx`
+        `${frontend}/features/pulls/pull-list.tsx`
       );
       const { getGetPullsQueryKey } = await import(
         `${process.cwd()}/lib/api-client-react/src/generated/api.ts`
@@ -226,7 +229,7 @@ describe("repository-scoped navigation (N7)", () => {
     "renders only repository siblings on Source (manager=%s)",
     async (canManage) => {
       const { RepositoryView } = await import(
-        `${frontend}/components/repositories/repository-view.tsx`
+        `${frontend}/features/repositories/repository-view.tsx`
       );
       const { getGetRepositoriesQueryKey } = await import(
         `${process.cwd()}/lib/api-client-react/src/generated/api.ts`

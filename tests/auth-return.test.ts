@@ -167,7 +167,7 @@ async function renderFirebaseReturnView() {
     `${root}/next/dist/shared/lib/app-router-context.shared-runtime.js`
   );
   const { BrowserFirebaseAuth } = await import(
-    `${process.cwd()}/artifacts/proofstack/components/auth/browser-firebase-auth.tsx`
+    `${process.cwd()}/artifacts/proofstack/features/auth/browser-firebase-auth.tsx`
   );
   const replace = vi.fn();
   const html = renderToStaticMarkup(
