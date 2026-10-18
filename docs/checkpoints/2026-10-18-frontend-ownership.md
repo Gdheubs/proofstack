@@ -20,10 +20,17 @@ Consolidated frontend ownership after tracing Next.js aliases, application impor
 - Focused frontend tests: 149 passed across 8 test files.
 - `pnpm test`: 617 passed, 1 failed. The failure is `tests/asset-cleanup-metadata.test.ts`, whose expected table count (46) conflicts with the 49 tables present during separate asset-lifecycle schema work.
 - `pnpm typecheck`: library, API, frontend, and scripts checks passed; test-project checking is blocked by two `TS2339` errors (`client.query` on `never`) in the untracked `tests/asset-lifecycle-store.test.ts`.
-- `pnpm format:check`: reports formatting issues in 359 repository files spanning docs, frontend, backend, and tests. No broad formatting rewrite was applied.
-- `git diff --check`: passed before checkpoint creation; final diff check remains to be run.
+- `pnpm format:check` on Windows reports formatting issues in 359 repository files; no broad formatting rewrite was applied. The hosted Linux check on the first task SHA isolated six task-owned files; those files were formatted and their focused Prettier check now passes.
+- `git diff --check`: passed for both the initial task diff and the follow-up formatter correction; only Git line-ending normalization warnings were emitted.
 - Gitleaks 8.30.1 archive SHA-256 verified against the repository-pinned checksum; scan ran in WSL with redaction and reported 0 findings.
+
+## Hosted follow-up
+
+- Initial task commit `3d1f5f3f4197a19f90c3106e54406bccb0135bb3` was pushed and read back from `origin/master` exactly.
+- [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39156545526) passed for that SHA.
+- [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39156545454) passed install, migrations, codegen, audit, and lint, then failed at `pnpm format:check` on six task-owned files. The later CI steps were skipped.
+- Those six files have since been formatted. Focused Prettier, lint, 149 frontend tests, and the Next production build pass after the fix. A follow-up commit/push and CI result remain pending.
 
 ## Remaining gates and next action
 
-The active asset-lifecycle work remains untouched and accounts for the full-suite test/typecheck failures above. Hosted CI has not yet been checked for this task's commit. Stage and review only the frontend ownership changes and this checkpoint, commit on `master`, push to the verified `origin`, read back the remote SHA, then inspect CI for that exact SHA.
+The active asset-lifecycle work remains untouched and accounts for the full-suite test/typecheck failures above. Stage the six formatter corrections and this evidence update, review staged paths, commit on `master`, push to the verified `origin`, read back the remote SHA, then inspect CI for that exact SHA.

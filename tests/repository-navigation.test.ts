@@ -19,9 +19,8 @@ beforeAll(async () => {
     "hooks/use-intelligence",
     "lib/community",
   ]) {
-    const extension = name.startsWith("hooks/") || name.startsWith("lib/")
-      ? "ts"
-      : "tsx";
+    const extension =
+      name.startsWith("hooks/") || name.startsWith("lib/") ? "ts" : "tsx";
     vi.doMock(`@/${name}`, () => import(`${frontend}/${name}.${extension}`));
   }
   for (const name of [
@@ -33,11 +32,10 @@ beforeAll(async () => {
     "lib/utils",
   ]) {
     const extension = name.startsWith("components/") ? "tsx" : "ts";
-    const sourceRoot = name.startsWith("components/") ? `${frontend}/src` : frontend;
-    vi.doMock(
-      `@/${name}`,
-      () => import(`${sourceRoot}/${name}.${extension}`),
-    );
+    const sourceRoot = name.startsWith("components/")
+      ? `${frontend}/src`
+      : frontend;
+    vi.doMock(`@/${name}`, () => import(`${sourceRoot}/${name}.${extension}`));
   }
   Object.assign(globalThis, {
     React: await import(`${dependencies}/react/index.js`),
