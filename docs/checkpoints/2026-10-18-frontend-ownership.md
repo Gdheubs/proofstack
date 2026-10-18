@@ -29,8 +29,9 @@ Consolidated frontend ownership after tracing Next.js aliases, application impor
 - Initial task commit `3d1f5f3f4197a19f90c3106e54406bccb0135bb3` was pushed and read back from `origin/master` exactly.
 - [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39156545526) passed for that SHA.
 - [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39156545454) passed install, migrations, codegen, audit, and lint, then failed at `pnpm format:check` on six task-owned files. The later CI steps were skipped.
-- Those six files have since been formatted. Focused Prettier, lint, 149 frontend tests, and the Next production build pass after the fix. A follow-up commit/push and CI result remain pending.
+- Those six files were formatted. Focused Prettier, lint, 149 frontend tests, and the Next production build pass after the fix.
+- Follow-up commit `26f3faf3d8e6b12252220a2d5bf881e823d9c6d0` was pushed and read back from `origin/master` exactly. [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39158268657) and [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39158268663) both passed for that SHA.
 
 ## Remaining gates and next action
 
-The active asset-lifecycle work remains untouched and accounts for the full-suite test/typecheck failures above. Stage the six formatter corrections and this evidence update, review staged paths, commit on `master`, push to the verified `origin`, read back the remote SHA, then inspect CI for that exact SHA.
+The active asset-lifecycle work remains untouched in the worktree and accounts for the local full-suite test/typecheck failures above. No deployment was performed. The final evidence update must be committed and pushed; then read back the remote SHA and inspect CI for that exact SHA.
