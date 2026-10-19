@@ -419,11 +419,11 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         release();
       }
     });
-    it("executes all journal migrations to the expected 46-table inventory", async () => {
+    it("executes all journal migrations to the expected 49-table inventory", async () => {
       const result = await pool.query(
         "SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'",
       );
-      expect(result.rows).toEqual([{ n: 46 }]);
+      expect(result.rows).toEqual([{ n: 49 }]);
     });
     it("rejects traversal snapshots in the SQL constraint, not only in the SDK adapter", async () => {
       const f = await fixture();
