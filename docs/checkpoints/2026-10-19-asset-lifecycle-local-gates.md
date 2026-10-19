@@ -24,7 +24,8 @@ Repair the local full-suite and repository typecheck failures in the active dura
 - `git diff --check`: passed; only Git line-ending normalization warnings were emitted.
 - Gitleaks 8.30.1 archive checksum verified; redacted scan reported 0 findings.
 - Native PostgreSQL migration/integration was not run locally because `DATABASE_URL` is not configured; PGlite applied all tracked migrations and passed the targeted suites.
+- Commit `573225a09a446caa9ee0805b09902938081a6bd0` was pushed and read back from `origin/master` exactly. [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39198454747) and [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39198454658) both passed for that SHA, including native PostgreSQL migration/integration tests.
 
 ## Remaining risk and next action
 
-The missing 0012 snapshot is now generated from the current schema and links to snapshot 0011. The full embedded suite retains one unrelated repository timeout; native PostgreSQL validation still depends on a disposable database. No deployment was performed. Stage and review the final snapshot/integration changes and checkpoint, commit/push this lifecycle work, and verify hosted CI on the exact pushed SHA before enabling the storage flow.
+The missing 0012 snapshot is now generated from the current schema and links to snapshot 0011. The full embedded suite retains one unrelated repository timeout, although hosted native PostgreSQL CI passes. No deployment was performed. Continue storage implementation only after separately reviewing the provider-acceptance gates in the durable-storage design.
