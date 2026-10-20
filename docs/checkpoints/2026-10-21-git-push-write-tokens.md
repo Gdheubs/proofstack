@@ -32,6 +32,11 @@ Review, repair and publish previously uncommitted Phase 4 work: token-authorized
 
 Not run: native PostgreSQL `test:all` (hosted CI covers it), browser E2E, Next production build (hosted CI covers it).
 
+## Hosted CI
+
+- `e3b0804`: [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39499465634) passed; [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39499465376) **failed** at `pnpm audit`: new advisory GHSA-r7fv-28h4-cvq7 for `markdown-it@14.3.1` (dev-only, via `orval>typedoc`). The same version was in the previously green lockfile; the advisory postdates that run.
+- Repair: `pnpm-workspace.yaml` override `markdown-it: 14.3.2`; local `pnpm audit --audit-level moderate` reports no known vulnerabilities. Hosted result for the repair commit is recorded in the next checkpoint.
+
 ## Next step
 
 Task 2 of the launch plan: trusted client-IP forwarding from the web proxy so per-IP rate limits are not shared by all users behind the Vercel/Cloudflare-to-Render hop.
