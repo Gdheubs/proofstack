@@ -158,7 +158,7 @@ describe("asset cleanup run-once mode", () => {
     const d = deps([true, true, true, false]);
     await expect(
       drainAssetCleanup(d, new AbortController().signal),
-    ).resolves.toEqual({ processed: 3 });
+    ).resolves.toEqual({ processed: 3, failed: false });
     expect(d.runOnce).toHaveBeenCalledTimes(4);
     expect(d.close).toHaveBeenCalledOnce();
   });
@@ -169,14 +169,14 @@ describe("asset cleanup run-once mode", () => {
         jobs: 4,
         milliseconds: 60000,
       }),
-    ).resolves.toEqual({ processed: 4 });
+    ).resolves.toEqual({ processed: 4, failed: false });
     expect(d.runOnce).toHaveBeenCalledTimes(4);
   });
   it("stops on an iteration failure with a sanitized warning", async () => {
     const d = deps([true, new Error("provider said secret things"), true]);
     await expect(
       drainAssetCleanup(d, new AbortController().signal),
-    ).resolves.toEqual({ processed: 1 });
+    ).resolves.toEqual({ processed: 1, failed: true });
     expect(d.warn.mock.calls).toEqual([["Asset cleanup iteration failed"]]);
     expect(d.close).toHaveBeenCalledOnce();
   });
@@ -186,6 +186,7 @@ describe("asset cleanup run-once mode", () => {
     controller.abort();
     await expect(drainAssetCleanup(d, controller.signal)).resolves.toEqual({
       processed: 0,
+      failed: false,
     });
     expect(d.runOnce).not.toHaveBeenCalled();
   });

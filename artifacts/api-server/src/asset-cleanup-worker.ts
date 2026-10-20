@@ -25,11 +25,12 @@ async function main() {
   };
   // --once drains due jobs and exits, for schedulers without an always-on worker.
   if (process.argv.includes("--once")) {
-    const { processed } = await drainAssetCleanup(
+    const { processed, failed } = await drainAssetCleanup(
       dependencies,
       stopping.signal,
     );
     console.info(`Asset cleanup run finished: ${processed} job(s) processed`);
+    if (failed) process.exitCode = 1;
   } else {
     console.info("Asset cleanup worker started");
     await superviseAssetCleanup(dependencies, stopping.signal);

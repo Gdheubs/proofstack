@@ -22,6 +22,7 @@ Cleanup runs every 6 hours instead of the planned hourly: an hourly install+buil
 
 - `tests/asset-cleanup-runtime.test.ts`: 5 new run-once cases (drain then close, job budget, sanitized failure stop, abort, stuck job fails closed without awaiting the pool); 25 passed with the existing supervisor cases.
 - Workflow YAML parsed with js-yaml (jobs, triggers and step counts as intended); `tests/ci-workflows.test.ts` 7 passed.
+- Clean-clone rehearsal of the cleanup job: `pnpm install --frozen-lockfile --filter @workspace/api-server...` and the API build succeed from the committed tree; `worker:asset-cleanup:once` without configuration fails closed (exit 1). With valid-looking configuration and an unreachable database, the first build logged one sanitized warning and exited **0**, which would hide outages from a scheduled run; the drain now reports `failed` and the entry sets exit code 1 (re-verified: exit 1). Git Bash rewrites `/bucket/prefix` environment values into Windows paths, so local runs need `MSYS_NO_PATHCONV=1`; Linux runners are unaffected.
 - `bash -n` syntax check of both scripts. They could not be executed locally: no PostgreSQL or passwordless sudo is available on this machine; the CI drill is their first real execution.
 - `pnpm run typecheck`, `pnpm lint` passed. Unit tests: 721 passed (51 files). Embedded integration: 190 passed, 2 skipped.
 

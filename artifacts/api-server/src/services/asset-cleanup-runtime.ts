@@ -116,9 +116,10 @@ export async function drainAssetCleanup(
   },
   signal: AbortSignal,
   limits = { jobs: 500, milliseconds: 8 * 60 * 1000 },
-): Promise<{ processed: number }> {
+): Promise<{ processed: number; failed: boolean }> {
   const started = Date.now();
   let processed = 0;
+  let failed = false;
   while (
     !signal.aborted &&
     processed < limits.jobs &&
@@ -131,9 +132,11 @@ export async function drainAssetCleanup(
       // As in the supervisor: after a deadline, exit without draining the pool.
       if (error instanceof AssetCleanupDeadlineError) throw error;
       dependencies.warn("Asset cleanup iteration failed");
+      // Reported so a scheduled run fails visibly instead of passing silently.
+      failed = true;
       break;
     }
   }
   await deadline(dependencies.close(), 10000);
-  return { processed };
+  return { processed, failed };
 }
