@@ -24,6 +24,7 @@ import {
   repoQuerySchema,
   repoError,
   uuid,
+  receivePackCommands,
 } from "./repository-input";
 import {
   storageEnabled,
@@ -37,6 +38,7 @@ import {
   treeEntries,
   readSource,
   history,
+  validatePushedTree,
 } from "./repository-git";
 const manager = `((p.owner_id=$1 AND (p.organization_id IS NULL OR ${memberAccessWhere("p.organization_id", "$1")})) OR ${managerWhere("p.organization_id", "$1")})`;
 const writer = `(${manager} OR (EXISTS(SELECT 1 FROM community_contributors c WHERE c.project_id=p.id AND c.user_id=$1 AND c.status='active') AND (p.organization_id IS NULL OR ${memberAccessWhere("p.organization_id", "$1")})))`;
@@ -145,7 +147,7 @@ export async function getRepositories(
       const tokens = uid
         ? (
             await db.query(
-              `SELECT id,name,expires_at::text AS "expiresAt",created_at::text AS "createdAt",revoked_at IS NOT NULL AS revoked FROM repository_tokens WHERE repository_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 20`,
+              `SELECT id,name,CASE WHEN token_hash LIKE 'write:%' THEN 'write' ELSE 'read' END AS scope,expires_at::text AS "expiresAt",created_at::text AS "createdAt",revoked_at IS NOT NULL AS revoked FROM repository_tokens WHERE repository_id=$1 AND user_id=$2 ORDER BY created_at DESC LIMIT 20`,
               [d.id, uid],
             )
           ).rows
@@ -196,6 +198,78 @@ export async function getRepositories(
     hasMore: rows.length > 20,
     offset: d.offset,
   };
+}
+export async function pushRepository(
+  req: Request,
+  id: string,
+  uid: string,
+  body: Buffer,
+) {
+  const updates = receivePackCommands(body);
+  return lockedRepository(id, uid, async (repo, path, db, branches) => {
+    if (!repo.canWrite) throw denied();
+    const defaultHead = branches.find(
+      (branch) => branch.name === repo.defaultBranch,
+    )?.head;
+    if (!defaultHead) throw repoError("Default branch is unavailable.", 503);
+    const update = updates[0];
+    if (update.branch === repo.defaultBranch)
+      throw repoError("Push to the protected default branch is disabled.", 403);
+    const current = branches.find((branch) => branch.name === update.branch);
+    let base: string;
+    if (update.oldHead === "0".repeat(40)) {
+      if (current) throw repoError("Branch already exists.", 409);
+      if (
+        branches.some(
+          (branch) =>
+            branch.name.startsWith(update.branch + "/") ||
+            update.branch.startsWith(branch.name + "/"),
+        )
+      )
+        throw repoError("Branch conflicts with an existing branch path.", 409);
+      if (branches.length >= 50)
+        throw repoError("Branch limit reached (50).", 409);
+      base = defaultHead;
+    } else {
+      if (!current || current.head !== update.oldHead)
+        throw repoError(
+          "Branch changed; fetch and retry from its latest head.",
+          409,
+        );
+      base = current.head;
+    }
+    const output = await git(
+      path,
+      ["receive-pack", "--stateless-rpc", path],
+      body,
+      {},
+      8 * 1024 * 1024,
+    );
+    try {
+      await git(path, ["merge-base", "--is-ancestor", base, update.newHead]);
+    } catch {
+      throw repoError(
+        "Push must fast-forward from the authorized branch head.",
+        409,
+      );
+    }
+    await validatePushedTree(path, update.newHead);
+    await quota(path, repo.quotaBytes);
+    const result =
+      update.oldHead === "0".repeat(40)
+        ? await db.query(
+            "INSERT INTO repository_branches(repository_id,name,head) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING name",
+            [id, update.branch, update.newHead],
+          )
+        : await db.query(
+            "UPDATE repository_branches SET head=$3,updated_at=now() WHERE repository_id=$1 AND name=$2 AND head=$4 RETURNING name",
+            [id, update.branch, update.newHead, update.oldHead],
+          );
+    if (!result.rows.length)
+      throw repoError("Branch changed while saving the push.", 409);
+    await audit(req, "repository.push", uid, id, { branch: update.branch }, db);
+    return output;
+  });
 }
 export async function runRepositoryAction(
   req: Request,
@@ -259,6 +333,7 @@ export async function runRepositoryAction(
       const repo = await repositoryAccess(d.id, uid, db, true);
       if (d.action === "token-create") {
         requireFresh(s, true);
+        if (d.scope === "write" && !repo.canWrite) throw denied();
         const active = (
           await db.query(
             `SELECT count(*)::int AS n FROM repository_tokens WHERE user_id=$1 AND repository_id=$2 AND revoked_at IS NULL AND expires_at>now()`,
@@ -270,10 +345,13 @@ export async function runRepositoryAction(
             "Revoke an existing token first (10 active tokens per repository).",
             409,
           );
-        token = "psr_" + randomBytes(32).toString("base64url");
+        token =
+          (d.scope === "write" ? "psw_" : "psr_") +
+          randomBytes(32).toString("base64url");
+        const digest = createHash("sha256").update(token).digest("hex");
         await db.query(
           `INSERT INTO repository_tokens(repository_id,user_id,name,token_hash,expires_at) VALUES($1,$2,$3,$4,now()+interval '30 days')`,
-          [d.id, uid, d.name, createHash("sha256").update(token).digest("hex")],
+          [d.id, uid, d.name, `${d.scope}:${digest}`],
         );
       } else if (d.action === "token-revoke") {
         const row = await db.query(
@@ -346,14 +424,14 @@ export async function runRepositoryAction(
     return {
       message:
         d.action === "token-create"
-          ? "Copy this read token now. It will not be shown again."
+          ? `Copy this ${d.scope} token now. It will not be shown again.`
           : "Repository updated",
       id: resultId,
       ...(token ? { token } : {}),
     };
   });
 }
-export async function tokenUser(raw: string | undefined, id: string) {
+export async function tokenCredential(raw: string | undefined, id: string) {
   if (!raw) return null;
   let token = "";
   if (raw.startsWith("Bearer ")) token = raw.slice(7);
@@ -362,15 +440,27 @@ export async function tokenUser(raw: string | undefined, id: string) {
     const separator = decoded.indexOf(":");
     if (separator >= 0) token = decoded.slice(separator + 1);
   }
-  if (!/^psr_[A-Za-z0-9_-]{43}$/.test(token))
-    throw repoError("Invalid or expired repository credential.", 401);
+  const match = /^(psr|psw)_([A-Za-z0-9_-]{43})$/.exec(token);
+  if (!match) throw repoError("Invalid or expired repository credential.", 401);
+  const requestedScope = match[1] === "psw" ? "write" : "read";
+  const digest = createHash("sha256").update(token).digest("hex");
+  const hashes =
+    requestedScope === "read"
+      ? [`read:${digest}`, digest]
+      : [`write:${digest}`];
   const r = await pool.query(
-    `SELECT t.user_id FROM repository_tokens t JOIN users u ON u.id=t.user_id AND u.status='active' AND u.mfa_recovery_required=false WHERE t.repository_id=$1 AND t.token_hash=$2 AND t.revoked_at IS NULL AND t.expires_at>now()`,
-    [id, createHash("sha256").update(token).digest("hex")],
+    `SELECT t.user_id,CASE WHEN t.token_hash LIKE 'write:%' THEN 'write' ELSE 'read' END AS scope FROM repository_tokens t JOIN users u ON u.id=t.user_id AND u.status='active' AND u.mfa_recovery_required=false WHERE t.repository_id=$1 AND t.token_hash=ANY($2::text[]) AND t.revoked_at IS NULL AND t.expires_at>now()`,
+    [id, hashes],
   );
   if (!r.rows[0])
     throw repoError("Invalid or expired repository credential.", 401);
-  return r.rows[0].user_id as string;
+  return {
+    userId: r.rows[0].user_id as string,
+    scope: r.rows[0].scope as "read" | "write",
+  };
+}
+export async function tokenUser(raw: string | undefined, id: string) {
+  return (await tokenCredential(raw, id))?.userId ?? null;
 }
 export async function validateRepositoryId(raw: string) {
   if (!uuid.safeParse(raw).success) throw missing();

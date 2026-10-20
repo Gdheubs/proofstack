@@ -64,7 +64,7 @@ The tracked migration sequence now includes `0005_faithful_pepper_potts.sql`. Ap
 
 Apply tracked migration `0006_handy_starbolt.sql` through the migration runner after reviewing it in staging. Git must be installed. Set `REPOSITORY_ROOT` to a private, durable, dedicated absolute directory owned by the API service user. Never use the ephemeral local filesystem of the existing Replit autoscale deployment: keep this feature disabled there, or provision a dedicated durable Git/API service. Every API replica serving repositories must share the same volume and database.
 
-`SESSION_SECRET` is required for Git endpoint rate protection, including public clone. Route `/api/git/*` to Express without stripping Authorization headers or altering the Git request body. Use HTTPS. Clone/fetch uses repo-scoped 30-day read tokens for private access; external Git push is disabled. See `repositories.md` for exact bounds, recovery and backup requirements.
+`SESSION_SECRET` is required for Git endpoint rate protection, including public clone. Route `/api/git/*` to Express without stripping Authorization headers or altering the Git request body. Use HTTPS. Clone/fetch uses repo-scoped 30-day read tokens for private access; feature-branch push requires a 30-day write token and never updates the protected default branch. See `repositories.md` for exact bounds, recovery and backup requirements.
 
 ## Phase 5 collaboration
 

@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Git push write tokens and code editor](2026-10-21-git-push-write-tokens.md) — token-authorized feature-branch push, read/write token scopes, CodeMirror editor and 1 MiB web commits; ships inactive while REPOSITORY_ROOT is unset.
 - [Platform workflow verification](2026-10-19-platform-workflow-verification.md) — repository collaboration, hiring listings/applications, and platform assessments verified; confirms read-only Git transport and no employer-authored custom form/assignment support.
 - [Asset lifecycle local-gate repair](2026-10-19-asset-lifecycle-local-gates.md) — repaired the full-suite table-count assertion and lifecycle mock typing; local tests, typecheck, and lint pass. Drizzle snapshot and database migration validation remain open.
 - [Frontend ownership cleanup](2026-10-18-frontend-ownership.md) — feature UI, shared hooks/utilities, and frontend aliases consolidated after import/build analysis; focused gates pass, while separate asset-lifecycle work blocks two repository-wide checks.

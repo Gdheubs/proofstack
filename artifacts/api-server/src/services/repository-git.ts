@@ -9,6 +9,8 @@ import {
   branchSchema,
   headSchema,
   pathSchema,
+  MAX_REPOSITORY_FILE_BYTES,
+  MAX_REPOSITORY_PUSH_FILE_BYTES,
 } from "./repository-input";
 export class GitCommandError extends ApiError {
   constructor(
@@ -165,6 +167,31 @@ export async function quota(path: string, limit: number) {
       "Repository storage quota reached. Contact the operator before retrying.",
       413,
     );
+}
+export async function validatePushedTree(path: string, head: string) {
+  headSchema.parse(head);
+  const entries = (
+    await git(path, ["ls-tree", "-r", "-z", "--full-tree", head])
+  )
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean);
+  if (entries.length > 10000)
+    throw repoError("A repository tree may contain at most 10,000 files.", 413);
+  for (const entry of entries) {
+    const tab = entry.indexOf("\t");
+    const [mode, type, oid] = entry.slice(0, tab).split(" ");
+    const file = entry.slice(tab + 1);
+    if (
+      !["100644", "100755"].includes(mode) ||
+      type !== "blob" ||
+      !pathSchema.safeParse(file).success
+    )
+      throw repoError("Only safe regular files may be pushed.", 400);
+    const size = Number((await git(path, ["cat-file", "-s", oid])).toString());
+    if (!Number.isSafeInteger(size) || size > MAX_REPOSITORY_PUSH_FILE_BYTES)
+      throw repoError("A pushed file exceeds the 10 MiB file limit.", 413);
+  }
 }
 export async function initialize(path: string) {
   await git(path, ["init", "--bare", "--initial-branch=main", path]);
@@ -325,7 +352,8 @@ export async function readSource(path: string, head: string, file: string) {
   if (mode !== "100644" || type !== "blob")
     throw repoError("This path is not a text file.", 400);
   const size = Number((await git(path, ["cat-file", "-s", oid])).toString());
-  if (size > 32768) return { content: "", size, previewable: false };
+  if (size > MAX_REPOSITORY_FILE_BYTES)
+    return { content: "", size, previewable: false };
   const bytes = await git(path, ["cat-file", "blob", oid]);
   const content = bytes.toString("utf8");
   return {

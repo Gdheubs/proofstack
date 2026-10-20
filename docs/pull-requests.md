@@ -36,4 +36,4 @@ Release records are immutable while their project exists; deleting the project o
 - Conflict resolution/rebase UI, richer review threads and requested reviewers.
 - Real staging browser/MFA journeys, native PostgreSQL concurrency tests, durable-volume restore drills and representative load tests.
 
-External Git push and SSH also remain Phase 4 gaps. These existing gaps are carried forward explicitly; the presence of pull requests and a patch check does not make the full GitHub-style platform launch-ready.
+SSH remains a Phase 4 gap; HTTPS push is limited to write-token feature branches. These existing gaps are carried forward explicitly; the presence of pull requests and a patch check does not make the full GitHub-style platform launch-ready.

@@ -368,6 +368,7 @@ export const GetRepositoriesResponse = zod.object({
   "tokens": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
+  "scope": zod.enum(['read', 'write']),
   "createdAt": zod.string(),
   "expiresAt": zod.string(),
   "revoked": zod.boolean()
@@ -390,6 +391,7 @@ export const RunRepositoryActionBody = zod.object({
   "message": zod.string().optional(),
   "name": zod.string().optional(),
   "tokenId": zod.string().optional(),
+  "scope": zod.enum(['read', 'write']).optional(),
   "remove": zod.boolean().optional()
 })
 

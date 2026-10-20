@@ -4,18 +4,23 @@ import type { RepositoryData } from "@workspace/api-client-react";
 import { card, field, Field, values, val } from "@/features/careers/shared";
 import { useRepositoryRun } from "@/hooks/use-repository";
 import { ActionForm } from "./action-form";
+import { CodeEditor } from "./code-editor";
 export function Editor({
   data: d,
-  edit,
+  mode,
   onClose,
 }: {
   data: RepositoryData;
-  edit: boolean;
+  mode: "new" | "edit" | "folder";
   onClose: () => void;
 }) {
   const a = useRepositoryRun();
   const r = d.repositories[0];
+  const edit = mode === "edit";
+  const folder = mode === "folder";
   const [remove, setRemove] = useState(false);
+  const [path, setPath] = useState(d.folder ? d.folder + "/" : "");
+  const [content, setContent] = useState(edit ? (d.file?.content ?? "") : "");
   return (
     <form
       className={card + " mb-5"}
@@ -27,8 +32,13 @@ export function Editor({
             id: r.id,
             branch: d.branch,
             expectedHead: d.head,
-            path: edit && d.file ? d.file.path : val(f, "path"),
-            content: remove ? "" : val(f, "content"),
+            path:
+              edit && d.file
+                ? d.file.path
+                : folder
+                  ? `${val(f, "path").replace(/\/+$/, "")}/.gitkeep`
+                  : val(f, "path"),
+            content: remove ? "" : content,
             message: val(f, "message"),
             remove,
           })
@@ -37,7 +47,8 @@ export function Editor({
       }}
     >
       <h2 className="text-xl font-semibold">
-        {edit ? "Edit file" : "New file"} · {d.branch}
+        {edit ? "Edit file" : folder ? "Create folder" : "New file"} ·{" "}
+        {d.branch}
       </h2>
       <ActionForm
         action={a}
@@ -46,13 +57,17 @@ export function Editor({
         {edit ? (
           <p className="font-mono text-sm">{d.file?.path}</p>
         ) : (
-          <Field
-            label="File path"
-            name="path"
-            value={d.folder ? d.folder + "/" : ""}
-            max={240}
-            required
-          />
+          <label className="block space-y-1 text-sm">
+            <span>{folder ? "Folder path" : "File path"}</span>
+            <input
+              className={field}
+              name="path"
+              value={path}
+              onChange={(event) => setPath(event.target.value)}
+              maxLength={folder ? 230 : 240}
+              required
+            />
+          </label>
         )}
         {edit && (
           <label className="flex gap-2 text-sm">
@@ -64,16 +79,22 @@ export function Editor({
             Delete this file in a new commit
           </label>
         )}
-        <label className="block text-sm">
-          UTF-8 source (up to 32 KiB)
-          <textarea
-            name="content"
-            className={field + " mt-1 min-h-80 font-mono text-xs"}
-            defaultValue={edit ? d.file?.content : ""}
-            spellCheck={false}
-            disabled={remove}
-          />
-        </label>
+        {folder ? (
+          <p className="text-xs text-muted-foreground">
+            Git tracks files rather than empty folders. A `.gitkeep` marker will
+            be committed inside this folder.
+          </p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <label className="block">Source file · up to 1 MiB</label>
+            <CodeEditor
+              path={edit && d.file ? d.file.path : path}
+              value={content}
+              onChange={setContent}
+              readOnly={remove}
+            />
+          </div>
+        )}
         <Field name="message" label="Commit message" max={200} required />
         <p className="text-xs text-muted-foreground">
           Committing publishes this content to everyone who can read the

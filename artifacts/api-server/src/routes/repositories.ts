@@ -11,7 +11,9 @@ import {
   getRepositories,
   runRepositoryAction,
   tokenUser,
+  tokenCredential,
   lockedRepository,
+  pushRepository,
   validateRepositoryId,
 } from "../services/repositories";
 import { git } from "../services/repository-git";
@@ -98,9 +100,37 @@ const gitRequest = async (
     ]);
   res.send(output);
 };
-router.get("/git/:id/info/refs", async (req, res) =>
-  gitRequest(req, res, true),
-);
+router.get("/git/:id/info/refs", async (req, res) => {
+  if (req.query.service !== "git-receive-pack")
+    return gitRequest(req, res, true);
+  const id = await validateRepositoryId(String(req.params.id));
+  const credential = await tokenCredential(req.get("authorization"), id);
+  if (!credential) throw repoError("A write token is required.", 401);
+  if (credential.scope !== "write")
+    throw repoError("This repository token is read-only.", 403);
+  await authLimit(req, "git-write", credential.userId, 30, 60);
+  const output = await lockedRepository(
+    id,
+    credential.userId,
+    async (repo, path) => {
+      if (!repo.canWrite)
+        throw repoError("Repository write access was revoked.", 403);
+      return git(path, [
+        "receive-pack",
+        "--stateless-rpc",
+        "--advertise-refs",
+        path,
+      ]);
+    },
+  );
+  const service = "# service=git-receive-pack\n";
+  const prefix = Buffer.from(
+    (service.length + 4).toString(16).padStart(4, "0") + service,
+  );
+  res
+    .type("application/x-git-receive-pack-advertisement")
+    .send(Buffer.concat([prefix, Buffer.from("0000"), output]));
+});
 router.post(
   "/git/:id/git-upload-pack",
   express.raw({
@@ -109,5 +139,28 @@ router.post(
     inflate: false,
   }),
   async (req, res) => gitRequest(req, res, false),
+);
+router.post(
+  "/git/:id/git-receive-pack",
+  express.raw({
+    type: "application/x-git-receive-pack-request",
+    limit: "64mb",
+    inflate: false,
+  }),
+  async (req, res) => {
+    const id = await validateRepositoryId(String(req.params.id));
+    const credential = await tokenCredential(req.get("authorization"), id);
+    if (!credential) throw repoError("A write token is required.", 401);
+    if (credential.scope !== "write")
+      throw repoError("This repository token is read-only.", 403);
+    if (
+      !req.is("application/x-git-receive-pack-request") ||
+      !Buffer.isBuffer(req.body)
+    )
+      throw repoError("Expected a Git receive-pack request.", 415);
+    await authLimit(req, "git-write", credential.userId, 30, 60);
+    const output = await pushRepository(req, id, credential.userId, req.body);
+    res.type("application/x-git-receive-pack-result").send(output);
+  },
 );
 export default router;

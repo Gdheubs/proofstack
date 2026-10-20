@@ -13,6 +13,7 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
   const [clone, setClone] = useState("");
+  const [scope, setScope] = useState<"read" | "write">("read");
   const id = d.repositories[0].id;
   return (
     <section className={card}>
@@ -48,6 +49,7 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
                 action: "token-create",
                 id,
                 name: val(f, "name"),
+                scope,
               });
               if (result?.token) {
                 setToken(result.token);
@@ -55,7 +57,7 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
               }
             }}
           >
-            <ActionForm action={a} label="Create 30-day read token">
+            <ActionForm action={a} label={`Create 30-day ${scope} token`}>
               <Field
                 label="Token label"
                 name="name"
@@ -63,8 +65,24 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
                 max={60}
                 required
               />
+              <label className="block space-y-1 text-sm">
+                <span>Permission</span>
+                <select
+                  className={field}
+                  value={scope}
+                  onChange={(event) =>
+                    setScope(event.target.value as typeof scope)
+                  }
+                >
+                  <option value="read">Clone and fetch only</option>
+                  {d.repositories[0].canWrite && (
+                    <option value="write">Push feature branches</option>
+                  )}
+                </select>
+              </label>
               <p className="text-xs text-muted-foreground">
-                Requires recent MFA. A token loses access if your account or
+                Requires recent MFA. Write tokens cannot update the protected
+                default branch. Every token loses access if your account or
                 project access is revoked.
               </p>
             </ActionForm>
@@ -118,6 +136,7 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
                 <div>
                   {t.name}
                   <p className="text-xs text-muted-foreground">
+                    {t.scope} access ·{" "}
                     {t.revoked
                       ? "Revoked"
                       : `Expires ${new Date(t.expiresAt).toLocaleDateString()}`}

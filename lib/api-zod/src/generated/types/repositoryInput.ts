@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RepositoryInputAction } from './repositoryInputAction';
+import type { RepositoryInputScope } from './repositoryInputScope';
 
 export interface RepositoryInput {
   action: RepositoryInputAction;
@@ -19,5 +20,6 @@ export interface RepositoryInput {
   message?: string;
   name?: string;
   tokenId?: string;
+  scope?: RepositoryInputScope;
   remove?: boolean;
 }

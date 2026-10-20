@@ -258,6 +258,7 @@
         "required": [
           "id",
           "name",
+          "scope",
           "createdAt",
           "expiresAt",
           "revoked"
@@ -268,6 +269,10 @@
           },
           "name": {
             "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["read", "write"]
           },
           "createdAt": {
             "type": "string"
@@ -428,6 +433,10 @@
           },
           "tokenId": {
             "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["read", "write"]
           },
           "remove": {
             "type": "boolean"

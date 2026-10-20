@@ -107,7 +107,7 @@ app.post(
 );
 app.use(
   "/api/repositories/action",
-  express.json({ limit: "128kb", strict: true, inflate: false }),
+  express.json({ limit: "4mb", strict: true, inflate: false }),
 );
 app.use(express.json({ limit: "32kb", strict: true, inflate: false }));
 

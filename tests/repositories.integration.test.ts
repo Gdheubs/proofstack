@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import app from "../artifacts/api-server/src/app";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, it, expect, vi } from "vitest";
@@ -171,7 +171,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         const pushAdvertisement = await fetch(
           `http://127.0.0.1:${address.port}/api/git/${id}/info/refs?service=git-receive-pack`,
         );
-        expect(pushAdvertisement.status).toBe(403);
+        expect(pushAdvertisement.status).toBe(401);
         expect(view.commits).toHaveLength(2);
         // Simulate a filesystem ref lag after a successful DB commit.
         const path = await repoPath(id);
@@ -186,6 +186,14 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
           await act(owner, { action: "token-create", id, name: "TEST clone" })
         ).token!;
         expect(await tokenUser("Bearer " + token, id)).toBe(owner);
+        const writeToken = (
+          await act(owner, {
+            action: "token-create",
+            id,
+            name: "TEST push",
+            scope: "write",
+          })
+        ).token!;
         const rows = await pool.query(
           "SELECT token_hash FROM repository_tokens WHERE repository_id=$1",
           [id],
@@ -206,6 +214,89 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         expect(
           await readFile(join(folder, "private-clone", "README.md"), "utf8"),
         ).toContain("Build something");
+        const writeClone = join(folder, "write-clone");
+        await clone(id, "write-clone", writeToken);
+        await run("git", [
+          "-C",
+          writeClone,
+          "config",
+          "user.name",
+          "Test Writer",
+        ]);
+        await run("git", [
+          "-C",
+          writeClone,
+          "config",
+          "user.email",
+          "writer@example.test",
+        ]);
+        await run("git", [
+          "-C",
+          writeClone,
+          "checkout",
+          "-b",
+          "feature/native-push",
+        ]);
+        await mkdir(join(writeClone, "src"), { recursive: true });
+        await writeFile(
+          join(writeClone, "src", "pushed.ts"),
+          "export const pushed = true;\n",
+          "utf8",
+        );
+        await run("git", ["-C", writeClone, "add", "."]);
+        await run("git", [
+          "-C",
+          writeClone,
+          "commit",
+          "-m",
+          "Add pushed source",
+        ]);
+        const authorization =
+          "Authorization: Basic " +
+          Buffer.from("git:" + writeToken).toString("base64");
+        await run(
+          "git",
+          [
+            "-c",
+            "http.extraHeader=" + authorization,
+            "-C",
+            writeClone,
+            "push",
+            "origin",
+            "HEAD:refs/heads/feature/native-push",
+          ],
+          { timeout: 15000 },
+        );
+        expect(
+          (await getRepositories({ id, branch: "feature/native-push" }, owner))
+            .file,
+        ).toBeNull();
+        await expect(
+          run("git", [
+            "-c",
+            "http.extraHeader=" + authorization,
+            "-C",
+            writeClone,
+            "push",
+            "origin",
+            "HEAD:refs/heads/main",
+          ]),
+        ).rejects.toBeDefined();
+        const readClone = join(folder, "read-clone");
+        await clone(id, "read-clone", token);
+        await expect(
+          run("git", [
+            "-c",
+            "http.extraHeader=" +
+              "Authorization: Basic " +
+              Buffer.from("git:" + token).toString("base64"),
+            "-C",
+            readClone,
+            "push",
+            "origin",
+            "HEAD:refs/heads/feature/read-only-push",
+          ]),
+        ).rejects.toBeDefined();
         // Existing, unexpired credentials must follow the current account state.
         const basic = "Basic " + Buffer.from("git:" + token).toString("base64");
         const credentialState = async () =>
@@ -275,7 +366,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         await act(owner, {
           action: "token-revoke",
           id,
-          tokenId: owned.tokens[0].id,
+          tokenId: owned.tokens.find((t) => t.scope === "read")!.id,
         });
         await expect(tokenUser("Bearer " + token, id)).rejects.toMatchObject({
           status: 401,
@@ -297,7 +388,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
               [[owner, contributor]],
             )
           ).rows[0].n,
-        ).toBe(5);
+        ).toBe(7);
       } finally {
         server.closeAllConnections();
         await new Promise<void>((resolve, reject) =>

@@ -18,6 +18,7 @@ import {
   repoInput,
   pathSchema,
   branchSchema,
+  receivePackCommands,
 } from "../artifacts/api-server/src/services/repository-input";
 let folder = "";
 afterEach(async () => {
@@ -129,9 +130,60 @@ describe("Native Git repository operations", () => {
         branch: "main",
         expectedHead: "a".repeat(40),
         path: "large.txt",
-        content: "x".repeat(32769),
+        content: "x".repeat(1024 * 1024 + 1),
         message: "Too large",
       }),
+    ).toThrow();
+  });
+  it("defaults repository credentials to read scope and accepts explicit write scope", () => {
+    const id = randomUUID();
+    expect(
+      repoInput({ action: "token-create", id, name: "Laptop" }),
+    ).toMatchObject({
+      action: "token-create",
+      scope: "read",
+    });
+    expect(
+      repoInput({ action: "token-create", id, name: "Laptop", scope: "write" }),
+    ).toMatchObject({ scope: "write" });
+    expect(() =>
+      repoInput({ action: "token-create", id, name: "Laptop", scope: "admin" }),
+    ).toThrow();
+  });
+  it("accepts only complete single feature-branch receive-pack updates", () => {
+    const pkt = (line: string) =>
+      Buffer.from((line.length + 4).toString(16).padStart(4, "0") + line);
+    const zero = "0".repeat(40);
+    const head = "a".repeat(40);
+    expect(
+      receivePackCommands(
+        Buffer.concat([
+          pkt(`${zero} ${head} refs/heads/feature/editor\0report-status\n`),
+          Buffer.from("0000"),
+        ]),
+      ),
+    ).toEqual([{ oldHead: zero, newHead: head, branch: "feature/editor" }]);
+    for (const ref of ["refs/tags/v1"]) {
+      expect(() =>
+        receivePackCommands(
+          Buffer.concat([pkt(`${zero} ${head} ${ref}\n`), Buffer.from("0000")]),
+        ),
+      ).toThrow();
+    }
+    expect(() =>
+      receivePackCommands(
+        Buffer.concat([
+          pkt(`${head} ${zero} refs/heads/feature/editor\n`),
+          Buffer.from("0000"),
+        ]),
+      ),
+    ).toThrow();
+    expect(() =>
+      receivePackCommands(
+        Buffer.from(
+          `${(4 + zero.length + 1 + head.length + 1 + "refs/heads/feature/x".length).toString(16)}${zero} ${head} refs/heads/feature/x`,
+        ),
+      ),
     ).toThrow();
   });
   it("fails closed when durable storage is unconfigured", async () => {

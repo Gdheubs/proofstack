@@ -656,9 +656,18 @@ export interface RepositoryCommit {
   message: string;
 }
 
+export type RepositoryTokenScope = typeof RepositoryTokenScope[keyof typeof RepositoryTokenScope];
+
+
+export const RepositoryTokenScope = {
+  read: 'read',
+  write: 'write',
+} as const;
+
 export interface RepositoryToken {
   id: string;
   name: string;
+  scope: RepositoryTokenScope;
   createdAt: string;
   expiresAt: string;
   revoked: boolean;
@@ -697,6 +706,14 @@ export const RepositoryInputAction = {
   'token-revoke': 'token-revoke',
 } as const;
 
+export type RepositoryInputScope = typeof RepositoryInputScope[keyof typeof RepositoryInputScope];
+
+
+export const RepositoryInputScope = {
+  read: 'read',
+  write: 'write',
+} as const;
+
 export interface RepositoryInput {
   action: RepositoryInputAction;
   id?: string;
@@ -709,6 +726,7 @@ export interface RepositoryInput {
   message?: string;
   name?: string;
   tokenId?: string;
+  scope?: RepositoryInputScope;
   remove?: boolean;
 }
 
