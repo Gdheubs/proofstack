@@ -29,7 +29,7 @@ tests, API build, and Next build all pass from the exact release commit.
 
 - [x] Replace the Replit/Google sidecar object-storage adapter with a Cloudflare R2 (S3 API) adapter; uploads pass through the API (source, 2026-10-21; live R2 acceptance pending).
 - [ ] Create a private R2 bucket and a bucket-scoped Object Read & Write API token.
-- [ ] Enforce MIME, byte limit, decode/canonicalization, expiry, and durable promotion/abandonment state before publishing an image. (MIME, byte limit, declared size, signature and one-hour expiry are enforced before the write; decode/canonicalization is task 4; abandoned reservations remain.)
+- [ ] Enforce MIME, byte limit, decode/canonicalization, expiry, and durable promotion/abandonment state before publishing an image. (MIME, byte limit, declared size, signature, one-hour expiry and full decode/re-encode with dimension, pixel, frame and time limits are enforced before the write; abandoned reservations remain.)
 - [ ] Run a separately supervised cleanup/reconciliation worker or deliberately keep uploads disabled.
 - [ ] Prove anonymous private-object denial, upload limits, cleanup retry, and crash recovery against a disposable R2 bucket.
 

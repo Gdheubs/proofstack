@@ -1,10 +1,20 @@
 import type { Request } from "express";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from "vitest";
 
 const tx = vi.hoisted(() => ({
   query: vi.fn(),
   audit: vi.fn(),
 }));
+// The unlocked pre-read and the locked transaction share one query log.
+vi.mock("@workspace/db", () => ({ pool: { query: tx.query } }));
 vi.mock(
   "../artifacts/api-server/src/services/auth-sessions",
   async (original) => ({
@@ -22,6 +32,8 @@ import {
   storeAssetContent,
 } from "../artifacts/api-server/src/services/community-assets";
 import { r2 } from "../artifacts/api-server/src/lib/objectStorage";
+import { images } from "../artifacts/api-server/src/services/image-canonical";
+import { ApiError } from "../artifacts/api-server/src/lib/errors";
 import type { CommunityDb } from "../artifacts/api-server/src/services/community-policy";
 import type { AuthSession } from "../artifacts/api-server/src/services/auth-sessions";
 
@@ -30,6 +42,8 @@ const id = "cc1575d2-514f-42fb-97b4-f6b6b7503a76";
 const objectId = "cc1575d2-514f-42fb-97b4-f6b6b7503a77";
 const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const req = { id: "request" } as unknown as Request;
+const canonicalBytes = Buffer.from("canonical-re-encoded-bytes");
+let canonical: MockInstance<typeof images.canonical>;
 
 beforeEach(() => {
   vi.stubEnv("PRIVATE_OBJECT_DIR", "/test-bucket/private");
@@ -41,6 +55,7 @@ beforeEach(() => {
   vi.stubEnv("R2_SECRET_ACCESS_KEY", "disposable-test-secret");
   tx.query.mockReset();
   tx.audit.mockReset();
+  canonical = vi.spyOn(images, "canonical").mockResolvedValue(canonicalBytes);
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -58,6 +73,8 @@ function pending(patch: Record<string, unknown> = {}) {
     ...patch,
   };
   tx.query.mockResolvedValue({ rows: [] });
+  // Once for the unlocked pre-read, once under the row lock.
+  tx.query.mockResolvedValueOnce({ rows: [row] });
   tx.query.mockResolvedValueOnce({ rows: [row] });
   return row;
 }
@@ -87,20 +104,27 @@ describe("API-side image ingest", () => {
     expect(client).not.toHaveBeenCalled();
   });
 
-  it("stores validated bytes at the reserved key, then marks the image ready and audits", async () => {
+  it("stores only re-encoded bytes at the reserved key, then marks the image ready and audits", async () => {
     pending();
     const put = vi.spyOn(storage, "put").mockResolvedValue();
     await expect(
       storeAssetContent(req, uid, id, "image/png; charset=binary", png),
     ).resolves.toEqual({ message: "Image upload completed", id });
+    expect(canonical).toHaveBeenCalledWith(png, "image/png");
     expect(put).toHaveBeenCalledWith(
       { bucket: "test-bucket", key: `private/ready/${objectId}` },
-      png,
+      canonicalBytes,
       "image/png",
     );
     expect(updates()).toEqual([
-      ["UPDATE community_assets SET status='ready' WHERE id=$1", [id]],
+      [
+        "UPDATE community_assets SET status='ready',size=$2 WHERE id=$1",
+        [id, canonicalBytes.length],
+      ],
     ]);
+    expect(
+      tx.query.mock.calls.filter(([sql]) => /FOR UPDATE/.test(sql)),
+    ).toHaveLength(1);
     expect(tx.audit).toHaveBeenCalledWith(
       req,
       "community.asset-upload",
@@ -122,15 +146,19 @@ describe("API-side image ingest", () => {
     ["a different content type", {}, "image/jpeg", png],
     ["a missing content type", {}, undefined, png],
     ["an oversized declaration", { size: 8388609 }, "image/png", png],
-  ])("rejects %s before writing", async (_label, patch, type, body) => {
-    pending(patch);
-    const put = vi.spyOn(storage, "put").mockResolvedValue();
-    await expect(
-      storeAssetContent(req, uid, id, type, body),
-    ).rejects.toMatchObject({ status: 400, code: "INVALID_IMAGE" });
-    expect(put).not.toHaveBeenCalled();
-    expect(updates()).toEqual([]);
-  });
+  ])(
+    "rejects %s before decoding or writing",
+    async (_label, patch, type, body) => {
+      pending(patch);
+      const put = vi.spyOn(storage, "put").mockResolvedValue();
+      await expect(
+        storeAssetContent(req, uid, id, type, body),
+      ).rejects.toMatchObject({ status: 400, code: "INVALID_IMAGE" });
+      expect(canonical).not.toHaveBeenCalled();
+      expect(put).not.toHaveBeenCalled();
+      expect(updates()).toEqual([]);
+    },
+  );
 
   it.each([
     ["another user's asset", { user_id: id }, 403, "PERMISSION_DENIED"],
@@ -142,15 +170,57 @@ describe("API-side image ingest", () => {
       409,
       "UPLOAD_EXPIRED",
     ],
-  ])("refuses %s without storage I/O", async (_label, patch, status, code) => {
-    pending(patch);
+  ])(
+    "refuses %s without decoding or storage I/O",
+    async (_label, patch, status, code) => {
+      pending(patch);
+      const put = vi.spyOn(storage, "put").mockResolvedValue();
+      const rejection = storeAssetContent(req, uid, id, "image/png", png);
+      await expect(rejection).rejects.toMatchObject({ status });
+      if (code !== "PERMISSION_DENIED")
+        await expect(rejection).rejects.toMatchObject({ code });
+      expect(canonical).not.toHaveBeenCalled();
+      expect(put).not.toHaveBeenCalled();
+      expect(updates()).toEqual([]);
+    },
+  );
+
+  it("never writes when decoding rejects the image", async () => {
+    pending();
+    canonical.mockRejectedValue(
+      new ApiError(400, "INVALID_IMAGE", "The image could not be decoded"),
+    );
     const put = vi.spyOn(storage, "put").mockResolvedValue();
-    const rejection = storeAssetContent(req, uid, id, "image/png", png);
-    await expect(rejection).rejects.toMatchObject({ status });
-    if (code !== "PERMISSION_DENIED")
-      await expect(rejection).rejects.toMatchObject({ code });
+    await expect(
+      storeAssetContent(req, uid, id, "image/png", png),
+    ).rejects.toMatchObject({ status: 400, code: "INVALID_IMAGE" });
     expect(put).not.toHaveBeenCalled();
     expect(updates()).toEqual([]);
+  });
+
+  it("rechecks state under the lock when it changed during decoding", async () => {
+    const row = pending();
+    tx.query.mockReset();
+    tx.query.mockResolvedValue({ rows: [] });
+    tx.query.mockResolvedValueOnce({ rows: [row] });
+    tx.query.mockResolvedValueOnce({ rows: [{ ...row, status: "deleting" }] });
+    const put = vi.spyOn(storage, "put").mockResolvedValue();
+    await expect(
+      storeAssetContent(req, uid, id, "image/png", png),
+    ).rejects.toMatchObject({ status: 409, code: "ASSET_DELETING" });
+    expect(canonical).toHaveBeenCalledOnce();
+    expect(put).not.toHaveBeenCalled();
+    expect(updates()).toEqual([]);
+  });
+
+  it("refuses a re-encoded image larger than 8 MiB", async () => {
+    pending();
+    canonical.mockResolvedValue(Buffer.alloc(8388609));
+    const put = vi.spyOn(storage, "put").mockResolvedValue();
+    await expect(
+      storeAssetContent(req, uid, id, "image/png", png),
+    ).rejects.toMatchObject({ status: 400, code: "INVALID_IMAGE" });
+    expect(put).not.toHaveBeenCalled();
   });
 
   it("does not mark the image ready when the storage write fails", async () => {

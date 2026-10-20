@@ -14,6 +14,7 @@ import {
 } from "./community-policy";
 import type { CommunityAction } from "./community-input";
 import { transaction, audit, type AuthSession } from "./auth-sessions";
+import { images } from "./image-canonical";
 import { z } from "zod";
 export const storage = new ObjectStorageService();
 export const MAX_IMAGE_BYTES = 8388608;
@@ -89,9 +90,37 @@ export async function requestUpload(body: unknown, uid: string) {
     };
   });
 }
+type AssetRow = {
+  id: string;
+  user_id: string;
+  status: string;
+  created_at: string | Date;
+  size: number;
+  content_type: (typeof IMAGE_TYPES)[number];
+  object_path: string;
+};
+function assertUploadable(row: AssetRow | undefined, uid: string) {
+  if (!row) throw missing();
+  if (row.user_id !== uid) throw denied();
+  if (row.status === "ready")
+    throw new ApiError(
+      409,
+      "UPLOAD_COMPLETE",
+      "This image upload is already complete",
+    );
+  if (row.status !== "pending")
+    throw new ApiError(
+      409,
+      "ASSET_DELETING",
+      "Image deletion is pending; request a new upload",
+    );
+  if (Date.now() - new Date(row.created_at).getTime() > 3600000)
+    throw new ApiError(409, "UPLOAD_EXPIRED", "Request a new upload");
+  return row;
+}
 // Bytes pass through the API rather than a presigned URL: size, type and
-// signature are enforced before anything reaches storage, and the browser only
-// talks to the same origin.
+// signature are enforced, then the image is fully decoded and re-encoded, so
+// only canonical pixels without metadata ever reach storage.
 export async function storeAssetContent(
   req: Request,
   uid: string,
@@ -100,48 +129,54 @@ export async function storeAssetContent(
   body: Buffer,
 ) {
   privateAssetDirectory();
+  const row = assertUploadable(
+    (await pool.query("SELECT * FROM community_assets WHERE id=$1", [id]))
+      .rows[0],
+    uid,
+  );
+  const type = contentType?.split(";")[0].trim().toLowerCase();
+  if (
+    body.length > MAX_IMAGE_BYTES ||
+    body.length !== row.size ||
+    type !== row.content_type ||
+    !imageSignature(body, row.content_type)
+  )
+    throw new ApiError(
+      400,
+      "INVALID_IMAGE",
+      "Uploaded image content does not match its declared type or size",
+    );
+  // Decode without holding a row lock; the state is rechecked under it below.
+  const canonical = await images.canonical(body, row.content_type);
+  if (canonical.length > MAX_IMAGE_BYTES)
+    throw new ApiError(
+      400,
+      "INVALID_IMAGE",
+      "The processed image exceeds 8 MiB; upload a smaller image",
+    );
   return transaction(async (db) => {
-    const row = (
-      await db.query("SELECT * FROM community_assets WHERE id=$1 FOR UPDATE", [
-        id,
-      ])
-    ).rows[0];
-    if (!row) throw missing();
-    if (row.user_id !== uid) throw denied();
-    if (row.status === "ready")
-      throw new ApiError(
-        409,
-        "UPLOAD_COMPLETE",
-        "This image upload is already complete",
-      );
-    if (row.status !== "pending")
-      throw new ApiError(
-        409,
-        "ASSET_DELETING",
-        "Image deletion is pending; request a new upload",
-      );
-    if (Date.now() - new Date(row.created_at).getTime() > 3600000)
-      throw new ApiError(409, "UPLOAD_EXPIRED", "Request a new upload");
-    const type = contentType?.split(";")[0].trim().toLowerCase();
-    if (
-      body.length > MAX_IMAGE_BYTES ||
-      body.length !== row.size ||
-      type !== row.content_type ||
-      !imageSignature(body, row.content_type)
-    )
-      throw new ApiError(
-        400,
-        "INVALID_IMAGE",
-        "Uploaded image content does not match its declared type or size",
-      );
+    const locked = assertUploadable(
+      (
+        await db.query(
+          "SELECT * FROM community_assets WHERE id=$1 FOR UPDATE",
+          [id],
+        )
+      ).rows[0],
+      uid,
+    );
     // The row lock is held across this single write: a concurrent delete or
     // second upload waits and then sees the final status.
-    await storage.put(storage.locate(row.object_path), body, row.content_type);
-    await db.query("UPDATE community_assets SET status='ready' WHERE id=$1", [
-      row.id,
-    ]);
-    await audit(req, "community.asset-upload", uid, row.id, {}, db);
-    return { message: "Image upload completed", id: row.id as string };
+    await storage.put(
+      storage.locate(locked.object_path),
+      canonical,
+      locked.content_type,
+    );
+    await db.query(
+      "UPDATE community_assets SET status='ready',size=$2 WHERE id=$1",
+      [locked.id, canonical.length],
+    );
+    await audit(req, "community.asset-upload", uid, id, {}, db);
+    return { message: "Image upload completed", id };
   });
 }
 export async function assertOwnedAssets(
