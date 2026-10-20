@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { RequestHandler } from "express";
+import { rateLimitAddress } from "../lib/client-ip";
 import { env } from "../lib/env";
 import { ApiError } from "../lib/errors";
 import { consumeRateLimit } from "../services/rate-limit";
@@ -15,7 +16,7 @@ export const apiRateLimit: RequestHandler = async (
     return;
   }
   const key = `api:${createHash("sha256")
-    .update(req.ip ?? req.socket.remoteAddress ?? "unknown")
+    .update(rateLimitAddress(req))
     .digest("hex")}`;
   try {
     const result = await consumeRateLimit(

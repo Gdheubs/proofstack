@@ -23,6 +23,7 @@ Set these in Render's secret/configuration UI:
 - `AUTH_APP_ORIGIN`: the exact HTTPS Vercel URL, without a trailing slash.
 - `CORS_ALLOWED_ORIGINS`: that same exact Vercel URL.
 - `TRUST_PROXY_CIDRS`: only Render's currently documented proxy ranges after verifying them for the deployment region.
+- `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket.
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and a 32+ character random `SESSION_SECRET`.
 
 Leave `REPOSITORY_ROOT`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`,
@@ -35,6 +36,13 @@ Set `API_INTERNAL_ORIGIN` to the exact HTTPS Render service URL before each
 build. Do not expose API secrets as `NEXT_PUBLIC_*` variables. Use the Render
 API URL only for the server-side Next.js rewrite; browsers continue to call the
 same-origin `/api/*` path.
+
+Set the server-only `PROXY_SHARED_SECRET` (same value as the API) and
+`TRUSTED_CLIENT_IP_HEADER` to the header the hosting edge itself sets and
+overwrites: `cf-connecting-ip` on Cloudflare, `x-real-ip` on Vercel. Never pick a
+header the actual host passes through from the browser. The web proxy strips any
+client-sent `x-proofstack-*` trust headers and forwards the edge-provided address
+with the secret; the API ignores the address unless the secret matches.
 
 ### Supabase
 

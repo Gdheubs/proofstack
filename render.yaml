@@ -28,3 +28,5 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      - key: PROXY_SHARED_SECRET
+        sync: false

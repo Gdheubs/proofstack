@@ -44,6 +44,15 @@ const firebase = {
 };
 
 describe("production preflight provider selection", () => {
+  it("requires the web proxy client-address secret", () => {
+    const name = "Web proxy client-address secret configured";
+    expect(
+      preflight({ ...firebase, PROXY_SHARED_SECRET: "" }).results,
+    ).toContainEqual({ check: name, ok: false });
+    expect(
+      preflight({ ...firebase, PROXY_SHARED_SECRET: "p".repeat(32) }).results,
+    ).toContainEqual({ check: name, ok: true });
+  });
   it("rejects a configured storage namespace that cannot promote uploads", () => {
     expect(
       preflight({ ...firebase, PRIVATE_OBJECT_DIR: "/bucket" }).results,

@@ -64,6 +64,11 @@ check(
   "Session encryption secret configured",
   (process.env.SESSION_SECRET?.length ?? 0) >= 32,
 );
+// Without it every browser behind the web tier shares one rate-limit bucket.
+check(
+  "Web proxy client-address secret configured",
+  (process.env.PROXY_SHARED_SECRET?.length ?? 0) >= 32,
+);
 check(
   "Maintenance disabled for traffic",
   process.env.MAINTENANCE_MODE !== "true",

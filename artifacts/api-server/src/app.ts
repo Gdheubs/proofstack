@@ -7,6 +7,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { env } from "./lib/env";
+import { trustedProxyClient } from "./lib/client-ip";
 import { ApiError } from "./lib/errors";
 import { errorHandler } from "./middlewares/error-handler";
 import { apiRateLimit } from "./middlewares/rate-limit";
@@ -21,6 +22,7 @@ app.set(
   "trust proxy",
   env.TRUST_PROXY_CIDRS.length ? env.TRUST_PROXY_CIDRS : false,
 );
+app.use(trustedProxyClient(env.PROXY_SHARED_SECRET));
 
 app.use(
   pinoHttp({

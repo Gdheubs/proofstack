@@ -7,6 +7,7 @@ import {
 } from "../services/auth-sessions";
 import { authLimit } from "../services/auth-limits";
 import { ApiError } from "../lib/errors";
+import { rateLimitAddress } from "../lib/client-ip";
 import {
   getRepositories,
   runRepositoryAction,
@@ -63,7 +64,7 @@ const gitRequest = async (
     throw repoError("Expected a Git upload-pack request.", 415);
   res.set("WWW-Authenticate", 'Basic realm="ProofStack read-only Git"');
   const uid = await tokenUser(req.get("authorization"), id);
-  await authLimit(req, "git-read", uid ?? req.ip ?? "anonymous", 60, 60);
+  await authLimit(req, "git-read", uid ?? rateLimitAddress(req), 60, 60);
   let output: Buffer;
   try {
     output = await lockedRepository(id, uid, async (_repo, path) =>

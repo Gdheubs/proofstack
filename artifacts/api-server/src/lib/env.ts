@@ -61,6 +61,12 @@ export const environmentSchema = z.object({
     .max(3600)
     .default(60),
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10000).default(120),
+  // Shared with the web tier; blank disables forwarded client addresses.
+  PROXY_SHARED_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined)
+    .pipe(z.string().min(32).optional()),
 });
 
 export function parseEnvironment(input: Record<string, unknown>) {

@@ -1,6 +1,7 @@
 import { pool } from "@workspace/db";
 import type { Request } from "express";
 import { digest } from "../lib/auth-crypto";
+import { rateLimitAddress } from "../lib/client-ip";
 import { ApiError } from "../lib/errors";
 import { consumeRateLimit } from "./rate-limit";
 import { writeAuditEvent } from "./audit";
@@ -16,7 +17,7 @@ export async function authLimit(
   // Named accounts retain both their cross-IP budget and the broader IP cap.
   const limits: [string, number][] = [
     [
-      `auth:ip:${purpose}:${digest(req.ip || "unknown", "rate-ip")}`,
+      `auth:ip:${purpose}:${digest(rateLimitAddress(req), "rate-ip")}`,
       identifier === undefined ? max : max * 3,
     ],
   ];
