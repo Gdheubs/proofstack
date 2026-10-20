@@ -11,6 +11,7 @@
     "bootstrap:admin": "node ./scripts/bootstrap-admin.mjs",
     "worker:intelligence": "node --enable-source-maps ./dist/intelligence-worker.mjs",
     "worker:asset-cleanup": "node --enable-source-maps ./dist/asset-cleanup-worker.mjs",
+    "worker:asset-cleanup:once": "node --enable-source-maps ./dist/asset-cleanup-worker.mjs --once",
     "ops:preflight": "node ./scripts/preflight.mjs",
     "ops:benchmark": "node ./scripts/benchmark.mjs",
     "ops:smoke-social": "node ./scripts/smoke-social.mjs"

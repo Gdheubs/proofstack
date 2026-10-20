@@ -97,4 +97,39 @@ describe("CI workflow supply-chain policy", () => {
       "run: pnpm audit --audit-level moderate",
     );
   });
+
+  it("confines deployment credentials to scheduled, environment-gated operations", () => {
+    const source = workflow("operations.yml");
+    const triggers = source.slice(
+      source.indexOf("\non:"),
+      source.indexOf("\npermissions:"),
+    );
+    expect(triggers).toContain("schedule:");
+    expect(triggers).toContain("workflow_dispatch:");
+    expect(triggers).not.toMatch(
+      /pull_request|push:|workflow_run|repository_dispatch/,
+    );
+    expect(source).toContain("permissions:\n  contents: read");
+    expect(source).not.toMatch(
+      /\b(?:write-all|contents:\s*write|id-token:\s*write|continue-on-error)|toJSON\(\s*secrets/,
+    );
+    const jobs = source
+      .slice(source.indexOf("\njobs:"))
+      .split(/\n {2}(?=[a-z-]+:\n)/)
+      .slice(1);
+    expect(jobs).toHaveLength(2);
+    for (const job of jobs) {
+      expect(job).toContain("environment: production");
+      expect(job).toMatch(/timeout-minutes: \d+/);
+      expect(job).toContain("persist-credentials: false");
+    }
+    // Secrets only ever appear as whole step environment values.
+    const uses = source.split("\n").filter((line) => line.includes("secrets."));
+    expect(uses.length).toBeGreaterThan(0);
+    for (const line of uses)
+      expect(line).toMatch(
+        /^ {10}[A-Z][A-Z0-9_]*: \$\{\{ secrets\.[A-Z][A-Z0-9_]* \}\}$/,
+      );
+    expect(source).not.toMatch(/echo[^\n]*\$\{\{/);
+  });
 });

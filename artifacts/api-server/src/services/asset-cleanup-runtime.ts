@@ -104,3 +104,36 @@ export async function superviseAssetCleanup(
   }
   await deadline(dependencies.close(), 10000);
 }
+
+// Run-once mode for schedulers without an always-on worker (GitHub Actions).
+// Drains due jobs until none remain or a job/time budget is spent, then stops.
+// The same per-job deadline applies: a timed-out job ends the run.
+export async function drainAssetCleanup(
+  dependencies: {
+    runOnce(): Promise<boolean>;
+    close(): Promise<void>;
+    warn(message: string): void;
+  },
+  signal: AbortSignal,
+  limits = { jobs: 500, milliseconds: 8 * 60 * 1000 },
+): Promise<{ processed: number }> {
+  const started = Date.now();
+  let processed = 0;
+  while (
+    !signal.aborted &&
+    processed < limits.jobs &&
+    Date.now() - started < limits.milliseconds
+  ) {
+    try {
+      if (!(await deadline(dependencies.runOnce(), 120000))) break;
+      processed++;
+    } catch (error) {
+      // As in the supervisor: after a deadline, exit without draining the pool.
+      if (error instanceof AssetCleanupDeadlineError) throw error;
+      dependencies.warn("Asset cleanup iteration failed");
+      break;
+    }
+  }
+  await deadline(dependencies.close(), 10000);
+  return { processed };
+}

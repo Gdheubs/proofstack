@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertAssetCleanupConfiguration,
+  drainAssetCleanup,
   superviseAssetCleanup,
 } from "../artifacts/api-server/src/services/asset-cleanup-runtime";
 
@@ -136,6 +137,72 @@ describe("asset cleanup supervised runtime", () => {
     );
     await vi.advanceTimersByTimeAsync(10000);
     await rejected;
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe("asset cleanup run-once mode", () => {
+  const deps = (results: (boolean | Error)[]) => {
+    const runOnce = vi.fn(async () => {
+      const next = results.shift() ?? false;
+      if (next instanceof Error) throw next;
+      return next;
+    });
+    return {
+      runOnce,
+      close: vi.fn().mockResolvedValue(undefined),
+      warn: vi.fn(),
+    };
+  };
+  it("drains due jobs, stops when none remain and closes the pool", async () => {
+    const d = deps([true, true, true, false]);
+    await expect(
+      drainAssetCleanup(d, new AbortController().signal),
+    ).resolves.toEqual({ processed: 3 });
+    expect(d.runOnce).toHaveBeenCalledTimes(4);
+    expect(d.close).toHaveBeenCalledOnce();
+  });
+  it("stops at the job budget", async () => {
+    const d = deps(Array(10).fill(true));
+    await expect(
+      drainAssetCleanup(d, new AbortController().signal, {
+        jobs: 4,
+        milliseconds: 60000,
+      }),
+    ).resolves.toEqual({ processed: 4 });
+    expect(d.runOnce).toHaveBeenCalledTimes(4);
+  });
+  it("stops on an iteration failure with a sanitized warning", async () => {
+    const d = deps([true, new Error("provider said secret things"), true]);
+    await expect(
+      drainAssetCleanup(d, new AbortController().signal),
+    ).resolves.toEqual({ processed: 1 });
+    expect(d.warn.mock.calls).toEqual([["Asset cleanup iteration failed"]]);
+    expect(d.close).toHaveBeenCalledOnce();
+  });
+  it("does nothing once aborted", async () => {
+    const d = deps([true]);
+    const controller = new AbortController();
+    controller.abort();
+    await expect(drainAssetCleanup(d, controller.signal)).resolves.toEqual({
+      processed: 0,
+    });
+    expect(d.runOnce).not.toHaveBeenCalled();
+  });
+  it("fails closed on a stuck job without awaiting the pool", async () => {
+    vi.useFakeTimers();
+    const runOnce = vi.fn(() => new Promise<boolean>(() => {}));
+    const close = vi.fn().mockResolvedValue(undefined);
+    const running = drainAssetCleanup(
+      { runOnce, close, warn: vi.fn() },
+      new AbortController().signal,
+    );
+    const rejected = expect(running).rejects.toThrow(
+      "ASSET_CLEANUP_DEADLINE_EXCEEDED",
+    );
+    await vi.advanceTimersByTimeAsync(120000);
+    await rejected;
+    expect(close).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
   });
 });

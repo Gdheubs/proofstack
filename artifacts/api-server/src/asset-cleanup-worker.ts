@@ -1,5 +1,6 @@
 import {
   assertAssetCleanupConfiguration,
+  drainAssetCleanup,
   superviseAssetCleanup,
 } from "./services/asset-cleanup-runtime";
 
@@ -17,18 +18,25 @@ async function main() {
       import("./services/asset-cleanup-storage"),
       import("./services/asset-cleanup-worker"),
     ]);
-  console.info("Asset cleanup worker started");
-  await superviseAssetCleanup(
-    {
-      runOnce: () => runAssetCleanupOnce(cleanupStorage),
-      close: () => pool.end(),
-      warn: (message) => console.warn(message),
-    },
-    stopping.signal,
-  );
+  const dependencies = {
+    runOnce: () => runAssetCleanupOnce(cleanupStorage),
+    close: () => pool.end(),
+    warn: (message: string) => console.warn(message),
+  };
+  // --once drains due jobs and exits, for schedulers without an always-on worker.
+  if (process.argv.includes("--once")) {
+    const { processed } = await drainAssetCleanup(
+      dependencies,
+      stopping.signal,
+    );
+    console.info(`Asset cleanup run finished: ${processed} job(s) processed`);
+  } else {
+    console.info("Asset cleanup worker started");
+    await superviseAssetCleanup(dependencies, stopping.signal);
+    console.info("Asset cleanup worker stopped");
+  }
   process.removeListener("SIGINT", stop);
   process.removeListener("SIGTERM", stop);
-  console.info("Asset cleanup worker stopped");
 }
 
 main().catch(() => {

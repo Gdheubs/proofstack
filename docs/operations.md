@@ -35,6 +35,36 @@ Back up PostgreSQL, the durable Git volume and object storage together with a do
 
 During the first drill, drain/stop writers and workers; obtain a provider database snapshot (or `pg_dump --format=custom` using secret-managed credentials), snapshot Git storage, and record object versions. Restore **into isolated staging**, using the same database major version and service UID. Use `pg_restore --no-owner --no-acl` where appropriate for the target privilege model. Restore Git paths/permissions and object versions; do not connect restored staging to production email/SMS/AI credentials. Verify schema, counts, private tenant boundaries, repository branches/commit objects/tags, release snapshots, upload references and queue states. Check an actual clone and file read. Measure elapsed restore time and document any lost writes. Test deletion/retention policies against backup obligations. No native backup or restore drill was possible in this local checkpoint.
 
+## Scheduled maintenance (GitHub Actions)
+
+The free-tier deployment has no always-on worker, so `.github/workflows/operations.yml` runs maintenance on a schedule. It runs only on its schedule or a manual **Run workflow** (choose `cleanup` or `backup`), never for pull requests or pushes. Both jobs use the protected GitHub environment `production`; create it under Settings → Environments, restrict it to the default branch, and add:
+
+| Kind     | Name                                                     | Used by | Value                                                                                       |
+| -------- | -------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
+| Variable | `PRIVATE_OBJECT_DIR`                                     | cleanup | Same `/<bucket>/<prefix>` as the API                                                        |
+| Variable | `R2_ENDPOINT`                                            | both    | `https://<account-id>.r2.cloudflarestorage.com`                                             |
+| Variable | `BACKUP_BUCKET`                                          | backup  | Name of the separate, private backup bucket                                                 |
+| Secret   | `DATABASE_URL`                                           | cleanup | Supabase **session pooler** connection string (GitHub runners have no IPv6)                 |
+| Secret   | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`               | cleanup | The API's image-bucket token                                                                |
+| Secret   | `BACKUP_DATABASE_URL`                                    | backup  | Session pooler string for a role that can read `public`, `auth` and `drizzle`               |
+| Secret   | `BACKUP_PASSPHRASE`                                      | backup  | 32+ random characters; store a copy outside GitHub — backups cannot be decrypted without it |
+| Secret   | `BACKUP_R2_ACCESS_KEY_ID`, `BACKUP_R2_SECRET_ACCESS_KEY` | backup  | A token scoped to the backup bucket only                                                    |
+
+**Image cleanup** runs every 6 hours (`17 */6 * * *`): it builds the API and runs `worker:asset-cleanup:once`, which drains due deletion jobs (at most 500 or 8 minutes per run) under the same leases, namespace allowlist and 120-second per-job deadline as the always-on worker, then exits. Deleted images keep their quota reserved until processed. Six-hourly runs keep the private repository within GitHub's free Actions minutes; run it hourly only with a paid plan or a public repository.
+
+**Database backup** runs nightly at 20:41 UTC (02:11 IST): `scripts/backup-database.sh` dumps `public`, `auth` and `drizzle` with `pg_dump` 17 (custom format), refuses an archive missing core tables, encrypts it with GPG AES-256 and uploads `database/proofstack-<UTC stamp>.dump.gpg`. Use a dedicated R2 bucket and token so the API's credentials cannot read or delete backups, and add an R2 lifecycle rule deleting `database/` objects after 30 days. Images in R2 are not copied; R2 itself is the durable store for them.
+
+Every CI run exercises the same scripts end to end: it backs up the disposable CI database, restores into an empty database, compares table, migration-ledger and user counts, and confirms a restore into a non-empty database is refused.
+
+### Restoring a backup
+
+1. Download the object from the backup bucket and fetch `BACKUP_PASSPHRASE` from its offline copy.
+2. Create an **empty, isolated** PostgreSQL 17 database (never the live one).
+3. Run `RESTORE_DATABASE_URL=<empty db> BACKUP_PASSPHRASE=... bash scripts/restore-database.sh proofstack-<stamp>.dump.gpg`. It refuses a database that already has tables and restores in one transaction.
+4. Inspect, then reconcile or cut over deliberately. Restoring Supabase's `auth` schema into a different Supabase project needs that project's own migration procedure; the script's target is an isolated database for drills, inspection and selective recovery.
+
+Record each manual restore drill (elapsed time, data loss window) in a checkpoint. The nightly schedule gives a recovery point of up to 24 hours.
+
 ## Required staging acceptance
 
 Use independent owner, admin, member, seeker, employer and outsider accounts. Verify sign-up, native MFA, recovery, renewal, revocation; public/private profile/project/org reads; role changes; uploads; job applications and employer-only conversations; repository web commits, clone, reviews, merge conflicts/protected main and releases; intelligence consent, quotas, cancellation, provider failure and worker restart; admin-only operations and stale-MFA denial. Confirm keyboard/mobile behavior, production cookies/CSP and secret-free logs in a real browser.

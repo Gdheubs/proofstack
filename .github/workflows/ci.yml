@@ -61,6 +61,39 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm test:all
+      - name: Install the PostgreSQL 17 client from the signed PGDG repository
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+      # Exercises the production backup and restore scripts end to end against
+      # the disposable CI database, with a throwaway passphrase.
+      - name: Backup and restore drill
+        run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          BACKUP_PASSPHRASE="$(openssl rand -base64 48)"
+          export BACKUP_PASSPHRASE
+          BACKUP_DATABASE_URL="$DATABASE_URL" \
+            BACKUP_OUTPUT_DIR="$RUNNER_TEMP/backup" \
+            bash scripts/backup-database.sh
+          psql "$DATABASE_URL" -qc "CREATE DATABASE proofstack_restore"
+          restore=postgresql://postgres@localhost:5432/proofstack_restore
+          RESTORE_DATABASE_URL="$restore" \
+            bash scripts/restore-database.sh "$RUNNER_TEMP"/backup/*.dump.gpg
+          summary="SELECT (SELECT count(*) FROM pg_tables WHERE schemaname IN ('public','drizzle')),
+            (SELECT count(*) FROM drizzle.__drizzle_migrations),
+            (SELECT count(*) FROM public.users)"
+          source_counts="$(psql "$DATABASE_URL" -Atqc "$summary")"
+          restored_counts="$(psql "$restore" -Atqc "$summary")"
+          echo "source=$source_counts restored=$restored_counts"
+          test "$source_counts" = "$restored_counts"
+          # A second restore into the now-populated database must be refused.
+          if RESTORE_DATABASE_URL="$restore" \
+            bash scripts/restore-database.sh "$RUNNER_TEMP"/backup/*.dump.gpg; then
+            echo "Restore into a non-empty database was not refused" >&2
+            exit 1
+          fi
       - run: pnpm --filter @workspace/api-server run build
       - run: pnpm --filter @workspace/proofstack run build
         env:
