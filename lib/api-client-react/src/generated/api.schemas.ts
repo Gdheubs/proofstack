@@ -73,6 +73,20 @@ export interface AuthFactor {
   name?: string;
 }
 
+export type SocialProvider = typeof SocialProvider[keyof typeof SocialProvider];
+
+
+export const SocialProvider = {
+  google: 'google',
+  github: 'github',
+  azure: 'azure',
+  linkedin_oidc: 'linkedin_oidc',
+  gitlab: 'gitlab',
+  discord: 'discord',
+  x: 'x',
+  facebook: 'facebook',
+} as const;
+
 export type AuthCapabilitiesEmailDelivery = typeof AuthCapabilitiesEmailDelivery[keyof typeof AuthCapabilitiesEmailDelivery];
 
 
@@ -87,6 +101,8 @@ export interface AuthCapabilities {
   phoneOtp: boolean;
   google: boolean;
   github: boolean;
+  /** Social sign-in providers enabled for this deployment, in display order. */
+  socialProviders: SocialProvider[];
   totp: boolean;
   phoneMfa: boolean;
   emailDelivery: AuthCapabilitiesEmailDelivery;
@@ -139,14 +155,6 @@ export const AuthActionInputKind = {
   recruiter: 'recruiter',
 } as const;
 
-export type AuthActionInputProvider = typeof AuthActionInputProvider[keyof typeof AuthActionInputProvider];
-
-
-export const AuthActionInputProvider = {
-  google: 'google',
-  github: 'github',
-} as const;
-
 export type AuthActionInputScope = typeof AuthActionInputScope[keyof typeof AuthActionInputScope];
 
 
@@ -194,7 +202,7 @@ export interface AuthActionInput {
   kind?: AuthActionInputKind;
   code?: string;
   handle?: string;
-  provider?: AuthActionInputProvider;
+  provider?: SocialProvider;
   scope?: AuthActionInputScope;
   sessionId?: string;
   factorId?: string;

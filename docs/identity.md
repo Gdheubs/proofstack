@@ -63,11 +63,34 @@ The command requires an existing active, provider-verified account with verified
 Configured development credentials: Supabase project URL/public key/server key and MSG91 auth key. Remaining provider settings are intentionally deferred.
 
 1. Set the MSG91 **OTP-section** template ID (`MSG91_OTP_TEMPLATE_ID`), not a DLT or Flow ID. Add `SUPABASE_SMS_HOOK_SECRET` through Secrets. In Supabase, enable phone authentication and configure the signed Send SMS HTTP hook at the app origin plus `/api/auth/hooks/send-sms`. Confirm current MSG91 custom-OTP support for this template and verify that the actual received SMS code succeeds at Supabase verification. Do not treat API acceptance as proof of correct delivery.
-2. Configure Google/GitHub in Supabase with each provider's correct callback URL. Supabase then redirects to the app's `/api/auth/callback`.
+2. Enable the social providers you want in Supabase (see [Social sign-in providers](#social-sign-in-providers)). Each provider redirects to Supabase, which then redirects to the app's `/api/auth/callback`.
 3. Set Supabase's exact app callback redirect allowlist and Site URL. Development can use the current HTTPS workspace origin. Production requires `AUTH_APP_ORIGIN` set to the actual published HTTPS origin; do not guess it.
 4. Public email needs a verified sending domain and SMTP. Until then, Supabase's built-in sender is team-address-only and currently limited to two sends/hour. Keep email confirmation enabled. `AUTH_EMAIL_SMTP_READY=true` is an operator readiness declaration only after actual delivery is verified.
    For numeric email OTP, include Supabase's `{{ .Token }}` in the relevant email templates and verify received-code login. Browser-bound links remain supported; do not replace native codes with app-generated values.
 5. Only set `AUTH_PHONE_MFA_READY=true` after provider entitlement and actual phone-factor enrollment/challenge/verification work.
 6. Make required server settings/secrets available in production and validate every live delivery and OAuth path before launch. Rotating `SESSION_SECRET` invalidates encrypted sessions/flows and recovery-code hashes; plan logout/re-enrollment accordingly.
 
-Disabled providers remain visibly pending. No development OTP bypass or fake delivery fallback is installed.
+Only social providers enabled in Supabase are shown; with none enabled, the sign-in page says social sign-in is not available yet. No development OTP bypass or fake delivery fallback is installed.
+
+## Social sign-in providers
+
+ProofStack offers Google, GitHub, Microsoft (Supabase id `azure`), LinkedIn (`linkedin_oidc`), GitLab, Discord, X (`x`, OAuth 2.0; the legacy `twitter` provider is not offered) and Facebook. `/api/auth/context` lists in `capabilities.socialProviders` exactly those that Supabase's `/auth/v1/settings` reports enabled, refreshed every 30 seconds. Starting any other provider returns `503 OAUTH_SETUP_REQUIRED` without contacting Supabase.
+
+Every provider registers the same **provider callback**: `https://<project-ref>.supabase.co/auth/v1/callback`. Paste the provider's client id and secret into Supabase → Authentication → Sign In / Providers. Supabase's Redirect URLs must contain the exact app callback `<AUTH_APP_ORIGIN>/api/auth/callback`.
+
+Sign-in requires a provider-verified email (or phone). An identity without one is refused with `IDENTITY_VERIFICATION_REQUIRED` and no account is created. Supabase links identities that share a verified email to one user, so the same person signing in with two providers reaches one ProofStack account.
+
+| Provider  | Where to create the app                                                       | Must configure                                                                                                                                                                          |
+| --------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Google    | Google Cloud Console → OAuth client (Web application)                         | Authorized redirect URI = provider callback. Publish the consent screen to production; testing mode admits only listed test users.                                                      |
+| GitHub    | GitHub → Settings → Developer settings → OAuth Apps                           | Authorization callback URL = provider callback.                                                                                                                                         |
+| Microsoft | Microsoft Entra → App registrations (personal and work accounts)              | Web redirect URI = provider callback; client secret. ProofStack requests the `email` scope. Follow Supabase's Azure guide for verified email claims, or Microsoft users may be refused. |
+| LinkedIn  | LinkedIn Developers → app with **Sign In with LinkedIn using OpenID Connect** | Authorized redirect URL = provider callback.                                                                                                                                            |
+| GitLab    | GitLab → Preferences → Applications                                           | Redirect URI = provider callback; scopes `read_user`, `openid`, `email`.                                                                                                                |
+| Discord   | Discord Developer Portal → OAuth2                                             | Redirect = provider callback.                                                                                                                                                           |
+| X         | X Developer Portal → User authentication settings (OAuth 2.0, Web App)        | Callback = provider callback; enable **Request email from users** (requires privacy-policy and terms URLs) or every X sign-in is refused.                                               |
+| Facebook  | Meta for Developers → Facebook Login                                          | Valid OAuth Redirect URI = provider callback. Switching the app to Live requires a privacy-policy URL and data-deletion instructions.                                                   |
+
+After deploying, run `pnpm --filter @workspace/api-server run ops:smoke-social <AUTH_APP_ORIGIN> --expect google,github,...`. It starts one flow per enabled provider through the deployed API and checks that Supabase redirects to that provider's real login host. It never signs in and prints no tokens; a failure names the provider and the status Supabase returned.
+
+Several providers require public privacy-policy and terms pages before public use; publish them first. Validate each provider with a real account that has not used ProofStack before, then again with an existing account, before announcing it.

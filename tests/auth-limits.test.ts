@@ -103,6 +103,7 @@ describe("authentication rate-limit isolation", () => {
     // Mock only the external identity transport, not the local limiter or flow persistence.
     vi.spyOn(identityProvider, "capabilities").mockResolvedValue({
       google: true,
+      socialProviders: ["google"],
     } as Awaited<ReturnType<typeof identityProvider.capabilities>>);
     vi.spyOn(identityProvider, "providerClient").mockReturnValue({
       auth: {

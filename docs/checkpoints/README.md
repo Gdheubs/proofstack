@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Social sign-in providers](2026-10-21-social-sign-in.md) — eight Supabase providers, only enabled ones shown; credential-free staging smoke check added. Real-user sign-in not yet performed (no provider apps or deployment exist).
 - [Image decoding and canonical re-encoding](2026-10-21-image-reencoding.md) — uploads fully decoded and re-encoded with sharp (pixel, dimension, frame and time limits; metadata stripped) before the R2 write; decode runs outside the row lock.
 - [Cloudflare R2 image storage](2026-10-21-r2-image-storage.md) — Replit/GCS adapter replaced by R2; uploads pass through the authenticated API with size/type/signature checks before the write; migration 0013 accepts R2 ETags. Live R2 acceptance pending.
 - [Trusted client address behind the web proxy](2026-10-21-trusted-client-address.md) — shared-secret client-IP forwarding so browsers behind the web tier no longer share one rate-limit bucket; IPv6 bucketed by /64; preflight check added.

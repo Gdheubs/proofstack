@@ -8,10 +8,10 @@
 import type { AuthActionInputAction } from './authActionInputAction';
 import type { AuthActionInputFactorType } from './authActionInputFactorType';
 import type { AuthActionInputKind } from './authActionInputKind';
-import type { AuthActionInputProvider } from './authActionInputProvider';
 import type { AuthActionInputRole } from './authActionInputRole';
 import type { AuthActionInputScope } from './authActionInputScope';
 import type { AuthActionInputStatus } from './authActionInputStatus';
+import type { SocialProvider } from './socialProvider';
 
 export interface AuthActionInput {
   action: AuthActionInputAction;
@@ -22,7 +22,7 @@ export interface AuthActionInput {
   kind?: AuthActionInputKind;
   code?: string;
   handle?: string;
-  provider?: AuthActionInputProvider;
+  provider?: SocialProvider;
   scope?: AuthActionInputScope;
   sessionId?: string;
   factorId?: string;

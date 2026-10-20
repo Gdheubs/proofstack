@@ -11,7 +11,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { errInfo, useAct, useSession } from "@/hooks/use-auth";
-import type { AuthCapabilities } from "@workspace/api-client-react";
+import type {
+  AuthCapabilities,
+  SocialProvider,
+} from "@workspace/api-client-react";
+
+const SOCIAL_LABELS: Record<SocialProvider, string> = {
+  google: "Google",
+  github: "GitHub",
+  azure: "Microsoft",
+  linkedin_oidc: "LinkedIn",
+  gitlab: "GitLab",
+  discord: "Discord",
+  x: "X",
+  facebook: "Facebook",
+};
 import {
   CODE_RE,
   CodeField,
@@ -321,7 +335,7 @@ function OtpTab({
   );
 }
 
-function SocialTab({
+export function SocialTab({
   caps,
   returnTo,
 }: {
@@ -337,7 +351,7 @@ function SocialTab({
       setFramed(true);
     }
   }, []);
-  const start = (provider: "google" | "github") =>
+  const start = (provider: SocialProvider) =>
     s.send(async () => {
       const r = await s.raw({ action: "oauth", provider });
       if (r.authorizationUrl) window.location.assign(r.authorizationUrl);
@@ -362,21 +376,20 @@ function SocialTab({
           </div>
         </Notice>
       )}
-      {(["google", "github"] as const).map((p) => (
+      {/* Only providers enabled in the identity project are offered. */}
+      {caps.socialProviders.length === 0 && (
+        <Notice tone="warn">Social sign-in is not available yet.</Notice>
+      )}
+      {caps.socialProviders.map((p) => (
         <Button
           key={p}
           variant="outline"
           className="w-full justify-start"
-          disabled={!caps[p] || s.busy || framed}
+          disabled={s.busy || framed}
           onClick={() => start(p)}
           data-testid={`button-oauth-${p}`}
         >
-          Continue with {p === "google" ? "Google" : "GitHub"}
-          {!caps[p] && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              pending setup
-            </span>
-          )}
+          Continue with {SOCIAL_LABELS[p]}
         </Button>
       ))}
       <Status err={s.err} msg={s.msg} />

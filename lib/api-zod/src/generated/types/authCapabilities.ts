@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AuthCapabilitiesEmailDelivery } from './authCapabilitiesEmailDelivery';
+import type { SocialProvider } from './socialProvider';
 
 export interface AuthCapabilities {
   password: boolean;
@@ -13,6 +14,8 @@ export interface AuthCapabilities {
   phoneOtp: boolean;
   google: boolean;
   github: boolean;
+  /** Social sign-in providers enabled for this deployment, in display order. */
+  socialProviders: SocialProvider[];
   totp: boolean;
   phoneMfa: boolean;
   emailDelivery: AuthCapabilitiesEmailDelivery;

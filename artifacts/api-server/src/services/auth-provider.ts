@@ -10,6 +10,7 @@ import {
 } from "../lib/auth-config";
 import { ApiError } from "../lib/errors";
 import { getFirebasePublicConfig } from "./firebase-provider";
+import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth-input";
 
 export type Credentials = { access_token: string; refresh_token: string };
 export function providerClient(
@@ -131,6 +132,9 @@ export async function capabilities() {
       phoneOtp: false,
       google,
       github,
+      socialProviders: SOCIAL_PROVIDERS.filter(
+        (p) => (p === "google" && google) || (p === "github" && github),
+      ) as SocialProvider[],
       totp,
       phoneMfa: false,
       emailDelivery: "development-limited" as const,
@@ -160,14 +164,15 @@ export async function capabilities() {
     };
   }
   const external = settingsCache.value.external as Record<string, boolean>;
+  // Only providers the Supabase project reports as enabled are offered.
+  const socialProviders = SOCIAL_PROVIDERS.filter((p) => external[p] === true);
   const pendingSetup: string[] = [];
   const phone = !!external.phone && smsConfigured();
   if (!smsConfigured())
     pendingSetup.push("MSG91 template and Supabase SMS-hook configuration");
   if (!external.phone)
     pendingSetup.push("Enable Supabase phone authentication");
-  if (!external.google) pendingSetup.push("Google OAuth provider");
-  if (!external.github) pendingSetup.push("GitHub OAuth provider");
+  if (!socialProviders.length) pendingSetup.push("Social sign-in providers");
   if (process.env.AUTH_EMAIL_SMTP_READY !== "true")
     pendingSetup.push(
       "Public email delivery: verified sending domain and SMTP. Development delivery is team-only and limited",
@@ -178,6 +183,7 @@ export async function capabilities() {
     phoneOtp: phone,
     google: !!external.google,
     github: !!external.github,
+    socialProviders,
     totp: true,
     phoneMfa: phone && process.env.AUTH_PHONE_MFA_READY === "true",
     emailDelivery:

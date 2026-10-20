@@ -1,5 +1,19 @@
 import { z } from "zod/v4";
 
+// Supabase provider ids, in display order. `azure` is Microsoft; `x` is the
+// OAuth 2.0 X provider (not legacy OAuth 1.0a `twitter`).
+export const SOCIAL_PROVIDERS = [
+  "google",
+  "github",
+  "azure",
+  "linkedin_oidc",
+  "gitlab",
+  "discord",
+  "x",
+  "facebook",
+] as const;
+export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
+
 const email = z
   .email()
   .max(320)
@@ -78,7 +92,7 @@ export const authActionSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("oauth"),
-      provider: z.enum(["google", "github"]),
+      provider: z.enum(SOCIAL_PROVIDERS),
     })
     .strict(),
   z.object({ action: z.literal("password-reset"), email }).strict(),

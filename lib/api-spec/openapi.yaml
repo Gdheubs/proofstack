@@ -163,15 +163,22 @@ components:
         type: { type: string, enum: [totp, phone] }
         status: { type: string, enum: [verified, unverified] }
         name: { type: string }
+    SocialProvider:
+      type: string
+      enum: [google, github, azure, linkedin_oidc, gitlab, discord, x, facebook]
     AuthCapabilities:
       type: object
-      required: [password, emailOtp, phoneOtp, google, github, totp, phoneMfa, emailDelivery, pendingSetup]
+      required: [password, emailOtp, phoneOtp, google, github, socialProviders, totp, phoneMfa, emailDelivery, pendingSetup]
       properties:
         password: { type: boolean }
         emailOtp: { type: boolean }
         phoneOtp: { type: boolean }
         google: { type: boolean }
         github: { type: boolean }
+        socialProviders:
+          description: Social sign-in providers enabled for this deployment, in display order.
+          type: array
+          items: { $ref: "#/components/schemas/SocialProvider" }
         totp: { type: boolean }
         phoneMfa: { type: boolean }
         emailDelivery: { type: string, enum: [development-limited, configured] }
@@ -201,7 +208,7 @@ components:
         kind: { type: string, enum: [developer, company, recruiter] }
         code: { type: string }
         handle: { type: string }
-        provider: { type: string, enum: [google, github] }
+        provider: { $ref: "#/components/schemas/SocialProvider" }
         scope: { type: string, enum: [local, global] }
         sessionId: { type: string }
         factorId: { type: string }

@@ -223,7 +223,7 @@ export async function runAction(
     }
     case "oauth": {
       const ready = await capabilities();
-      if (!ready[input.provider])
+      if (!ready.socialProviders.includes(input.provider))
         throw new ApiError(
           503,
           "OAUTH_SETUP_REQUIRED",
@@ -236,6 +236,8 @@ export async function runAction(
         options: {
           redirectTo: `${authOrigin()}/api/auth/callback`,
           skipBrowserRedirect: true,
+          // Microsoft returns no email address without this scope.
+          ...(input.provider === "azure" ? { scopes: "email" } : {}),
         },
       });
       providerFailure(result.error);
