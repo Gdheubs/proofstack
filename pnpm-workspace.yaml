@@ -65,5 +65,5 @@ overrides:
   '@expo/ngrok-bin>@expo/ngrok-bin-win32-x64': '-'
   esbuild: 0.28.2
   js-yaml: 4.3.2
-  # GHSA-r7fv-28h4-cvq7 (smartquotes quadratic complexity), via orval>typedoc.
-  markdown-it: 14.3.2
+  # GHSA-r7fv-28h4-cvq7 and GHSA-gfr2-rv44-r23c, dev-only via orval>typedoc.
+  markdown-it: 14.3.3

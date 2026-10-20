@@ -26,6 +26,11 @@ Offer Google, GitHub, Microsoft, LinkedIn, GitLab, Discord, X and Facebook throu
 - `pnpm run typecheck`, `pnpm lint`, Prettier (`--end-of-line auto`) passed; codegen output matches the spec.
 - Unit tests: 715 passed (51 files). Embedded integration: 190 passed, 2 skipped. Next production build passed.
 
+## Hosted CI
+
+- `1f36b46`: [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39508232857) passed; [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39508232862) **failed** at `pnpm audit`: new high advisory GHSA-gfr2-rv44-r23c for `markdown-it <14.3.3` (dev-only, `orval>typedoc`), published after the previous green run.
+- Repair: override raised to `markdown-it: 14.3.3` (published 2026-10-16; meets the repository's one-day minimum release age, not a two-week bar). `pnpm audit` reports no known vulnerabilities, including the earlier low advisory; codegen output is unchanged. Hosted result for the repair is recorded in the next checkpoint.
+
 ## Required to complete real-user verification
 
 1. Create the Supabase project, set Site URL and the Redirect URL `<AUTH_APP_ORIGIN>/api/auth/callback`.
