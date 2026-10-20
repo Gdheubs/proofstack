@@ -44,6 +44,8 @@ Preserve immutable source-generation pinning and destination create precondition
 
 ### S-01 — Signed upload ingress is not bounded (P1; SEC-01)
 
+**Source update (2026-10-21):** signed PUT URLs were removed. Browsers upload to the authenticated, CSRF-protected, rate-limited same-origin API, which refuses declared bodies over 8 MiB unread, caps streamed bodies at 8 MiB, and checks declared size, type and signature before writing to R2 (`routes/community.ts`, `services/community-assets.ts`; `tests/asset-upload-route.test.ts`, `tests/community-assets.test.ts`). Remaining: live R2 acceptance and a per-account byte budget; the 100-row cap still bounds count, not bytes. The original evidence below describes the removed Replit adapter.
+
 **Evidence:** `API/services/community-assets.ts:31-85` accepts a declared size/type and counts asset rows. `API/lib/objectStorage.ts:128-147,249-275` signs a 900-second PUT using only bucket, object name, method and expiry. Actual size is checked later at completion (`community-assets.ts:201-212`). The direct cloud body bypasses API JSON/rate limits.
 
 **Risk:** Oversized/repeated/abandoned writes can consume provider capacity before rejection; live-object/version byte accounting is not provided by a 100-row cap. Actual sidecar constraints were not inspected, so this is a missing enforced contract in source, not a measured provider exploit.
@@ -57,6 +59,8 @@ Preserve immutable source-generation pinning and destination create precondition
 **Smallest safe fix / exit:** After bounded ingress, constrain a decoder worker by compressed bytes, dimensions/pixels, frames, memory and time; strip metadata and promote only a supported canonical output. Preserve existing PNG/JPEG/WebP product support; define animation handling explicitly. Reject header-only/truncated files, corrupt images and resource bombs, and prove failures never activate a ready reference. CSP/MIME checks remain useful but do not replace decoding.
 
 ### S-03 — Promotion, abandoned uploads and pre-enqueue location lack durable lifecycle (P1; SEC-04)
+
+**Source update (2026-10-21):** there is no quarantine copy or promotion step; the final immutable `ready/` key is reserved in SQL before any write and is the only key cleanup ever targets. Still open: abandoned `pending` reservations keep quota until deleted, a crash between the R2 write and commit leaves an object at the reserved key, and namespace rotation before enqueue. The evidence below describes the removed adapter.
 
 **Evidence:** `API/services/community-assets.ts:190-227` chooses a fresh random destination, copies and sets ACL before SQL update/audit/commit. No durable promotion destination exists before external I/O. Expired completion returns `UPLOAD_EXPIRED` without expiring the SQL reservation. `DB/community-assets.ts:14-24` stores a relative path, not upload-time bucket/namespace. Resolution uses current configuration (`API/lib/objectStorage.ts:150-173`); deletion captures the current namespace only at enqueue (`community-assets.ts:150-175`). Account FK cascade deletes rows, not unqueued objects.
 

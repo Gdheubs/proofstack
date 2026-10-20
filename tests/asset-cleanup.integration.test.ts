@@ -28,6 +28,12 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     });
     async function fixture(status = "ready") {
       vi.stubEnv("PRIVATE_OBJECT_DIR", "/test-bucket/private");
+      vi.stubEnv(
+        "R2_ENDPOINT",
+        "https://0123456789abcdef.r2.cloudflarestorage.com",
+      );
+      vi.stubEnv("R2_ACCESS_KEY_ID", "disposable-test-key-id");
+      vi.stubEnv("R2_SECRET_ACCESS_KEY", "disposable-test-secret");
       const uid = randomUUID(),
         id = randomUUID();
       fixtures.push({ uid, id });
@@ -143,8 +149,9 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         "INSERT INTO community_assets(user_id,object_path,content_type,size,status) SELECT $1,'/objects/uploads/' || gen_random_uuid(),'image/png',8,'pending' FROM generate_series(1,99)",
         [f.uid],
       );
-      vi.spyOn(storage, "getObjectEntityUploadURL").mockResolvedValue(
-        `https://storage.googleapis.com/test-bucket/private/uploads/${randomUUID()}`,
+      // Requesting an upload only reserves SQL state; it never touches storage.
+      vi.spyOn(storage, "put").mockRejectedValue(
+        new Error("must not reach storage"),
       );
       await expect(
         requestUpload(
@@ -435,11 +442,34 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         ),
       ).rejects.toThrow();
     });
+    it("stores R2 ETags as pinned versions but rejects other values in SQL", async () => {
+      const f = await fixture();
+      await enqueue(f);
+      const pin = (value: string) =>
+        pool.query(
+          "UPDATE asset_cleanup_jobs SET generation=$2 WHERE asset_id=$1",
+          [f.id, value],
+        );
+      for (const value of [
+        "0123456789abcdef0123456789abcdef",
+        "0123456789abcdef0123456789abcdef-12",
+        "123",
+      ])
+        await expect(pin(value)).resolves.toBeDefined();
+      for (const value of [
+        '"0123456789abcdef0123456789abcdef"',
+        "0123456789ABCDEF0123456789ABCDEF",
+        "0123456789abcdef0123456789abcdef-0",
+        "0",
+        "../victim",
+      ])
+        await expect(pin(value)).rejects.toThrow();
+    });
     it("makes deletion terminal for completion and reattachment, including existing-path shortcuts", async () => {
       const f = await fixture("pending");
       await enqueue(f);
       const lookup = vi
-        .spyOn(storage, "getObjectEntityFile")
+        .spyOn(storage, "put")
         .mockRejectedValue(new Error("must not reach storage"));
       await expect(
         runCommunityAction({ id: randomUUID() } as Request, f.session, {
@@ -458,10 +488,10 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     });
     it("never deletes bytes when the enclosing audit append fails and SQL rolls back", async () => {
       const f = await fixture();
-      const remove = vi.fn().mockResolvedValue([]);
+      const remove = vi.spyOn(storage, "remove").mockResolvedValue();
       const lookup = vi
-        .spyOn(storage, "getObjectEntityFile")
-        .mockResolvedValue({ delete: remove } as never);
+        .spyOn(storage, "inspect")
+        .mockRejectedValue(new Error("must not reach storage"));
       // Real SQL failure after assetAction, not a mocked transaction/audit implementation.
       await pool.query(
         "ALTER TABLE audit_logs ADD CONSTRAINT test_asset_audit_failure CHECK (action <> 'community.asset-delete') NOT VALID",

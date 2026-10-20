@@ -1,7 +1,10 @@
-import { objectStorageClient } from "../lib/objectStorage";
+import { ObjectStorageService, type StoredObject } from "../lib/objectStorage";
+import { STORAGE_VERSION } from "./asset-cleanup-runtime";
 import type { CleanupStorage, CleanupTarget } from "./asset-cleanup-worker";
 
-function capturedFile(target: CleanupTarget) {
+const storage = new ObjectStorageService();
+
+function capturedObject(target: CleanupTarget): StoredObject {
   if (
     !/^[a-z0-9][a-z0-9._-]*$/.test(target.bucket) ||
     !/^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(target.namespace) ||
@@ -17,41 +20,23 @@ function capturedFile(target: CleanupTarget) {
     .map((s) => s.trim());
   if (!allowed.includes(`/${target.bucket}/${target.namespace}`))
     throw new Error("Cleanup namespace not allowlisted");
-  return objectStorageClient.bucket(target.bucket).file(target.object_name);
+  // The captured key, never one derived from the current PRIVATE_OBJECT_DIR.
+  return { bucket: target.bucket, key: target.object_name };
 }
 export const cleanupStorage: CleanupStorage = {
   async inspect(target) {
-    const file = capturedFile(target);
-    try {
-      const [metadata] = await file.getMetadata({ timeout: 30000 });
-      if (
-        typeof metadata.generation !== "string" ||
-        !/^[1-9][0-9]{0,29}$/.test(metadata.generation)
-      )
-        throw new Error("Storage generation required");
-      return metadata.generation;
-    } catch (error) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === 404
-      )
-        return null;
-      throw error;
-    }
+    const version = await storage.inspect(capturedObject(target));
+    if (version !== null && !STORAGE_VERSION.test(version))
+      throw new Error("Storage version required");
+    return version;
   },
-  async remove(target, generation) {
-    if (
-      typeof generation !== "string" ||
-      !/^[1-9][0-9]{0,29}$/.test(generation)
-    )
-      throw new Error("Invalid cleanup generation");
-    // File.delete has no typed timeout option. The dedicated process supervisor
-    // enforces a hard 120s iteration deadline, below the durable lease duration.
-    await capturedFile(target).delete({
-      ifGenerationMatch: generation,
-      ignoreNotFound: true,
-    });
+  async remove(target, version) {
+    if (typeof version !== "string" || !STORAGE_VERSION.test(version))
+      throw new Error("Invalid cleanup version");
+    // Keys are immutable: each upload reserves a fresh UUID key that is written
+    // once, after the asset row is locked, and never reused. The pinned version
+    // is compared before this call; R2 delete preconditions are not relied on.
+    // The supervisor's 120s deadline bounds this call below the 5-minute lease.
+    await storage.remove(capturedObject(target));
   },
 };

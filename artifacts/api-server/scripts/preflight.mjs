@@ -61,6 +61,11 @@ check(
   ) && !objectDir.split("/").some((part) => part === "." || part === ".."),
 );
 check(
+  "R2 object storage credentials",
+  httpsOrigin(process.env.R2_ENDPOINT) &&
+    Boolean(process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY),
+);
+check(
   "Session encryption secret configured",
   (process.env.SESSION_SECRET?.length ?? 0) >= 32,
 );

@@ -92,6 +92,13 @@
       "when": 1792166400000,
       "tag": "0012_durable_asset_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792532531552,
+      "tag": "0013_r2_storage_versions",
+      "breakpoints": true
     }
   ]
 }

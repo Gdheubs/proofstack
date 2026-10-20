@@ -4,7 +4,7 @@
 
 The intended hosting layout is Vercel for the dynamic Next.js frontend, Render for the Express API and separately supervised workers, Supabase for managed identity and PostgreSQL, and GitHub for source and CI. This application requires running servers and cannot be deployed as a static export. Set the server-only `API_INTERNAL_ORIGIN` to the Render API origin before building the Vercel frontend so `/api/*` is proxied same-origin.
 
-**Deployment gap:** image/object storage still uses a Replit credential sidecar and Replit-backed Google Cloud Storage adapter. It must be replaced with a Supabase Storage adapter before uploads can work on Render. Supabase identity/PostgreSQL and Vercel/Render hosting do not replace this storage integration. Optional AI accepts an OpenAI-compatible endpoint and is separately configured through server-side secrets; review its consent and spend controls before enabling it.
+Image storage uses a private Cloudflare R2 bucket through its S3-compatible API; see [deployment](deployment.md#cloudflare-r2-image-storage). Optional AI accepts an OpenAI-compatible endpoint and is separately configured through server-side secrets; review its consent and spend controls before enabling it.
 
 ## Install and configure
 
@@ -12,7 +12,7 @@ The intended hosting layout is Vercel for the dynamic Next.js frontend, Render f
 2. Configure secrets using `.env.example` as the inventory. A copied `.env` is documentation unless your process manager explicitly loads it; the API does not automatically load dotenv files.
 3. Set `DATABASE_URL` to a disposable development PostgreSQL database. Apply tracked migrations with `pnpm --filter @workspace/db run migrate:dev`. Production migration execution must be an explicit reviewed release step against the chosen Supabase PostgreSQL project; never run development migrations in production.
 4. For accounts, set `AUTH_APP_ORIGIN` to the exact HTTPS browser origin and a random `SESSION_SECRET` of at least 32 characters. For default Supabase mode, set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SECRET_KEY`, following `identity.md`. For explicit `AUTH_PROVIDER=firebase`, follow [firebase-auth.md](firebase-auth.md), including Admin credentials, public Web config and `FIREBASE_WEB_AUTH_DOMAIN` on both API and Next for CSP. Do not mix providers or auto-link existing accounts. Never place server secrets in browser variables.
-5. Do not configure uploads for Vercel/Render yet. The existing object adapter requires the Replit local credential sidecar and a private bucket; it must be replaced with a reviewed Supabase Storage adapter before enabling image upload and cleanup. Preserve signed-upload limits, private access, cleanup fencing and backup requirements.
+5. For image uploads, set `PRIVATE_OBJECT_DIR` and the `R2_*` credentials for a private Cloudflare R2 bucket ([deployment](deployment.md#cloudflare-r2-image-storage)). Without them, upload requests return `503 STORAGE_CONFIGURATION_REQUIRED` and the rest of the product works. Preserve private access, cleanup fencing and backup requirements.
 6. AI is optional. Set the OpenAI-compatible endpoint/key only when using a supported provider; review provider disclosure, consent and spend controls before enabling it.
 7. Leave SMTP/phone readiness flags false until actual delivery and entitlement are verified. Follow `identity.md` for SMS-hook signing and OAuth configuration.
 
@@ -51,7 +51,7 @@ NODE_ENV=production PORT=3000 pnpm --filter @workspace/proofstack run serve
 - Test the Phase 3 exit criteria in `roadmap.md` with real staging provider accounts and storage.
 - Review the production schema diff, take a backup, and test restore and rollback. Never reset a production database to make tests pass.
 - Review proxy trust and edge rate limits. Current API deliberately trusts no forwarded IPs; behind a proxy users can share a rate bucket. An allowlist must match the actual deployed network, not an arbitrary hop count.
-- Set storage lifecycle cleanup for abandoned `uploads/` objects older than one day. Completed images now live under `ready/`; never apply that expiry rule to `ready/`. A failed transaction can leave an unreferenced ready object, so reconciliation must check database references before deletion.
+- Uploads write each image once to a key reserved in SQL under `ready/`; there is no `uploads/` quarantine object. Never apply an expiry rule to `ready/`. A failure after the R2 write but before commit can leave an unreferenced ready object at the reserved key; reconciliation must check database references before deletion.
 - Capture latency/query-count/load baselines, logs and alerts. Remaining per-item community reads must be batched before claiming high-scale readiness.
 
 No live credentials, production database access, deployment or hosted CI result were supplied for this review.

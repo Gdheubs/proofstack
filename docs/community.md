@@ -19,10 +19,11 @@ Profiles expose only selected public fields; email, phone, session state and pro
 - `GET /api/community`: bounded, viewer-aware views; collections use 20-item offset pages.
 - `POST /api/community/action`: action-specific field allowlists, typed validation, managed identity, completed native MFA where applicable, signed CSRF, per-user/IP limits, transactions and audit events.
 - `POST /api/community/assist`: six writing-assistance tasks; no automatic publication.
-- `POST /api/community/uploads`: owned image metadata and a direct-to-storage signed PUT URL.
+- `POST /api/community/uploads`: reserves owned image metadata and a final storage key; returns a same-origin `uploadUrl`.
+- `PUT /api/community/assets/:id/content`: CSRF-protected, owner-only, rate-limited image body (`image/png`, `image/jpeg` or `image/webp`, at most 8 MiB, within one hour of the request). Size, declared type and signature are checked before the API writes the bytes to private R2 storage and marks the image ready. `asset-complete` then confirms readiness.
 - `GET /api/community/assets/:id`: ready image serving only if publicly referenced, owned by the requester or referenced by an accessible project.
 
-The existing Replit PostgreSQL database is retained. App Storage contains images; PostgreSQL stores ownership and ready/pending metadata. PNG, JPEG and WebP uploads are capped at 8 MiB, checked against actual content type, size and signature before completion. SVG/HTML are rejected. Nonpublic images are private/no-store; even public images are served with no-sniff and restrictive content security policy. Uploaded-but-unused images can be removed; referenced images must be detached first.
+A private Cloudflare R2 bucket contains images; PostgreSQL stores ownership and ready/pending metadata. PNG, JPEG and WebP uploads are capped at 8 MiB, checked against actual content type, size and signature before completion. SVG/HTML are rejected. Nonpublic images are private/no-store; even public images are served with no-sniff and restrictive content security policy. Uploaded-but-unused images can be removed; referenced images must be detached first.
 
 ## Social and organization access
 

@@ -98,7 +98,7 @@ export function useCommunityAssist() {
 
 const MAX = 8 * 1024 * 1024;
 export function useCommunityUpload() {
-  const { request } = useCsrf();
+  const { request, csrf } = useCsrf();
   const up = useRequestCommunityUpload({ request });
   const { run } = useCommunityRun();
   const [busy, setBusy] = useState(false);
@@ -120,12 +120,20 @@ export function useCommunityUpload() {
           contentType: file.type as "image/png" | "image/jpeg" | "image/webp",
         },
       });
+      // Same-origin API endpoint: the API validates and stores the bytes.
       const put = await fetch(u.uploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": file.type, "X-CSRF-Token": csrf },
         body: file,
       });
-      if (!put.ok) throw new Error("The image upload was rejected by storage.");
+      if (!put.ok) {
+        const failure = (await put.json().catch(() => null)) as {
+          error?: { message?: string };
+        } | null;
+        throw new Error(
+          failure?.error?.message ?? "The image upload was rejected.",
+        );
+      }
       const done = await run(
         { action: "asset-complete", id: u.id },
         "Image uploaded.",

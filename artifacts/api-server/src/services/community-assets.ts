@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { Request } from "express";
 import { pool } from "@workspace/db";
 import {
   ObjectStorageService,
@@ -12,11 +13,14 @@ import {
   projectReadWhere,
 } from "./community-policy";
 import type { CommunityAction } from "./community-input";
-import { transaction, type AuthSession } from "./auth-sessions";
+import { transaction, audit, type AuthSession } from "./auth-sessions";
 import { z } from "zod";
 export const storage = new ObjectStorageService();
+export const MAX_IMAGE_BYTES = 8388608;
+export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 function privateAssetDirectory() {
   try {
+    storage.assertConfigured();
     return storage.getPrivateObjectDir();
   } catch (error) {
     if (error instanceof StorageConfigurationError)
@@ -31,8 +35,8 @@ function privateAssetDirectory() {
 const uploadSchema = z
   .object({
     name: z.string().trim().min(1).max(150),
-    size: z.number().int().min(1).max(8388608),
-    contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+    size: z.number().int().min(1).max(MAX_IMAGE_BYTES),
+    contentType: z.enum(IMAGE_TYPES),
   })
   .strict();
 export function imageSignature(bytes: Buffer, type: string) {
@@ -56,7 +60,6 @@ export async function requestUpload(body: unknown, uid: string) {
       "Use a PNG, JPEG or WebP image up to 8 MiB",
     );
   privateAssetDirectory();
-  const uploadUrl = await storage.getObjectEntityUploadURL();
   return transaction(async (db) => {
     // Serialize quota reservations per account, including concurrent uploads.
     await db.query("SELECT id FROM users WHERE id=$1 FOR UPDATE", [uid]);
@@ -72,16 +75,73 @@ export async function requestUpload(body: unknown, uid: string) {
         "UPLOAD_LIMIT",
         "Remove unused images before uploading more",
       );
-    const objectPath = storage.normalizeObjectEntityPath(uploadUrl);
+    // Reserve the final immutable key before any byte is written, so cleanup
+    // always targets the exact object this asset may own.
     const r = await db.query(
       "INSERT INTO community_assets(user_id,object_path,content_type,size) VALUES($1,$2,$3,$4) RETURNING id",
-      [uid, objectPath, p.data.contentType, p.data.size],
+      [uid, `/objects/ready/${randomUUID()}`, p.data.contentType, p.data.size],
     );
+    const id = r.rows[0].id as string;
     return {
-      id: r.rows[0].id as string,
-      uploadUrl,
-      assetPath: `/api/community/assets/${r.rows[0].id}`,
+      id,
+      uploadUrl: `/api/community/assets/${id}/content`,
+      assetPath: `/api/community/assets/${id}`,
     };
+  });
+}
+// Bytes pass through the API rather than a presigned URL: size, type and
+// signature are enforced before anything reaches storage, and the browser only
+// talks to the same origin.
+export async function storeAssetContent(
+  req: Request,
+  uid: string,
+  id: string,
+  contentType: string | undefined,
+  body: Buffer,
+) {
+  privateAssetDirectory();
+  return transaction(async (db) => {
+    const row = (
+      await db.query("SELECT * FROM community_assets WHERE id=$1 FOR UPDATE", [
+        id,
+      ])
+    ).rows[0];
+    if (!row) throw missing();
+    if (row.user_id !== uid) throw denied();
+    if (row.status === "ready")
+      throw new ApiError(
+        409,
+        "UPLOAD_COMPLETE",
+        "This image upload is already complete",
+      );
+    if (row.status !== "pending")
+      throw new ApiError(
+        409,
+        "ASSET_DELETING",
+        "Image deletion is pending; request a new upload",
+      );
+    if (Date.now() - new Date(row.created_at).getTime() > 3600000)
+      throw new ApiError(409, "UPLOAD_EXPIRED", "Request a new upload");
+    const type = contentType?.split(";")[0].trim().toLowerCase();
+    if (
+      body.length > MAX_IMAGE_BYTES ||
+      body.length !== row.size ||
+      type !== row.content_type ||
+      !imageSignature(body, row.content_type)
+    )
+      throw new ApiError(
+        400,
+        "INVALID_IMAGE",
+        "Uploaded image content does not match its declared type or size",
+      );
+    // The row lock is held across this single write: a concurrent delete or
+    // second upload waits and then sees the final status.
+    await storage.put(storage.locate(row.object_path), body, row.content_type);
+    await db.query("UPDATE community_assets SET status='ready' WHERE id=$1", [
+      row.id,
+    ]);
+    await audit(req, "community.asset-upload", uid, row.id, {}, db);
+    return { message: "Image upload completed", id: row.id as string };
   });
 }
 export async function assertOwnedAssets(
@@ -186,45 +246,13 @@ export async function assetAction(
       "Image deletion is pending; request a new upload",
     );
   if (row.status === "ready")
-    return { message: "Image upload already completed", id: row.id as string };
-  if (Date.now() - new Date(row.created_at).getTime() > 3600000)
-    throw new ApiError(409, "UPLOAD_EXPIRED", "Request a new upload");
-  const file = await storage.getObjectEntityFile(row.object_path);
-  const [metadata] = await file.getMetadata();
-  // Pin validation and promotion to one immutable storage generation. The PUT
-  // URL remains valid for 15 minutes and must never address a published image.
-  if (!metadata.generation)
-    throw new ApiError(409, "UPLOAD_CHANGED", "Retry image completion");
-  const source = file.bucket.file(file.name, {
-    generation: metadata.generation,
-  });
-  const [signature] = await source.download({ start: 0, end: 15 });
-  if (
-    Number(metadata.size) > 8388608 ||
-    Number(metadata.size) !== row.size ||
-    metadata.contentType !== row.content_type ||
-    !imageSignature(signature, row.content_type)
-  )
-    throw new ApiError(
-      400,
-      "INVALID_IMAGE",
-      "Uploaded image content does not match its declared type or size",
-    );
-  const objectId = randomUUID();
-  const finalPath = `/objects/ready/${objectId}`;
-  const finalFile = file.bucket.file(
-    `${file.name.slice(0, file.name.lastIndexOf("/uploads/"))}/ready/${objectId}`,
+    return { message: "Image upload completed", id: row.id as string };
+  // Completion now happens when the API stores validated content.
+  throw new ApiError(
+    409,
+    "UPLOAD_CONTENT_REQUIRED",
+    "Upload the image content before completing it",
   );
-  await source.copy(finalFile, { preconditionOpts: { ifGenerationMatch: 0 } });
-  await storage.trySetObjectEntityAclPolicy(finalPath, {
-    owner: s.user.id,
-    visibility: "private",
-  });
-  await db.query(
-    "UPDATE community_assets SET status='ready',object_path=$2 WHERE id=$1",
-    [row.id, finalPath],
-  );
-  return { message: "Image upload completed", id: row.id as string };
 }
 export async function assetAccess(id: string, uid: string | null) {
   const row = (
@@ -253,6 +281,6 @@ export async function assetAccess(id: string, uid: string | null) {
   return {
     row,
     isPublic,
-    file: await storage.getObjectEntityFile(row.object_path),
+    object: storage.locate(row.object_path),
   };
 }

@@ -30,3 +30,11 @@ services:
         sync: false
       - key: PROXY_SHARED_SECRET
         sync: false
+      - key: PRIVATE_OBJECT_DIR
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { pool } from "@workspace/db";
+import { STORAGE_VERSION } from "./asset-cleanup-runtime";
 
 export type CleanupTarget = {
   bucket: string;
@@ -10,7 +11,7 @@ export type CleanupTarget = {
 export type CleanupStorage = {
   // null means confirmed not found; other errors must fail/retry, never succeed.
   inspect(target: CleanupTarget): Promise<string | null>;
-  remove(target: CleanupTarget, generation: string): Promise<void>;
+  remove(target: CleanupTarget, version: string): Promise<void>;
 };
 
 export async function runAssetCleanupOnce(
@@ -35,11 +36,11 @@ export async function runAssetCleanupOnce(
     const current = await boundary.inspect(job);
     if (current !== null) {
       if (
-        !/^[1-9][0-9]{0,29}$/.test(current) ||
+        !STORAGE_VERSION.test(current) ||
         (job.generation !== null && current !== job.generation)
       )
         throw new Error("Generation changed");
-      // Persist the storage generation before the first delete. Lease-token CAS
+      // Persist the storage version before the first delete. Lease-token CAS
       // stops an expired/reclaimed worker from starting new destructive work.
       const pinned = await pool.query(
         `UPDATE asset_cleanup_jobs SET generation=coalesce(generation,$3)

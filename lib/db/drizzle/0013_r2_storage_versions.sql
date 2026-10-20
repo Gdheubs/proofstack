@@ -1,0 +1,2 @@
+ALTER TABLE "asset_cleanup_jobs" DROP CONSTRAINT "asset_cleanup_generation_check";--> statement-breakpoint
+ALTER TABLE "asset_cleanup_jobs" ADD CONSTRAINT "asset_cleanup_generation_check" CHECK ("asset_cleanup_jobs"."generation" IS NULL OR "asset_cleanup_jobs"."generation" ~ '^([1-9][0-9]{0,29}|[0-9a-f]{32}(-[1-9][0-9]{0,4})?)$');

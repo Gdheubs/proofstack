@@ -8,6 +8,9 @@ const config = {
   ASSET_CLEANUP_ENABLED: "true",
   ASSET_CLEANUP_ALLOWED_NAMESPACES: "/test-bucket/private",
   DATABASE_URL: "postgresql://127.0.0.1:1/isolated_no_connection",
+  R2_ENDPOINT: "https://0123456789abcdef.r2.cloudflarestorage.com",
+  R2_ACCESS_KEY_ID: "disposable-test-key-id",
+  R2_SECRET_ACCESS_KEY: "disposable-test-secret",
 };
 afterEach(() => vi.useRealTimers());
 describe("asset cleanup supervised runtime", () => {
@@ -23,6 +26,14 @@ describe("asset cleanup supervised runtime", () => {
     { ...config, ASSET_CLEANUP_ALLOWED_NAMESPACES: "/bucket/private," },
     { ...config, DATABASE_URL: "https://not-postgres.invalid" },
     { ...config, DATABASE_URL: "" },
+    { ...config, R2_ENDPOINT: "" },
+    {
+      ...config,
+      R2_ENDPOINT: "http://0123456789abcdef.r2.cloudflarestorage.com",
+    },
+    { ...config, R2_ENDPOINT: "https://example.test/bucket" },
+    { ...config, R2_ACCESS_KEY_ID: "" },
+    { ...config, R2_SECRET_ACCESS_KEY: "" },
   ])(
     "refuses unsafe or implicit startup before dependency initialization: %j",
     (env) => {

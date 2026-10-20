@@ -53,6 +53,27 @@ describe("production preflight provider selection", () => {
       preflight({ ...firebase, PROXY_SHARED_SECRET: "p".repeat(32) }).results,
     ).toContainEqual({ check: name, ok: true });
   });
+  it("requires an HTTPS R2 endpoint with both credentials", () => {
+    const name = "R2 object storage credentials";
+    const r2 = {
+      R2_ENDPOINT: "https://0123456789abcdef.r2.cloudflarestorage.com",
+      R2_ACCESS_KEY_ID: "disposable-key-id",
+      R2_SECRET_ACCESS_KEY: "disposable-secret",
+    };
+    expect(preflight({ ...firebase, ...r2 }).results).toContainEqual({
+      check: name,
+      ok: true,
+    });
+    for (const patch of [
+      { R2_ENDPOINT: "http://0123456789abcdef.r2.cloudflarestorage.com" },
+      { R2_ENDPOINT: "https://example.test/bucket" },
+      { R2_ACCESS_KEY_ID: "" },
+      { R2_SECRET_ACCESS_KEY: "" },
+    ])
+      expect(
+        preflight({ ...firebase, ...r2, ...patch }).results,
+      ).toContainEqual({ check: name, ok: false });
+  });
   it("rejects a configured storage namespace that cannot promote uploads", () => {
     expect(
       preflight({ ...firebase, PRIVATE_OBJECT_DIR: "/bucket" }).results,

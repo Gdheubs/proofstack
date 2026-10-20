@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { objectStorageClient } from "../artifacts/api-server/src/lib/objectStorage";
+import { r2 } from "../artifacts/api-server/src/lib/objectStorage";
 
 const id = "cc1575d2-514f-42fb-97b4-f6b6b7503a76";
+const etag = "0123456789abcdef0123456789abcdef";
 const target = {
   bucket: "test-bucket",
   namespace: "private",
@@ -12,6 +13,19 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
 });
+function unreachable() {
+  return vi.spyOn(r2, "client").mockImplementation(() => {
+    throw new Error("storage must not be reached");
+  });
+}
+function provider(send: ReturnType<typeof vi.fn>) {
+  return vi.spyOn(r2, "client").mockReturnValue({ send } as never);
+}
+async function boundary() {
+  return (
+    await import("../artifacts/api-server/src/services/asset-cleanup-storage")
+  ).cleanupStorage;
+}
 describe("cleanup storage boundary", () => {
   it.each([
     { object_name: "private/ready/../../victim" },
@@ -37,102 +51,92 @@ describe("cleanup storage boundary", () => {
         "ASSET_CLEANUP_ALLOWED_NAMESPACES",
         `/${malicious.bucket}/${malicious.namespace}`,
       );
-      const bucket = vi
-        .spyOn(objectStorageClient, "bucket")
-        .mockImplementation(() => {
-          throw new Error("storage must not be reached");
-        });
-      const { cleanupStorage } =
-        await import("../artifacts/api-server/src/services/asset-cleanup-storage");
-      await expect(cleanupStorage.inspect(malicious)).rejects.toThrow(
+      const client = unreachable();
+      await expect((await boundary()).inspect(malicious)).rejects.toThrow(
         "Invalid cleanup target",
       );
-      expect(bucket).not.toHaveBeenCalled();
+      expect(client).not.toHaveBeenCalled();
     },
   );
-  it.each(["", "0", "1e3", undefined, "123/.."])(
-    "rejects missing/unsafe delete generation %s before storage",
-    async (generation) => {
+  it.each([
+    "",
+    "0",
+    "1e3",
+    undefined,
+    "123/..",
+    `"${etag}"`,
+    etag.toUpperCase(),
+  ])(
+    "rejects missing/unsafe delete version %s before storage",
+    async (version) => {
       vi.stubEnv("ASSET_CLEANUP_ALLOWED_NAMESPACES", "/test-bucket/private");
-      const bucket = vi
-        .spyOn(objectStorageClient, "bucket")
-        .mockImplementation(() => {
-          throw new Error("storage must not be reached");
-        });
-      const { cleanupStorage } =
-        await import("../artifacts/api-server/src/services/asset-cleanup-storage");
+      const client = unreachable();
       await expect(
-        cleanupStorage.remove(target, generation as string),
-      ).rejects.toThrow("Invalid cleanup generation");
-      expect(bucket).not.toHaveBeenCalled();
+        (await boundary()).remove(target, version as string),
+      ).rejects.toThrow("Invalid cleanup version");
+      expect(client).not.toHaveBeenCalled();
     },
   );
   it("treats only confirmed storage 404 as absent, not denial or provider failure", async () => {
     vi.stubEnv("ASSET_CLEANUP_ALLOWED_NAMESPACES", "/test-bucket/private");
-    const getMetadata = vi
+    const denied = { name: "AccessDenied", $metadata: { httpStatusCode: 403 } };
+    const send = vi
       .fn()
-      .mockRejectedValueOnce({ code: 404 })
-      .mockRejectedValueOnce({ code: 403 });
-    vi.spyOn(objectStorageClient, "bucket").mockReturnValue({
-      file: () => ({ getMetadata }),
-    } as never);
-    const { cleanupStorage } =
-      await import("../artifacts/api-server/src/services/asset-cleanup-storage");
-    expect(await cleanupStorage.inspect(target)).toBeNull();
-    await expect(cleanupStorage.inspect(target)).rejects.toEqual({ code: 403 });
+      .mockRejectedValueOnce({
+        name: "NotFound",
+        $metadata: { httpStatusCode: 404 },
+      })
+      .mockRejectedValueOnce(denied)
+      .mockRejectedValueOnce(new Error("socket hang up"));
+    provider(send);
+    const storage = await boundary();
+    expect(await storage.inspect(target)).toBeNull();
+    await expect(storage.inspect(target)).rejects.toBe(denied);
+    await expect(storage.inspect(target)).rejects.toThrow("socket hang up");
   });
   it("rejects namespace snapshots not in the worker allowlist before storage initialization", async () => {
     vi.stubEnv("ASSET_CLEANUP_ALLOWED_NAMESPACES", "/other-bucket/private");
-    const bucket = vi
-      .spyOn(objectStorageClient, "bucket")
-      .mockImplementation(() => {
-        throw new Error("storage must not be reached");
-      });
-    const { cleanupStorage } =
-      await import("../artifacts/api-server/src/services/asset-cleanup-storage");
-    await expect(cleanupStorage.inspect(target)).rejects.toThrow(
+    const client = unreachable();
+    await expect((await boundary()).inspect(target)).rejects.toThrow(
       "Cleanup namespace not allowlisted",
     );
-    expect(bucket).not.toHaveBeenCalled();
+    expect(client).not.toHaveBeenCalled();
   });
-  it.each([undefined, "", "0", "1e3", 123])(
-    "rejects malformed provider metadata generation %s",
-    async (generation) => {
+  it.each([undefined, "", "0", "1e3", "not-an-etag"])(
+    "rejects malformed provider ETag %s",
+    async (value) => {
       vi.stubEnv("ASSET_CLEANUP_ALLOWED_NAMESPACES", "/test-bucket/private");
-      const getMetadata = vi.fn().mockResolvedValue([{ generation }]);
-      vi.spyOn(objectStorageClient, "bucket").mockReturnValue({
-        file: () => ({ getMetadata }),
-      } as never);
-      const { cleanupStorage } =
-        await import("../artifacts/api-server/src/services/asset-cleanup-storage");
-      await expect(cleanupStorage.inspect(target)).rejects.toThrow(
-        "Storage generation required",
+      provider(vi.fn().mockResolvedValue({ ETag: value }));
+      await expect((await boundary()).inspect(target)).rejects.toThrow(
+        "Storage version required",
       );
     },
   );
-  it("uses only an explicitly allowlisted captured namespace and generation-fenced delete after configuration rotates", async () => {
+  it("uses only an explicitly allowlisted captured key after configuration rotates", async () => {
     vi.stubEnv("PRIVATE_OBJECT_DIR", "/different-bucket/new-prefix");
     vi.stubEnv("ASSET_CLEANUP_ALLOWED_NAMESPACES", "/test-bucket/private");
-    const file = {
-      getMetadata: vi.fn().mockResolvedValue([{ generation: "123" }]),
-      delete: vi.fn().mockResolvedValue([]),
-    };
-    const fileFor = vi.fn().mockReturnValue(file);
-    const bucket = vi
-      .spyOn(objectStorageClient, "bucket")
-      .mockReturnValue({ file: fileFor } as never);
-    const { cleanupStorage } =
-      await import("../artifacts/api-server/src/services/asset-cleanup-storage");
-    expect(await cleanupStorage.inspect(target)).toBe("123");
-    await cleanupStorage.remove(target, "123");
-    expect(bucket.mock.calls).toEqual([["test-bucket"], ["test-bucket"]]);
-    expect(fileFor.mock.calls).toEqual([
-      [target.object_name],
-      [target.object_name],
-    ]);
-    expect(file.delete).toHaveBeenCalledWith({
-      ifGenerationMatch: "123",
-      ignoreNotFound: true,
-    });
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ ETag: `"${etag}"` })
+      .mockResolvedValueOnce({});
+    provider(send);
+    const storage = await boundary();
+    expect(await storage.inspect(target)).toBe(etag);
+    await storage.remove(target, etag);
+    const [head, remove] = send.mock.calls.map(([command]) => command);
+    expect(head.constructor.name).toBe("HeadObjectCommand");
+    expect(remove.constructor.name).toBe("DeleteObjectCommand");
+    for (const command of [head, remove])
+      expect(command.input).toEqual({
+        Bucket: "test-bucket",
+        Key: target.object_name,
+      });
+  });
+  it("accepts multipart ETags and legacy numeric generations", async () => {
+    vi.stubEnv("ASSET_CLEANUP_ALLOWED_NAMESPACES", "/test-bucket/private");
+    provider(vi.fn().mockResolvedValue({}));
+    const storage = await boundary();
+    await expect(storage.remove(target, `${etag}-12`)).resolves.toBeUndefined();
+    await expect(storage.remove(target, "123")).resolves.toBeUndefined();
   });
 });

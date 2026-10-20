@@ -22,10 +22,8 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         const asset = randomUUID();
         const path = `/api/community/assets/${asset}`;
         const objectRead = vi
-          .spyOn(storage, "getObjectEntityFile")
-          .mockResolvedValue(
-            {} as Awaited<ReturnType<typeof storage.getObjectEntityFile>>,
-          );
+          .spyOn(storage, "locate")
+          .mockReturnValue({ bucket: "test-bucket", key: "private/test" });
         try {
           await pool.query("BEGIN");
           await pool.query(
@@ -33,8 +31,8 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
             [owner, `${owner}@example.test`, status],
           );
           await pool.query(
-            "INSERT INTO community_assets(id,user_id,object_path,content_type,size,status) VALUES($1,$2,'/objects/ready/test','image/png',8,'ready')",
-            [asset, owner],
+            "INSERT INTO community_assets(id,user_id,object_path,content_type,size,status) VALUES($1,$2,$3,'image/png',8,'ready')",
+            [asset, owner, `/objects/ready/${randomUUID()}`],
           );
           await pool.query(
             "INSERT INTO community_projects(id,owner_id,slug,title,description,screenshots) VALUES($1::uuid,$2,$1::text,'Disabled reference','Fixture',$3::jsonb)",

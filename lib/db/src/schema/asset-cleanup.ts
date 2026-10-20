@@ -48,9 +48,10 @@ export const assetCleanupJobsTable = pgTable(
       "asset_cleanup_target_check",
       sql`${t.bucket} ~ '^[a-z0-9][a-z0-9._-]*$' AND ${t.namespace} ~ '^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$' AND ${t.namespace} !~ '(^|/)\\.{1,2}(/|$)' AND ${t.objectPath} ~ '^/objects/(ready|uploads)/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' AND ${t.objectName} = ${t.namespace} || '/' || substring(${t.objectPath} from 10)`,
     ),
+    // A numeric object generation or an R2/S3 ETag (single or multipart).
     check(
       "asset_cleanup_generation_check",
-      sql`${t.generation} IS NULL OR ${t.generation} ~ '^[1-9][0-9]{0,29}$'`,
+      sql`${t.generation} IS NULL OR ${t.generation} ~ '^([1-9][0-9]{0,29}|[0-9a-f]{32}(-[1-9][0-9]{0,4})?)$'`,
     ),
   ],
 );

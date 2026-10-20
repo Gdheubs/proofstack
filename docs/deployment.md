@@ -26,9 +26,25 @@ Set these in Render's secret/configuration UI:
 - `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket.
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and a 32+ character random `SESSION_SECRET`.
 
-Leave `REPOSITORY_ROOT`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`,
-`INTELLIGENCE_ENABLED`, and optional AI keys empty for the initial free-tier
-beta. Those features need the acceptance work in the production plan.
+- `PRIVATE_OBJECT_DIR`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: image storage (see below). Preflight checks the namespace and credentials.
+
+Leave `REPOSITORY_ROOT`, `INTELLIGENCE_ENABLED`, and optional AI keys empty for
+the initial free-tier beta. Those features need the acceptance work in the
+production plan.
+
+### Cloudflare R2 image storage
+
+Create one **private** R2 bucket (no public bucket URL or custom domain) and an
+R2 API token with Object Read & Write limited to that bucket. Set
+`PRIVATE_OBJECT_DIR=/<bucket>/<prefix>` and `R2_ENDPOINT` to the exact
+`https://<account-id>.r2.cloudflarestorage.com` origin. No bucket CORS rule is
+needed: browsers upload to the same-origin API, which enforces the 8 MiB limit,
+declared size, type and signature before writing, and serves every image after
+SQL authorization. Do not add an object lifecycle rule under `<prefix>/ready/`;
+completed images live there. Deleted images are removed by the supervised
+cleanup worker (`ASSET_CLEANUP_ENABLED=true`,
+`ASSET_CLEANUP_ALLOWED_NAMESPACES=/<bucket>/<prefix>`, same R2 and database
+settings).
 
 ### Vercel web
 

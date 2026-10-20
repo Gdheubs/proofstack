@@ -1,5 +1,10 @@
 // This module intentionally imports neither the database nor storage. Startup
 // validation must succeed before the standalone entrypoint loads either client.
+
+// A numeric object generation or an R2/S3 ETag (single or multipart).
+export const STORAGE_VERSION =
+  /^(?:[1-9][0-9]{0,29}|[0-9a-f]{32}(?:-[1-9][0-9]{0,4})?)$/;
+
 export function assertAssetCleanupConfiguration(
   env: NodeJS.ProcessEnv = process.env,
 ): void {
@@ -16,9 +21,21 @@ export function assertAssetCleanupConfiguration(
   } catch {
     /* Invalid/missing URLs fail closed without logging their contents. */
   }
+  let storageValid = false;
+  try {
+    const url = new URL(env.R2_ENDPOINT || "");
+    storageValid =
+      url.protocol === "https:" &&
+      url.origin === env.R2_ENDPOINT &&
+      !!env.R2_ACCESS_KEY_ID &&
+      !!env.R2_SECRET_ACCESS_KEY;
+  } catch {
+    /* Same fail-closed rule as the database URL. */
+  }
   if (
     env.ASSET_CLEANUP_ENABLED !== "true" ||
     !databaseValid ||
+    !storageValid ||
     namespaces.some(
       (value) =>
         !/^\/[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(
