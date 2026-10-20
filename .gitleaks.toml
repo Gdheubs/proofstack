@@ -27,3 +27,20 @@ condition = "AND"
 paths = ['''(^|[/\\])docs[/\\]review-phase5-2026-10-06\.md$''']
 regexTarget = "match"
 regexes = ['''^API proxy responses, anonymous/private\s*$''']
+
+# Commit ad2899d test fixtures: a UUID object id named `key` and a disposable
+# session value. Both lines were since rewritten; these match only the exact
+# historical lines in their test files.
+[[rules.allowlists]]
+description = "Historical UUID fixture in community asset tests"
+condition = "AND"
+paths = ['''(^|[/\\])tests[/\\]community-assets\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''^const key = "cc1575d2-514f-42fb-97b4-f6b6b7503a77";\s*$''']
+
+[[rules.allowlists]]
+description = "Historical disposable session value in upload route tests"
+condition = "AND"
+paths = ['''(^|[/\\])tests[/\\]asset-upload-route\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''^\s*vi\.stubEnv\("SESSION_SECRET", "disposable-route-test-key-at-least-32-chars"\);\s*$''']

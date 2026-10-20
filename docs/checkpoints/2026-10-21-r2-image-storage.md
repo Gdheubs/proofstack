@@ -34,6 +34,11 @@ There is no quarantine copy or promotion step, and no bucket CORS rule or public
 - Unit tests: 674 passed (47 files). Embedded integration: 190 passed, 2 skipped (21 files), including all 15 asset-cleanup and 2 asset-visibility cases after migration `0013`.
 - `pnpm --filter @workspace/api-server run build` passed; the bundle no longer references `@google-cloud/storage`, and `@aws-sdk/client-s3` resolves from the API package at runtime.
 
+## Hosted CI
+
+- `ad2899d`: [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39503904988) passed, including native PostgreSQL `test:all`. [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39503904943) **failed**: gitleaks reported 2 `generic-api-key` findings. A local run of the same pinned, checksum-verified gitleaks 8.30.1 (WSL) located them at `tests/community-assets.test.ts:30` (a UUID fixture named `key`) and `tests/asset-upload-route.test.ts:57` (a disposable `SESSION_SECRET` test value). Neither is a credential.
+- Repair: renamed the fixture to `objectId` and generated the session value with `"r".repeat(40)`; added two exact-path, exact-line reviewed exceptions in `.gitleaks.toml` for the historical lines (history is not rewritten); raised the reviewed-exception count in `tests/ci-secrets.test.ts` from 2 to 4. A local full-history scan then reported zero findings. Hosted result for the repair is recorded in the next checkpoint.
+
 **Not run:** any request against real Cloudflare R2 (no bucket or credentials exist yet), native PostgreSQL `test:all` (hosted CI), browser E2E.
 
 ## Remaining risks

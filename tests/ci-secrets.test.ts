@@ -8,7 +8,9 @@ describe("fail-closed secret scanning policy", () => {
       "utf8",
     );
     expect(config).toContain("useDefault = true");
-    expect(config.match(/condition = "AND"/g)).toHaveLength(2);
+    // Reviewed exact-line exceptions: RFC6238 vector, a phase 5 review
+    // sentence, and two historical ad2899d test fixtures. Adding one needs review.
+    expect(config.match(/condition = "AND"/g)).toHaveLength(4);
     expect(config).toContain("^sb_publishable_");
     expect(config).not.toMatch(/regexes.*sb_secret_/);
     expect(config).not.toMatch(/paths\s*=\s*\[\s*['"](?:tests|docs)\//);

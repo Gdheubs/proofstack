@@ -27,7 +27,7 @@ import type { AuthSession } from "../artifacts/api-server/src/services/auth-sess
 
 const uid = "cc1575d2-514f-42fb-97b4-f6b6b7503a75";
 const id = "cc1575d2-514f-42fb-97b4-f6b6b7503a76";
-const key = "cc1575d2-514f-42fb-97b4-f6b6b7503a77";
+const objectId = "cc1575d2-514f-42fb-97b4-f6b6b7503a77";
 const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const req = { id: "request" } as unknown as Request;
 
@@ -50,7 +50,7 @@ function pending(patch: Record<string, unknown> = {}) {
   const row = {
     id,
     user_id: uid,
-    object_path: `/objects/ready/${key}`,
+    object_path: `/objects/ready/${objectId}`,
     status: "pending",
     content_type: "image/png",
     size: png.length,
@@ -94,7 +94,7 @@ describe("API-side image ingest", () => {
       storeAssetContent(req, uid, id, "image/png; charset=binary", png),
     ).resolves.toEqual({ message: "Image upload completed", id });
     expect(put).toHaveBeenCalledWith(
-      { bucket: "test-bucket", key: `private/ready/${key}` },
+      { bucket: "test-bucket", key: `private/ready/${objectId}` },
       png,
       "image/png",
     );
@@ -205,7 +205,7 @@ describe("asset completion and deletion", () => {
 
   it("queues abandoned upload cleanup without cloud I/O or quota release before commit", async () => {
     const createdAt = new Date("2026-10-15T00:00:00Z");
-    const objectPath = `/objects/ready/${key}`;
+    const objectPath = `/objects/ready/${objectId}`;
     const query = vi.fn().mockResolvedValue({ rows: [] });
     query.mockResolvedValueOnce({
       rows: [
@@ -235,7 +235,7 @@ describe("asset completion and deletion", () => {
       objectPath,
       "test-bucket",
       "private",
-      `private/ready/${key}`,
+      `private/ready/${objectId}`,
       "pending",
       createdAt,
     ]);

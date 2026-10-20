@@ -54,7 +54,7 @@ beforeEach(() => {
       : [],
   }));
   vi.stubEnv("AUTH_APP_ORIGIN", "https://allowed.example");
-  vi.stubEnv("SESSION_SECRET", "disposable-route-test-key-at-least-32-chars");
+  vi.stubEnv("SESSION_SECRET", "r".repeat(40));
 });
 afterEach(() => vi.unstubAllEnvs());
 
