@@ -16,6 +16,8 @@ Render Free has no background workers and Supabase Free has no backups. Add a ru
 - `tests/ci-workflows.test.ts`: new policy test for `operations.yml` (triggers, permissions, environment, timeouts, secret placement, no echo of expressions); mutation-checked by temporarily adding a `pull_request` trigger and a secret inside `run:`, each of which failed the test.
 - `docs/operations.md`: environment variables/secrets table, cadence and minutes rationale, separate backup bucket and 30-day lifecycle rule, restore procedure.
 
+Scheduled runs are inert until the repository variable `OPERATIONS_ENABLED` is `true`, so an unconfigured environment does not produce failing runs every 6 hours; manual runs always work.
+
 Cleanup runs every 6 hours instead of the planned hourly: an hourly install+build job would use most of the private repository's 2,000 free Actions minutes per month.
 
 ## Validation (local)
@@ -25,6 +27,10 @@ Cleanup runs every 6 hours instead of the planned hourly: an hourly install+buil
 - Clean-clone rehearsal of the cleanup job: `pnpm install --frozen-lockfile --filter @workspace/api-server...` and the API build succeed from the committed tree; `worker:asset-cleanup:once` without configuration fails closed (exit 1). With valid-looking configuration and an unreachable database, the first build logged one sanitized warning and exited **0**, which would hide outages from a scheduled run; the drain now reports `failed` and the entry sets exit code 1 (re-verified: exit 1). Git Bash rewrites `/bucket/prefix` environment values into Windows paths, so local runs need `MSYS_NO_PATHCONV=1`; Linux runners are unaffected.
 - `bash -n` syntax check of both scripts. They could not be executed locally: no PostgreSQL or passwordless sudo is available on this machine; the CI drill is their first real execution.
 - `pnpm run typecheck`, `pnpm lint` passed. Unit tests: 721 passed (51 files). Embedded integration: 190 passed, 2 skipped.
+
+## Hosted CI
+
+- `cda5729`: [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39514430965) and [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39514430874) passed. The first real execution of the drill: backup verified 50 tables (39,958 encrypted bytes); restore recreated 50 tables and 14 migration-ledger rows; source and restored counts matched (`50|14|22` tables/migrations/users); a second restore into the populated database was refused. GitHub registered **ProofStack Operations** as active.
 
 ## Remaining risks
 

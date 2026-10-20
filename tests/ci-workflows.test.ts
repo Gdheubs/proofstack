@@ -118,6 +118,10 @@ describe("CI workflow supply-chain policy", () => {
       .split(/\n {2}(?=[a-z-]+:\n)/)
       .slice(1);
     expect(jobs).toHaveLength(2);
+    // Schedules stay inert until an operator opts in.
+    expect(
+      source.match(/&& vars\.OPERATIONS_ENABLED == 'true'\)/g),
+    ).toHaveLength(2);
     for (const job of jobs) {
       expect(job).toContain("environment: production");
       expect(job).toMatch(/timeout-minutes: \d+/);

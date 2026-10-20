@@ -3,7 +3,8 @@ name: ProofStack Operations
 # Scheduled maintenance against the deployed environment. Runs only on its
 # schedule or a manual dispatch, never for pull requests or pushes. Credentials
 # live in the protected "production" environment, are exposed only as step
-# environment variables, and are never printed.
+# environment variables, and are never printed. Scheduled runs stay off until
+# the repository variable OPERATIONS_ENABLED is "true"; manual runs always work.
 on:
   schedule:
     # Image cleanup every 6 hours (keeps Actions minutes within the free tier).
@@ -27,7 +28,7 @@ concurrency:
 
 jobs:
   asset-cleanup:
-    if: github.event.schedule == '17 */6 * * *' || inputs.task == 'cleanup'
+    if: (github.event.schedule == '17 */6 * * *' && vars.OPERATIONS_ENABLED == 'true') || inputs.task == 'cleanup'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
@@ -56,7 +57,7 @@ jobs:
         run: pnpm --filter @workspace/api-server run worker:asset-cleanup:once
 
   database-backup:
-    if: github.event.schedule == '41 20 * * *' || inputs.task == 'backup'
+    if: (github.event.schedule == '41 20 * * *' && vars.OPERATIONS_ENABLED == 'true') || inputs.task == 'backup'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production

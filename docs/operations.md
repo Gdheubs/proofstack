@@ -37,7 +37,7 @@ During the first drill, drain/stop writers and workers; obtain a provider databa
 
 ## Scheduled maintenance (GitHub Actions)
 
-The free-tier deployment has no always-on worker, so `.github/workflows/operations.yml` runs maintenance on a schedule. It runs only on its schedule or a manual **Run workflow** (choose `cleanup` or `backup`), never for pull requests or pushes. Both jobs use the protected GitHub environment `production`; create it under Settings → Environments, restrict it to the default branch, and add:
+The free-tier deployment has no always-on worker, so `.github/workflows/operations.yml` runs maintenance on a schedule. It runs only on its schedule or a manual **Run workflow** (choose `cleanup` or `backup`), never for pull requests or pushes. Scheduled runs are skipped until the **repository** variable `OPERATIONS_ENABLED` is `true` (set it after the environment below is configured and a manual run of each task succeeds); manual runs are never skipped. Both jobs use the protected GitHub environment `production`; create it under Settings → Environments, restrict it to the default branch, and add:
 
 | Kind     | Name                                                     | Used by | Value                                                                                       |
 | -------- | -------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
