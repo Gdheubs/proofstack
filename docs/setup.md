@@ -2,7 +2,7 @@
 
 ## Target deployment architecture
 
-The intended hosting layout is Cloudflare Workers (OpenNext) for the dynamic Next.js frontend, Render for the Express API and separately supervised workers, Supabase for managed identity and PostgreSQL, and GitHub for source and CI. This application requires running servers and cannot be deployed as a static export. Set the server-only `API_INTERNAL_ORIGIN` to the Render API origin before building the frontend so `/api/*` is proxied same-origin.
+The intended hosting layout is Cloudflare Workers (OpenNext) for the dynamic Next.js frontend, Render for the Express API and separately supervised workers, Neon for PostgreSQL, Supabase for managed identity, and GitHub for source and CI. This application requires running servers and cannot be deployed as a static export. Set the server-only `API_INTERNAL_ORIGIN` to the Render API origin before building the frontend so `/api/*` is proxied same-origin.
 
 Image storage uses a private Cloudflare R2 bucket through its S3-compatible API; see [deployment](deployment.md#cloudflare-r2-image-storage). Optional AI accepts an OpenAI-compatible endpoint and is separately configured through server-side secrets; review its consent and spend controls before enabling it.
 

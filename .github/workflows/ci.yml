@@ -53,6 +53,10 @@ jobs:
         run: pnpm --filter @workspace/db run migrate:dev
       - name: Verify the migration runner can be safely rerun
         run: pnpm --filter @workspace/db run migrate:dev
+      - name: Release migration command is idempotent on a migrated database
+        run: pnpm --filter @workspace/db run migrate:release
+        env:
+          MIGRATION_TARGET_HOST: localhost
       - run: pnpm --filter @workspace/api-spec run codegen
       - run: node scripts/ci-check-generated.mjs
       - run: pnpm audit --audit-level moderate
@@ -94,6 +98,22 @@ jobs:
             echo "Restore into a non-empty database was not refused" >&2
             exit 1
           fi
+          # Identity-only mode, as used for the Supabase auth schema.
+          psql "$DATABASE_URL" -qc "CREATE SCHEMA auth;
+            CREATE TABLE auth.users (id uuid PRIMARY KEY);
+            INSERT INTO auth.users VALUES (gen_random_uuid()), (gen_random_uuid());"
+          BACKUP_DATABASE_URL="$DATABASE_URL" \
+            BACKUP_OUTPUT_DIR="$RUNNER_TEMP/identity" \
+            BACKUP_SCHEMAS=auth BACKUP_REQUIRED_TABLES=auth.users \
+            BACKUP_MIN_TABLES=1 BACKUP_NAME=identity \
+            bash scripts/backup-database.sh
+          psql "$DATABASE_URL" -qc "CREATE DATABASE proofstack_identity"
+          identity=postgresql://postgres@localhost:5432/proofstack_identity
+          RESTORE_DATABASE_URL="$identity" \
+            bash scripts/restore-database.sh "$RUNNER_TEMP"/identity/identity-*.dump.gpg
+          test "$(psql "$identity" -Atqc 'SELECT count(*) FROM auth.users')" = 2
+          test "$(psql "$identity" -Atqc \
+            "SELECT count(*) FROM pg_namespace WHERE nspname = 'public'")" = 1
       - run: pnpm --filter @workspace/api-server run build
       # Runs the Next.js production build and packages it as a Cloudflare Worker.
       - run: pnpm --filter @workspace/proofstack run cf:build

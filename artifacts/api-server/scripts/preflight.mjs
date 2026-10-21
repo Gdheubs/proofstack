@@ -20,6 +20,24 @@ const httpsOrigin = (value) => {
 };
 check("Production runtime", process.env.NODE_ENV === "production");
 check("HTTPS application origin", httpsOrigin(process.env.AUTH_APP_ORIGIN));
+// The pool sets per-session timeouts; transaction poolers (Neon -pooler,
+// port 6543) do not keep sessions. Production traffic must also use TLS.
+let databaseUrl = null;
+try {
+  databaseUrl = new URL(process.env.DATABASE_URL ?? "");
+} catch {}
+check(
+  "Direct database endpoint",
+  !!databaseUrl &&
+    !databaseUrl.hostname.includes("-pooler") &&
+    databaseUrl.port !== "6543",
+);
+check(
+  "Database TLS required",
+  ["require", "verify-ca", "verify-full"].includes(
+    databaseUrl?.searchParams.get("sslmode") ?? "",
+  ),
+);
 const provider = process.env.AUTH_PROVIDER ?? "supabase";
 let identityConfigured = false;
 if (provider === "supabase") {

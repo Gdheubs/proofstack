@@ -8,7 +8,7 @@ evidence section says so.
 ## Release boundary
 
 - [x] The application is a Next.js 16 frontend, Express 5 API, PostgreSQL/Drizzle data layer, Supabase-managed identity, and optional workers.
-- [x] The target layout is Cloudflare Workers for the frontend, Render for the API, Supabase for PostgreSQL/Auth, Cloudflare R2 for images, and GitHub Actions for CI and scheduled maintenance.
+- [x] The target layout is Cloudflare Workers for the frontend, Render for the API, Neon for PostgreSQL, Supabase for Auth, Cloudflare R2 for images, and GitHub Actions for CI and scheduled maintenance.
 - [x] Native Git hosting, background intelligence jobs, and image uploads remain disabled for the initial free-tier beta until their durable-storage/worker controls have been implemented and accepted.
 - [ ] A product owner has approved the beta privacy notice, terms, support contact, retention schedule, account-erasure policy, and external AI provider policy.
 
@@ -77,11 +77,12 @@ documented recovery procedure works without data loss.
 
 ## Known free-tier constraints
 
-| Service                 | Suitable beta use                             | Constraint that blocks a production claim                                                           |
-| ----------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Cloudflare Workers Free | Commercial-use Next.js frontend               | 3 MiB compressed Worker and about 10 ms CPU per request; Paid is $5/month.                          |
-| Render Free             | Staging Express API                           | Sleeps after idle, has an ephemeral filesystem, and does not provide a free persistent worker/disk. |
-| Supabase Free           | Fresh staging PostgreSQL/Auth/Storage project | 500 MB database, 1 GB storage, project pause after inactivity, and no automatic backups.            |
+| Service                 | Suitable beta use                     | Constraint that blocks a production claim                                                           |
+| ----------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Cloudflare Workers Free | Commercial-use Next.js frontend       | 3 MiB compressed Worker and about 10 ms CPU per request; Paid is $5/month.                          |
+| Render Free             | Staging Express API                   | Sleeps after idle, has an ephemeral filesystem, and does not provide a free persistent worker/disk. |
+| Neon Free               | Application PostgreSQL with branching | 1 GB per project, 100 CU-hours/month, scale to zero after 5 minutes, 6-hour restore history.        |
+| Supabase Free           | Auth only                             | 50,000 MAU; project pauses after a week of inactivity; no automatic backups of the auth schema.     |
 
 The current source must therefore keep uploads, native Git hosting, and
 always-on worker features disabled until a provider and operational model

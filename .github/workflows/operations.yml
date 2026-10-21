@@ -71,12 +71,32 @@ jobs:
           sudo apt-get install -y -qq postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y -qq postgresql-client-17
-      - name: Dump, verify, encrypt and upload to the backup bucket
+      - name: Back up the application database (Neon)
         env:
           R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
           BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET }}
           AWS_DEFAULT_REGION: auto
+          BACKUP_SCHEMAS: public drizzle
+          BACKUP_NAME: proofstack
           BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_R2_SECRET_ACCESS_KEY }}
+        run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          bash scripts/backup-database.sh
+      # Sign-in identities live in the Supabase Auth project, not in Neon.
+      - name: Back up Supabase Auth identities
+        if: vars.IDENTITY_BACKUP_ENABLED == 'true'
+        env:
+          R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
+          BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET }}
+          AWS_DEFAULT_REGION: auto
+          BACKUP_SCHEMAS: auth
+          BACKUP_REQUIRED_TABLES: auth.users auth.identities
+          BACKUP_MIN_TABLES: "5"
+          BACKUP_NAME: identity
+          BACKUP_DATABASE_URL: ${{ secrets.IDENTITY_BACKUP_DATABASE_URL }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
           AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_R2_SECRET_ACCESS_KEY }}

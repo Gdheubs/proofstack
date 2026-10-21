@@ -16,7 +16,7 @@ See [intelligence setup and limits](docs/intelligence.md) before enabling Phase 
 
 - Node.js 24 and pnpm 11.25.0 (pinned in package.json and CI).
 - A disposable PostgreSQL database for development and integration tests.
-- Cloudflare Workers (OpenNext) for the Next.js frontend, Render for the Express API, GitHub Actions for scheduled maintenance, Supabase for managed identity and PostgreSQL, and Cloudflare R2 for images.
+- Cloudflare Workers (OpenNext) for the Next.js frontend, Render for the Express API, GitHub Actions for scheduled maintenance, Neon serverless PostgreSQL for data, Supabase for managed identity, and Cloudflare R2 for images.
 - Managed identity configuration for real accounts. Credentials belong in deployment secrets.
 
 ```sh

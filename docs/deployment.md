@@ -6,12 +6,14 @@ launch.
 
 ## Services
 
-| Component               | Provider       | Configuration                                                                              |
-| ----------------------- | -------------- | ------------------------------------------------------------------------------------------ |
-| Web                     | Cloudflare     | Workers via OpenNext, Root Directory `artifacts/proofstack` (see below).                   |
-| API                     | Render         | Create from `render.yaml`; it deliberately requires secret values to be entered in Render. |
-| Database, Auth, Storage | Supabase       | Create one fresh staging project; do not reuse local or existing identity data.            |
-| CI                      | GitHub Actions | Require the repository CI and security workflows for the exact release commit.             |
+| Component | Provider       | Configuration                                                                              |
+| --------- | -------------- | ------------------------------------------------------------------------------------------ |
+| Web       | Cloudflare     | Workers via OpenNext, Root Directory `artifacts/proofstack` (see below).                   |
+| API       | Render         | Create from `render.yaml`; it deliberately requires secret values to be entered in Render. |
+| Database  | Neon           | Serverless PostgreSQL; direct endpoint; migrations via `migrate:release` (see below).      |
+| Auth      | Supabase       | Create one fresh project used only for Auth; do not reuse existing identity data.          |
+| Images    | Cloudflare R2  | Private bucket; see below.                                                                 |
+| CI        | GitHub Actions | Require the repository CI and security workflows for the exact release commit.             |
 
 ## Required configuration
 
@@ -19,7 +21,7 @@ launch.
 
 Set these in Render's secret/configuration UI:
 
-- `DATABASE_URL`: the server-only Supabase PostgreSQL connection string.
+- `DATABASE_URL`: the server-only Neon **direct** connection string (see below); `DATABASE_POOL_MAX=5` on the free compute.
 - `AUTH_APP_ORIGIN`: the exact HTTPS frontend (Worker) URL, without a trailing slash.
 - `CORS_ALLOWED_ORIGINS`: that same exact frontend URL.
 - `TRUST_PROXY_CIDRS`: only Render's currently documented proxy ranges after verifying them for the deployment region.
@@ -83,20 +85,54 @@ move to Workers Paid if requests exceed the free limit. `cf:build` must run on
 Linux (CI, Cloudflare's builder or WSL); OpenNext's bundler cannot read pnpm's
 symlinked dependencies on Windows. Use `pnpm dev` for local development.
 
-### Supabase
+### Neon database
 
-Configure the frontend URL as the authorized application/site URL and the exact
-redirect URL. Store the Supabase secret key only in Render. Apply database
-migrations through a reviewed release command against the fresh staging target,
-never through application startup.
+The application database is **Neon** serverless PostgreSQL; Supabase is used
+only for Auth. Create a Neon project in the region nearest Render (for India,
+`aws-ap-south-1` Mumbai or `aws-ap-southeast-1` Singapore) on PostgreSQL 17.
+
+- `DATABASE_URL` (Render, GitHub `production` environment): the **direct**
+  (non-pooled, host without `-pooler`) connection string with
+  `sslmode=verify-full&channel_binding=require`. The pool sets per-session
+  timeouts that Neon's transaction pooler does not keep; preflight fails on a
+  pooled host or a URL without TLS. Neon's certificates are publicly trusted,
+  so no CA file is needed, and Neon accepts IPv4 (Render and GitHub runners).
+- `DATABASE_POOL_MAX`: connections per process (default 10). Use `5` on the
+  free 0.25 CU compute, where workers also connect.
+- **Migrations:** run once per release, never at startup:
+  `MIGRATION_TARGET_HOST=<exact host> DATABASE_URL=<direct url> pnpm --filter @workspace/db run migrate:release`.
+  It refuses a host that does not match `MIGRATION_TARGET_HOST` and pooled
+  endpoints, waits at most 10 s for locks, and reports how many migrations ran.
+- **Scale to zero:** Neon Free suspends compute after 5 minutes idle and
+  includes 100 CU-hours per month; the first request after idle waits for the
+  compute to resume (the pool allows 10 s). Point uptime monitors at
+  `/api/healthz` (no database), **not** `/api/readyz`: a five-minute
+  database probe keeps the compute awake permanently (about 182 CU-hours a
+  month at 0.25 CU) and exhausts the free allowance.
+- **Branching:** create a Neon branch per staging environment or pull request
+  for disposable copies of production schema/data; apply `migrate:release` to
+  the branch first when rehearsing a release.
+- **Recovery:** Neon Free keeps 6 hours of history for point-in-time restore;
+  the nightly encrypted `pg_dump` in `docs/operations.md` covers longer.
+
+### Supabase Auth
+
+Supabase provides identity only (email/password, email OTP, social sign-in,
+MFA). Configure the frontend URL as the authorized site URL and the exact
+redirect URL, and set Resend (or another provider) as custom SMTP under
+Authentication → Emails. Store the Supabase secret key only in Render. The
+Supabase project's own database holds the `auth` schema; back it up with the
+optional identity backup in `docs/operations.md`. Free projects pause after a
+week without activity, which also stops sign-in; keep real usage or an uptime
+check on a sign-in-related endpoint, or upgrade before launch.
 
 ## Verification sequence
 
 1. Confirm the Git SHA, clean working tree, and green hosted CI.
 2. Run the local frozen install and full checks on the same SHA.
-3. Create the fresh Supabase staging project and inspect the target connection,
-   TLS mode, migration role, and backup/export limitations.
-4. Apply reviewed migrations and run API preflight against the target.
+3. Create the Neon project (and a staging branch) and the Supabase Auth
+   project; inspect the target connection, TLS mode and roles.
+4. Run `migrate:release` against the target, then API preflight.
 5. Deploy Render API, verify `/api/healthz` and `/api/readyz`, then deploy
    the Cloudflare Worker.
 6. With dedicated test accounts, verify registration/login, logout, protected

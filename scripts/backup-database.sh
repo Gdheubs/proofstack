@@ -5,7 +5,9 @@
 # Upload (scheduled backups): BACKUP_BUCKET, R2_ENDPOINT, AWS_ACCESS_KEY_ID,
 #   AWS_SECRET_ACCESS_KEY. Without BACKUP_BUCKET the encrypted file is kept in
 #   BACKUP_OUTPUT_DIR instead (CI restore drill).
-# Optional: BACKUP_MIN_TABLES (default 40), the fewest tables a valid dump has.
+# Optional: BACKUP_SCHEMAS (default "public auth drizzle"),
+#   BACKUP_REQUIRED_TABLES (default "public.users drizzle.__drizzle_migrations"),
+#   BACKUP_MIN_TABLES (default 40), BACKUP_NAME (default "proofstack").
 # Never prints connection strings, passphrases or data.
 set -euo pipefail
 
@@ -16,26 +18,37 @@ if [ "${#BACKUP_PASSPHRASE}" -lt 32 ]; then
   exit 1
 fi
 min_tables="${BACKUP_MIN_TABLES:-40}"
+name="${BACKUP_NAME:-proofstack}"
+read -r -a schemas <<<"${BACKUP_SCHEMAS:-public auth drizzle}"
+read -r -a required <<<"${BACKUP_REQUIRED_TABLES:-public.users drizzle.__drizzle_migrations}"
+if ! [[ "$name" =~ ^[a-z][a-z0-9-]{0,31}$ ]]; then
+  echo "BACKUP_NAME must be lowercase letters, digits and hyphens" >&2
+  exit 1
+fi
+schema_args=()
+for schema in "${schemas[@]}"; do schema_args+=("--schema=$schema"); done
 
 umask 077
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-dump="$work/proofstack-$stamp.dump"
+dump="$work/$name-$stamp.dump"
 
-# Application data, Supabase identities (auth) and the migration ledger.
-# Patterns that match nothing (no auth schema outside Supabase) are skipped.
+# By default: application data, Supabase identities (auth) when present, and
+# the migration ledger. Schema patterns that match nothing are skipped.
 pg_dump "$BACKUP_DATABASE_URL" \
   --format=custom --compress=9 --no-owner --no-privileges \
-  --schema=public --schema=auth --schema=drizzle \
+  "${schema_args[@]}" \
   --file="$dump"
 
 # A readable archive with the expected tables, or no backup at all.
 pg_restore --list "$dump" >"$work/toc.txt"
 tables="$(grep -c ' TABLE DATA ' "$work/toc.txt" || true)"
-if [ "$tables" -lt "$min_tables" ] ||
-  ! grep -Eq ' TABLE DATA public users( |$)' "$work/toc.txt" ||
-  ! grep -Eq ' TABLE DATA drizzle __drizzle_migrations( |$)' "$work/toc.txt"; then
+missing=0
+for table in "${required[@]}"; do
+  grep -Eq " TABLE DATA ${table%%.*} ${table#*.}( |\$)" "$work/toc.txt" || missing=1
+done
+if [ "$tables" -lt "$min_tables" ] || [ "$missing" -ne 0 ]; then
   echo "Backup verification failed: $tables table(s); required tables missing" >&2
   exit 1
 fi
@@ -48,7 +61,7 @@ size="$(stat -c%s "$dump.gpg")"
 
 if [ -n "${BACKUP_BUCKET:-}" ]; then
   : "${R2_ENDPOINT:?R2_ENDPOINT is required for upload}"
-  key="database/proofstack-$stamp.dump.gpg"
+  key="database/$name-$stamp.dump.gpg"
   aws s3 cp "$dump.gpg" "s3://$BACKUP_BUCKET/$key" \
     --endpoint-url "$R2_ENDPOINT" --only-show-errors
   echo "Backup uploaded: $key ($size bytes, $tables tables)"

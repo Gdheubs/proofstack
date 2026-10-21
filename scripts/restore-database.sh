@@ -26,13 +26,17 @@ gpg --batch --yes --quiet --pinentry-mode loopback --decrypt \
   --passphrase-fd 3 --output "$work/restore.dump" "$file" \
   3< <(printf '%s' "$BACKUP_PASSPHRASE")
 
-# Recreate the dumped schemas (public included) exactly as archived.
-psql "$RESTORE_DATABASE_URL" -qc "DROP SCHEMA IF EXISTS public CASCADE"
+# Recreate the dumped schemas exactly as archived. The empty default public
+# schema is replaced only when the archive contains its own.
+if pg_restore --list "$work/restore.dump" | grep -Eq " SCHEMA - public( |$)"; then
+  psql "$RESTORE_DATABASE_URL" -qc "DROP SCHEMA IF EXISTS public CASCADE"
+fi
 pg_restore --dbname="$RESTORE_DATABASE_URL" --no-owner --no-privileges \
   --exit-on-error --single-transaction "$work/restore.dump"
 
 tables="$(psql "$RESTORE_DATABASE_URL" -Atqc \
   "SELECT count(*) FROM pg_tables WHERE schemaname IN ('public','auth','drizzle')")"
 migrations="$(psql "$RESTORE_DATABASE_URL" -Atqc \
-  "SELECT count(*) FROM drizzle.__drizzle_migrations")"
+  "SELECT CASE WHEN to_regclass('drizzle.__drizzle_migrations') IS NULL THEN 0
+          ELSE (SELECT count(*) FROM drizzle.__drizzle_migrations) END")"
 echo "Restored $tables table(s); $migrations applied migration(s) recorded"
