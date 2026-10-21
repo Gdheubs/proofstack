@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Cloudflare Workers frontend](2026-10-21-cloudflare-workers-frontend.md) — Next 16 runs on Workers via OpenNext (Pages is not viable); client-only editor brings the Worker to 2,636 KiB gzip; CI size gate at the free 3 MiB limit.
 - [Scheduled operations](2026-10-21-scheduled-operations.md) — run-once image cleanup and encrypted nightly database backups via GitHub Actions; restore script exercised by a CI drill.
 - [Social sign-in providers](2026-10-21-social-sign-in.md) — eight Supabase providers, only enabled ones shown; credential-free staging smoke check added. Real-user sign-in not yet performed (no provider apps or deployment exist).
 - [Image decoding and canonical re-encoding](2026-10-21-image-reencoding.md) — uploads fully decoded and re-encoded with sharp (pixel, dimension, frame and time limits; metadata stripped) before the R2 write; decode runs outside the row lock.

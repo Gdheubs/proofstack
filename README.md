@@ -16,7 +16,7 @@ See [intelligence setup and limits](docs/intelligence.md) before enabling Phase 
 
 - Node.js 24 and pnpm 11.25.0 (pinned in package.json and CI).
 - A disposable PostgreSQL database for development and integration tests.
-- Vercel for the Next.js frontend, Render for the Express API and workers, and Supabase for managed identity and PostgreSQL.
+- Cloudflare Workers (OpenNext) for the Next.js frontend, Render for the Express API, GitHub Actions for scheduled maintenance, Supabase for managed identity and PostgreSQL, and Cloudflare R2 for images.
 - Managed identity configuration for real accounts. Credentials belong in deployment secrets.
 
 ```sh
@@ -33,7 +33,7 @@ Set DATABASE_URL before migrations. Only run test:all against a disposable test 
 
 ## Deployment target
 
-The application is a dynamic Next.js frontend plus a separate Express API and optional workers. It is not a static GitHub Pages site. `API_INTERNAL_ORIGIN` can route Vercel `/api/*` requests to the Render API. Image uploads are stored in a private Cloudflare R2 bucket and pass through the API for validation. See [setup](docs/setup.md) for current deployment gaps.
+The application is a dynamic Next.js frontend plus a separate Express API and optional workers. It is not a static GitHub Pages site. `API_INTERNAL_ORIGIN` routes the frontend's same-origin `/api/*` requests to the Render API. Image uploads are stored in a private Cloudflare R2 bucket and pass through the API for validation. See [setup](docs/setup.md) for current deployment gaps.
 
 ## Local full-stack development
 

@@ -2,7 +2,7 @@
 
 ## Target deployment architecture
 
-The intended hosting layout is Vercel for the dynamic Next.js frontend, Render for the Express API and separately supervised workers, Supabase for managed identity and PostgreSQL, and GitHub for source and CI. This application requires running servers and cannot be deployed as a static export. Set the server-only `API_INTERNAL_ORIGIN` to the Render API origin before building the Vercel frontend so `/api/*` is proxied same-origin.
+The intended hosting layout is Cloudflare Workers (OpenNext) for the dynamic Next.js frontend, Render for the Express API and separately supervised workers, Supabase for managed identity and PostgreSQL, and GitHub for source and CI. This application requires running servers and cannot be deployed as a static export. Set the server-only `API_INTERNAL_ORIGIN` to the Render API origin before building the frontend so `/api/*` is proxied same-origin.
 
 Image storage uses a private Cloudflare R2 bucket through its S3-compatible API; see [deployment](deployment.md#cloudflare-r2-image-storage). Optional AI accepts an OpenAI-compatible endpoint and is separately configured through server-side secrets; review its consent and spend controls before enabling it.
 
@@ -27,7 +27,7 @@ API_INTERNAL_ORIGIN=http://127.0.0.1:8080 PORT=3000 pnpm --filter @workspace/pro
 
 The optional server-only `API_INTERNAL_ORIGIN` lets Next.js proxy `/api/*` to Express in a local or standalone setup. It must be an exact HTTP(S) origin and must be set before `next build` for production output. It is not a browser credential. Leave it unset when the hosting platform already routes the API.
 
-For local development, set `API_INTERNAL_ORIGIN` to the Express API origin. For deployment, configure that variable on the Vercel build so its Next.js rewrite sends `/api/*` to the Render API. Set exact HTTPS `AUTH_APP_ORIGIN` and matching CORS origins. GitHub hosts source and CI; it does not host the dynamic application.
+For local development, set `API_INTERNAL_ORIGIN` to the Express API origin. For deployment, configure that variable on the Cloudflare build so its Next.js rewrite sends `/api/*` to the Render API. Set exact HTTPS `AUTH_APP_ORIGIN` and matching CORS origins. GitHub hosts source and CI; it does not host the dynamic application.
 
 Production build commands:
 

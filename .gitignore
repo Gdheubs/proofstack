@@ -6,6 +6,11 @@ tmp
 out-tsc
 *.tsbuildinfo
 .next/
+# Cloudflare Workers build output, local runtime state and local secrets
+.open-next/
+.wrangler/
+.dev.vars
+.dev.vars.*
 .env
 .env.*
 !.env.example

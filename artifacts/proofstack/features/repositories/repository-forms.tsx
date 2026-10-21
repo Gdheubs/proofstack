@@ -1,10 +1,24 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { RepositoryData } from "@workspace/api-client-react";
 import { card, field, Field, values, val } from "@/features/careers/shared";
 import { useRepositoryRun } from "@/hooks/use-repository";
 import { ActionForm } from "./action-form";
-import { CodeEditor } from "./code-editor";
+
+// The editor and its language grammars only ever run in the browser; loading
+// them client-side keeps about 1 MB of CodeMirror out of the server bundle.
+const CodeEditor = dynamic(
+  () => import("./code-editor").then((m) => m.CodeEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-88 rounded-md border text-muted-foreground">
+        Loading editor…
+      </div>
+    ),
+  },
+);
 export function Editor({
   data: d,
   mode,

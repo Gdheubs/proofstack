@@ -95,8 +95,11 @@ jobs:
             exit 1
           fi
       - run: pnpm --filter @workspace/api-server run build
-      - run: pnpm --filter @workspace/proofstack run build
+      # Runs the Next.js production build and packages it as a Cloudflare Worker.
+      - run: pnpm --filter @workspace/proofstack run cf:build
         env:
           NODE_ENV: production
           API_INTERNAL_ORIGIN: http://127.0.0.1:8080
           NEXT_TELEMETRY_DISABLED: "1"
+      - name: Keep the Worker within the Workers Free 3 MiB compressed limit
+        run: node scripts/ci-check-worker-size.mjs artifacts/proofstack

@@ -54,8 +54,12 @@ describe("CI workflow supply-chain policy", () => {
     expect(source).toContain(
       "run: pnpm --filter @workspace/api-server run build",
     );
+    // The Cloudflare build runs the Next.js production build itself.
     expect(source).toContain(
-      "run: pnpm --filter @workspace/proofstack run build",
+      "run: pnpm --filter @workspace/proofstack run cf:build",
+    );
+    expect(source.indexOf("run cf:build")).toBeLessThan(
+      source.indexOf("run: node scripts/ci-check-worker-size.mjs"),
     );
   });
 

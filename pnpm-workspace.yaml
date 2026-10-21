@@ -6,6 +6,8 @@ packages:
 
 allowBuilds:
   esbuild: true
+  # Downloads the Cloudflare Workers runtime used by wrangler/OpenNext.
+  workerd: true
   '@firebase/util': false
   protobufjs: false
 
@@ -67,3 +69,5 @@ overrides:
   js-yaml: 4.3.2
   # GHSA-r7fv-28h4-cvq7 and GHSA-gfr2-rv44-r23c, dev-only via orval>typedoc.
   markdown-it: 14.3.3
+  # GHSA-wq5f-xc86-pv6w (librsvg in sharp <0.35.5), dev-only via wrangler>miniflare.
+  'miniflare>sharp': 0.35.5

@@ -8,7 +8,7 @@ evidence section says so.
 ## Release boundary
 
 - [x] The application is a Next.js 16 frontend, Express 5 API, PostgreSQL/Drizzle data layer, Supabase-managed identity, and optional workers.
-- [x] The target layout is Vercel for the frontend, Render for the API, Supabase for PostgreSQL/Auth/Storage, and GitHub Actions for CI.
+- [x] The target layout is Cloudflare Workers for the frontend, Render for the API, Supabase for PostgreSQL/Auth, Cloudflare R2 for images, and GitHub Actions for CI and scheduled maintenance.
 - [x] Native Git hosting, background intelligence jobs, and image uploads remain disabled for the initial free-tier beta until their durable-storage/worker controls have been implemented and accepted.
 - [ ] A product owner has approved the beta privacy notice, terms, support contact, retention schedule, account-erasure policy, and external AI provider policy.
 
@@ -16,10 +16,10 @@ evidence section says so.
 
 - [x] Remove Replit deployment scaffolding and unused mockup workspace.
 - [x] Remove Replit-only development CORS, CSP, authentication-origin, and Next development-origin allowances.
-- [x] Document the Vercel, Render, Supabase, and GitHub target layout.
+- [x] Document the Render, Supabase and GitHub target layout (frontend moved from Vercel to Cloudflare Workers on 2026-10-21).
 - [x] Add a non-deploying Render Blueprint for the API with a health check and secret placeholders.
-- [ ] Confirm the Vercel project is configured with `artifacts/proofstack` as its Root Directory and `API_INTERNAL_ORIGIN` set to the HTTPS Render API origin at build time.
-- [ ] Confirm production environment variables exist only in Vercel, Render, and Supabase secret/configuration stores.
+- [ ] Confirm the Cloudflare Worker builds from `artifacts/proofstack` with `API_INTERNAL_ORIGIN` set to the HTTPS Render API origin at build time.
+- [ ] Confirm production environment variables exist only in Cloudflare, Render, Supabase and GitHub environment secret stores.
 - [ ] Verify the exact GitHub commit is pushed and hosted CI passes.
 
 **Exit evidence:** a clean checkout installs from `pnpm-lock.yaml`; lint, typecheck,
@@ -77,11 +77,11 @@ documented recovery procedure works without data loss.
 
 ## Known free-tier constraints
 
-| Service       | Suitable beta use                             | Constraint that blocks a production claim                                                           |
-| ------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Vercel Hobby  | Personal/noncommercial Next.js frontend       | Usage limits and personal-use restriction.                                                          |
-| Render Free   | Staging Express API                           | Sleeps after idle, has an ephemeral filesystem, and does not provide a free persistent worker/disk. |
-| Supabase Free | Fresh staging PostgreSQL/Auth/Storage project | 500 MB database, 1 GB storage, project pause after inactivity, and no automatic backups.            |
+| Service                 | Suitable beta use                             | Constraint that blocks a production claim                                                           |
+| ----------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Cloudflare Workers Free | Commercial-use Next.js frontend               | 3 MiB compressed Worker and about 10 ms CPU per request; Paid is $5/month.                          |
+| Render Free             | Staging Express API                           | Sleeps after idle, has an ephemeral filesystem, and does not provide a free persistent worker/disk. |
+| Supabase Free           | Fresh staging PostgreSQL/Auth/Storage project | 500 MB database, 1 GB storage, project pause after inactivity, and no automatic backups.            |
 
 The current source must therefore keep uploads, native Git hosting, and
 always-on worker features disabled until a provider and operational model
