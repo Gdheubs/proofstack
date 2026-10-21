@@ -114,8 +114,9 @@ it("returns the verified legacy callback to the auth UI without trusting query d
       `${CSRF_COOKIE}=${csrf}`,
       `${DEVICE_COOKIE}=${signedNonce()}`,
     ]);
-  expect(response.status).toBe(303);
-  expect(response.headers.location).toBe("/auth");
+  expect(response.status).toBe(200);
+  expect(response.headers.location).toBeUndefined();
+  expect(response.text).toContain('content="0;url=/auth"');
   expect(
     (response.headers["set-cookie"] as unknown as string[]).some((cookie) =>
       cookie.startsWith(`${SESSION_COOKIE}=`),
@@ -132,10 +133,26 @@ it("returns the verified legacy callback to the auth UI without trusting query d
     (await pool.query("SELECT * FROM users WHERE auth_subject=$1", [uid])).rows,
   ).toHaveLength(1);
 });
-it("retains the safe failed callback redirect", async () => {
+it("retains the safe failed callback navigation", async () => {
   const response = await supertest(app()).get(
     "/api/auth/callback?code=bad&next=//attacker.example.test",
   );
-  expect(response.status).toBe(303);
-  expect(response.headers.location).toBe("/auth?error=callback_failed");
+  expect(response.status).toBe(200);
+  expect(response.headers.location).toBeUndefined();
+  expect(response.headers["referrer-policy"]).toBe("no-referrer");
+  expect(response.text).toContain(
+    'content="0;url=/auth?error=callback_failed"',
+  );
+  expect(response.text).not.toContain("attacker");
+});
+// The web tier's fetch proxy follows redirects, so the API must not issue them.
+it("issues no HTTP redirects from the API", async () => {
+  const { readdirSync, readFileSync } = await import("node:fs");
+  const root = new URL("../artifacts/api-server/src/", import.meta.url);
+  const files = readdirSync(root, { recursive: true, encoding: "utf8" })
+    .filter((file) => file.endsWith(".ts"))
+    .filter((file) =>
+      /\bres\.redirect\(/.test(readFileSync(new URL(file, root), "utf8")),
+    );
+  expect(files).toEqual([]);
 });

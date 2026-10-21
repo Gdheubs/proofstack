@@ -420,6 +420,22 @@ export async function runAction(
   }
 }
 
+// The web tier's proxy follows HTTP redirects itself, which would resolve
+// "/auth" against the API origin and drop the session cookies set here. A page
+// that navigates client-side reaches the browser intact with its cookies.
+function continueTo(
+  res: Response,
+  path: "/auth" | "/auth?error=callback_failed",
+) {
+  res
+    .status(200)
+    .set("Referrer-Policy", "no-referrer")
+    .type("html")
+    .send(
+      `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${path}"><title>Signing in</title><a href="${path}">Continue</a>`,
+    );
+}
+
 export async function authCallback(req: Request, res: Response) {
   try {
     const handle = req.cookies?.["__Host-ps-flow"];
@@ -442,10 +458,10 @@ export async function authCallback(req: Request, res: Response) {
     );
     await consumeFlow(handle, res);
     // The auth UI consumes its tab-local allowlisted destination after context is ready.
-    // Never accept a callback query parameter as a server redirect target.
-    res.redirect(303, "/auth");
+    // Never accept a callback query parameter as a navigation target.
+    continueTo(res, "/auth");
   } catch {
     await audit(req, "auth.callback_failed");
-    res.redirect(303, "/auth?error=callback_failed");
+    continueTo(res, "/auth?error=callback_failed");
   }
 }

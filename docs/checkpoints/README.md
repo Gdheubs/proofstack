@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [First live review and callback fix](2026-10-21-live-review-callback.md) — live anonymous review of the deployed Worker/API; the sign-in callback no longer redirects, because the Worker's proxy followed redirects and dropped session cookies.
 - [Neon application database](2026-10-21-neon-database.md) — Neon replaces Supabase Postgres (Supabase kept for Auth); new guarded migrate:release, pool/TLS/channel-binding settings, preflight checks and identity backups.
 - [Cloudflare Workers frontend](2026-10-21-cloudflare-workers-frontend.md) — Next 16 runs on Workers via OpenNext (Pages is not viable); client-only editor brings the Worker to 2,636 KiB gzip; CI size gate at the free 3 MiB limit.
 - [Scheduled operations](2026-10-21-scheduled-operations.md) — run-once image cleanup and encrypted nightly database backups via GitHub Actions; restore script exercised by a CI drill.
