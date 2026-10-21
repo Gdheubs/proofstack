@@ -36,7 +36,12 @@ pg_restore --dbname="$RESTORE_DATABASE_URL" --no-owner --no-privileges \
 
 tables="$(psql "$RESTORE_DATABASE_URL" -Atqc \
   "SELECT count(*) FROM pg_tables WHERE schemaname IN ('public','auth','drizzle')")"
-migrations="$(psql "$RESTORE_DATABASE_URL" -Atqc \
-  "SELECT CASE WHEN to_regclass('drizzle.__drizzle_migrations') IS NULL THEN 0
-          ELSE (SELECT count(*) FROM drizzle.__drizzle_migrations) END")"
+# Identity-only archives have no migration ledger. Check before counting:
+# PostgreSQL resolves table names even in a CASE branch that never runs.
+migrations=0
+if [ "$(psql "$RESTORE_DATABASE_URL" -Atqc \
+  "SELECT to_regclass('drizzle.__drizzle_migrations') IS NOT NULL")" = "t" ]; then
+  migrations="$(psql "$RESTORE_DATABASE_URL" -Atqc \
+    "SELECT count(*) FROM drizzle.__drizzle_migrations")"
+fi
 echo "Restored $tables table(s); $migrations applied migration(s) recorded"

@@ -23,6 +23,10 @@ Parent: `6ee06dc` (Cloudflare Workers frontend). Hosted [ProofStack CI](https://
 - `pnpm run typecheck`, `pnpm lint`, Prettier on changed files passed. Unit tests: 740 passed (53 files). Embedded integration: 190 passed, 2 skipped. `bash -n` on both scripts.
 - **Not verified:** a connection to a real Neon project (none exists yet), Neon cold-start latency, and the identity backup against a real Supabase project. `migrate:release` and the identity-mode drill first execute in hosted CI for this commit.
 
+## Hosted CI
+
+- `c114c10`: [ProofStack Security](https://github.com/Gdheubs/proofstack/actions/runs/39519998457) passed; [ProofStack CI](https://github.com/Gdheubs/proofstack/actions/runs/39519998534) **failed** in the drill. `migrate:release` ran first and reported `14 previously applied, 0 applied now, 14 total`; the main backup/restore matched (`50|14|22`) and the identity backup was written, but restoring it failed: the migration-count query referenced `drizzle.__drizzle_migrations` inside a `CASE` branch, and PostgreSQL resolves table names even in branches that never run. Repair: check `to_regclass` first, count separately. Hosted result for the repair is recorded in the next checkpoint.
+
 ## Remaining risks
 
 - Supabase Free still pauses after a week of inactivity, which would stop sign-in; low-traffic launches need real usage or Supabase Pro.
