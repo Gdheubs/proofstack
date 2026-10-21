@@ -12,6 +12,7 @@ export async function authLimit(
   identifier?: string,
   max = 10,
   seconds = 600,
+  perNetwork = false,
 ) {
   // Without an account identifier, the budget belongs to this client alone.
   // Named accounts retain both their cross-IP budget and the broader IP cap.
@@ -21,7 +22,20 @@ export async function authLimit(
       identifier === undefined ? max : max * 3,
     ],
   ];
-  if (identifier !== undefined) {
+  if (identifier !== undefined && perNetwork) {
+    // Guessing budgets: one network cannot exhaust another network's budget
+    // for the same account, while a wide account-level cap still applies.
+    limits.push(
+      [
+        `auth:idnet:${purpose}:${digest(networkKey(req, identifier), "rate-id")}`,
+        max,
+      ],
+      [
+        `auth:id:${purpose}:${digest(identifier.toLowerCase(), "rate-id")}`,
+        max * 5,
+      ],
+    );
+  } else if (identifier !== undefined) {
     limits.push([
       `auth:id:${purpose}:${digest(identifier.toLowerCase(), "rate-id")}`,
       max,
@@ -37,10 +51,16 @@ export async function authLimit(
       );
   }
 }
-export async function checkLock(identifier: string) {
+// Locks apply to an account from one client network, so failures from
+// elsewhere cannot lock the owner out of their own account.
+const networkKey = (req: Request, identifier: string) =>
+  `${identifier.toLowerCase()}|${rateLimitAddress(req)}`;
+const failureKey = (req: Request, identifier: string) =>
+  digest(networkKey(req, identifier), "failure");
+export async function checkLock(req: Request, identifier: string) {
   const { rows } = await pool.query(
     "SELECT locked_until FROM auth_failures WHERE identifier_hash=$1",
-    [digest(identifier.toLowerCase(), "failure")],
+    [failureKey(req, identifier)],
   );
   if (
     rows[0]?.locked_until &&
@@ -61,17 +81,17 @@ export async function failedAttempt(req: Request, identifier: string) {
     window_started_at=CASE WHEN auth_failures.window_started_at < now()-interval '15 minutes' THEN now() ELSE auth_failures.window_started_at END,
     locked_until=CASE WHEN auth_failures.window_started_at >= now()-interval '15 minutes' AND auth_failures.failures>=4
       THEN now()+interval '15 minutes' ELSE NULL END RETURNING locked_until`,
-    [digest(identifier.toLowerCase(), "failure")],
+    [failureKey(req, identifier)],
   );
   await writeAuditEvent({
     action: rows[0].locked_until ? "auth.account_locked" : "auth.login_failed",
     resourceType: "identity",
     requestId: String(req.id),
-    metadata: { identifierHash: digest(identifier.toLowerCase(), "failure") },
+    metadata: { identifierHash: failureKey(req, identifier) },
   });
 }
-export async function clearFailures(identifier: string) {
+export async function clearFailures(req: Request, identifier: string) {
   await pool.query("DELETE FROM auth_failures WHERE identifier_hash=$1", [
-    digest(identifier.toLowerCase(), "failure"),
+    failureKey(req, identifier),
   ]);
 }

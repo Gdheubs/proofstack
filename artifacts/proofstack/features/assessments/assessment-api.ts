@@ -5,6 +5,7 @@ export type Assessment = {
   description: string;
   questionCount: number;
   durationMinutes: number;
+  retakeCooldownHours?: number;
 };
 export type AssessmentQuestion = {
   id: string;
@@ -21,6 +22,13 @@ export type AssessmentResult = {
   total: number;
   remark: string;
   completedAt: string;
+  /** Which completed attempt this was; older results omit it. */
+  attempt?: number;
+  /** Completed attempts in total; present on profile results. */
+  attempts?: number;
+  topics?: { topic: string; correct: number; total: number }[];
+  /** Weakest topics, which the next attempt emphasises. */
+  focus?: string[];
 };
 export type AssessmentAttempt = {
   id: string;

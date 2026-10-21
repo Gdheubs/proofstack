@@ -196,6 +196,14 @@ export const notificationReadWhere = (alias = "n", viewer = "$1") => `(
      AND EXISTS(SELECT 1 FROM community_contributors notification_invite
      WHERE notification_invite.project_id=p.id AND notification_invite.user_id=${viewer}::uuid
      AND notification_invite.status IN ('pending','active') AND notification_invite.created_at<=${alias}.created_at)))))
+  OR (${alias}.title='Organization invitation'
+   AND ${alias}.href ~ '^/organizations/[a-z0-9]+(-[a-z0-9]+)*$'
+   AND EXISTS(SELECT 1 FROM organizations notification_org
+    JOIN organization_invitations notification_org_invite ON notification_org_invite.organization_id=notification_org.id
+    WHERE '/organizations/'||notification_org.slug=${alias}.href
+    AND ${alias}.body='You are invited to join '||notification_org.name||' on ProofStack. You join only if you accept.'
+    AND notification_org_invite.user_id=${viewer}::uuid AND notification_org_invite.declined_at IS NULL
+    AND notification_org_invite.expires_at>now() AND notification_org_invite.created_at<=${alias}.created_at))
   OR (${alias}.title IN ('Application updated','Application message')
    AND ${alias}.href ~ '^/applications/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
    AND EXISTS(SELECT 1 FROM career_applications notification_application

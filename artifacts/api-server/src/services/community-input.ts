@@ -198,6 +198,11 @@ const schemas = {
     organizationId: id,
     targetId: id,
   }),
+  "member-respond": z.object({
+    action: z.literal("member-respond"),
+    organizationId: id,
+    accept: z.boolean(),
+  }),
   "team-save": z.object({
     action: z.literal("team-save"),
     id: id.optional(),

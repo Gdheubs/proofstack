@@ -85,6 +85,52 @@ export function OrgView({ slug }: { slug: string }) {
             </div>
           )}
         </div>
+        {o.myInvitation && (
+          <div className="rounded-md border border-accent bg-accent/10 p-4">
+            <p className="font-medium">
+              You are invited to join as {roleLabel(o.myInvitation.role)}.
+            </p>
+            <p className="mb-3 text-sm text-muted-foreground">
+              You become a member only if you accept. The invitation expires{" "}
+              {new Date(o.myInvitation.expiresAt).toLocaleDateString()}.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                disabled={pending}
+                onClick={() =>
+                  run(
+                    {
+                      action: "member-respond",
+                      organizationId: o.id,
+                      accept: true,
+                    },
+                    "Invitation accepted.",
+                  )
+                }
+              >
+                Accept
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() =>
+                  run(
+                    {
+                      action: "member-respond",
+                      organizationId: o.id,
+                      accept: false,
+                    },
+                    "Invitation declined.",
+                  )
+                }
+              >
+                Decline
+              </Button>
+            </div>
+          </div>
+        )}
         {o.description && (
           <p className="max-w-3xl whitespace-pre-wrap">{o.description}</p>
         )}

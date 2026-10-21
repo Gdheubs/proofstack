@@ -6,9 +6,14 @@ paths:
       operationId: getCommunityImage
       tags: [community]
       parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
       responses:
-        '200':
+        "200":
           description: Ready PNG JPEG or WebP image subject to reference visibility
           content:
             image/png: { schema: { type: string, format: binary } }
@@ -376,6 +381,28 @@ components:
             type: string,
             enum: [organization_owner, organization_admin, organization_member],
           }
+    CommunityInvitation:
+      type: object
+      required: [person, role, createdAt, expiresAt]
+      properties:
+        person: { $ref: "#/components/schemas/CommunityPerson" }
+        role:
+          {
+            type: string,
+            enum: [organization_owner, organization_admin, organization_member],
+          }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+    CommunityOwnInvitation:
+      type: object
+      required: [role, expiresAt]
+      properties:
+        role:
+          {
+            type: string,
+            enum: [organization_owner, organization_admin, organization_member],
+          }
+        expiresAt: { type: string, format: date-time }
     CommunityTeam:
       type: object
       required: [id, name, description, members]
@@ -403,6 +430,8 @@ components:
           canManage,
           canManageRoles,
           members,
+          invitations,
+          myInvitation,
           teams,
           repositories,
           projects,
@@ -422,6 +451,23 @@ components:
           {
             type: array,
             items: { $ref: "#/components/schemas/CommunityMember" },
+          }
+        invitations:
+          {
+            type: array,
+            description: Pending invitations,
+            shown only to organization managers.,
+            items: { $ref: "#/components/schemas/CommunityInvitation" },
+          }
+        myInvitation:
+          {
+            description: The viewer's own pending invitation,
+            if any.,
+            oneOf:
+              [
+                { $ref: "#/components/schemas/CommunityOwnInvitation" },
+                { type: "null" },
+              ],
           }
         teams:
           { type: array, items: { $ref: "#/components/schemas/CommunityTeam" } }
@@ -581,6 +627,7 @@ components:
                 organization-delete,
                 member-save,
                 member-remove,
+                member-respond,
                 team-save,
                 team-delete,
                 team-member,

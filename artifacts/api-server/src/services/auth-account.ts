@@ -3,6 +3,7 @@ import type { Request } from "express";
 import { ApiError } from "../lib/errors";
 import { adminClient, providerFailure } from "./auth-provider";
 import { hasPermission } from "./authorization";
+import { roleRank } from "./organization-roles";
 import {
   requireFresh,
   requireSupabase,
@@ -69,6 +70,12 @@ export async function getAccount(session: AuthSession) {
     passwordRecovery: session.row.password_recovery,
   };
 }
+// Moderators need to identify accounts, not contact them.
+export function maskEmail(email: string | null) {
+  if (!email) return email;
+  const at = email.lastIndexOf("@");
+  return at > 0 ? `${email[0]}***${email.slice(at)}` : "***";
+}
 export async function listUsers(session: AuthSession) {
   if (!session.user.platformRole)
     throw new ApiError(
@@ -82,7 +89,12 @@ export async function listUsers(session: AuthSession) {
     u.email_verified_at IS NOT NULL AS "emailVerified",u.phone_verified_at IS NOT NULL AS "phoneVerified",
     u.mfa_recovery_required AS "mfaRecoveryRequired",p.display_name AS "displayName",p.kind
     FROM users u JOIN profiles p ON p.user_id=u.id ORDER BY u.created_at DESC LIMIT 100`);
-  return rows;
+  if (["admin", "super_admin"].includes(session.user.platformRole)) return rows;
+  return rows.map((row) => ({
+    ...row,
+    email: maskEmail(row.email),
+    phone: null,
+  }));
 }
 export async function manageUser(
   req: Request,
@@ -242,18 +254,13 @@ export async function organizationRole(
       [organizationId],
     );
     assertLastOwner(member.rows[0]?.key || "", role, owners.rows[0].n);
-    if (!member.rows[0]) {
-      const count = await tx.query(
-        "SELECT count(*)::int AS n FROM organization_members WHERE organization_id=$1 AND status='active'",
-        [organizationId],
+    // Membership requires the developer's consent through an invitation.
+    if (!member.rows[0])
+      throw new ApiError(
+        409,
+        "INVITATION_REQUIRED",
+        "Invite the developer to the organization first; roles apply after they accept",
       );
-      if (count.rows[0].n >= 500)
-        throw new ApiError(
-          409,
-          "MEMBER_LIMIT",
-          "The organization has reached its member limit",
-        );
-    }
     const target = await tx.query(
       "SELECT id,auth_subject FROM users WHERE id=$1 AND status='active'",
       [userId],
@@ -278,12 +285,12 @@ export async function organizationRole(
         "The developer must enroll and verify MFA before receiving an owner or admin role",
       );
     await tx.query(
-      `INSERT INTO organization_members(organization_id,user_id,role_id)
-      SELECT $1,$2,id FROM roles WHERE key=$3 ON CONFLICT(organization_id,user_id)
-      DO UPDATE SET role_id=EXCLUDED.role_id,status='active',updated_at=now()`,
+      `UPDATE organization_members SET role_id=(SELECT id FROM roles WHERE key=$3),updated_at=now()
+      WHERE organization_id=$1 AND user_id=$2`,
       [organizationId, userId, role],
     );
-    if (member.rows[0]?.key !== role)
+    // Only a demotion (owner to admin) must end existing sessions.
+    if (roleRank(role) < roleRank(member.rows[0].key))
       await tx.query(
         "UPDATE sessions SET revoked_at=now(),encrypted_credentials=NULL WHERE user_id=$1",
         [userId],

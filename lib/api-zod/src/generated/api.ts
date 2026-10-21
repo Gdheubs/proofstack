@@ -711,6 +711,29 @@ export const GetCommunityResponse = zod.object({
 }),
   "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member'])
 })),
+  "invitations": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.string().uuid(),
+  "handle": zod.string(),
+  "displayName": zod.string(),
+  "kind": zod.enum(['developer', 'company', 'recruiter']),
+  "avatarPath": zod.string(),
+  "bio": zod.string(),
+  "location": zod.string(),
+  "skills": zod.array(zod.string()),
+  "followers": zod.number().int(),
+  "following": zod.number().int(),
+  "followingByMe": zod.boolean(),
+  "isMe": zod.boolean()
+}),
+  "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member']),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+})).describe('Pending invitations'),
+  "myInvitation": zod.union([zod.object({
+  "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member']),
+  "expiresAt": zod.coerce.date()
+}),zod.null()]).describe('The viewer\'s own pending invitation'),
   "teams": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1002,6 +1025,29 @@ export const GetCommunityResponse = zod.object({
 }),
   "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member'])
 })),
+  "invitations": zod.array(zod.object({
+  "person": zod.object({
+  "id": zod.string().uuid(),
+  "handle": zod.string(),
+  "displayName": zod.string(),
+  "kind": zod.enum(['developer', 'company', 'recruiter']),
+  "avatarPath": zod.string(),
+  "bio": zod.string(),
+  "location": zod.string(),
+  "skills": zod.array(zod.string()),
+  "followers": zod.number().int(),
+  "following": zod.number().int(),
+  "followingByMe": zod.boolean(),
+  "isMe": zod.boolean()
+}),
+  "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member']),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+})).describe('Pending invitations'),
+  "myInvitation": zod.union([zod.object({
+  "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member']),
+  "expiresAt": zod.coerce.date()
+}),zod.null()]).describe('The viewer\'s own pending invitation'),
   "teams": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1233,7 +1279,7 @@ export const GetCommunityImageResponse = zod.unknown()
 
 
 export const RunCommunityActionBody = zod.object({
-  "action": zod.enum(['profile-save', 'entry-save', 'entry-delete', 'follow', 'post-save', 'post-delete', 'comment-save', 'comment-delete', 'reaction', 'bookmark', 'project-save', 'project-delete', 'contributor-invite', 'contributor-respond', 'contributor-remove', 'organization-save', 'organization-delete', 'member-save', 'member-remove', 'team-save', 'team-delete', 'team-member', 'notification-read', 'asset-complete', 'asset-delete']),
+  "action": zod.enum(['profile-save', 'entry-save', 'entry-delete', 'follow', 'post-save', 'post-delete', 'comment-save', 'comment-delete', 'reaction', 'bookmark', 'project-save', 'project-delete', 'contributor-invite', 'contributor-respond', 'contributor-remove', 'organization-save', 'organization-delete', 'member-save', 'member-remove', 'member-respond', 'team-save', 'team-delete', 'team-member', 'notification-read', 'asset-complete', 'asset-delete']),
   "id": zod.string().uuid().optional(),
   "targetId": zod.string().uuid().optional(),
   "targetType": zod.enum(['post', 'comment', 'project']).optional(),

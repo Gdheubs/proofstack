@@ -44,6 +44,34 @@ const start = async (assessmentId = "javascript-foundations") => {
   expect(response.status).toBe(200);
   return response.body as AssessmentAttempt;
 };
+type KeyQuestion = {
+  id: string;
+  topic: string;
+  correctOptionId: string;
+  options: { id: string }[];
+};
+// Graders' view of an attempt: the stored snapshot, including the answer key.
+const key = async (attemptId: string) =>
+  (
+    await pool.query("SELECT snapshot FROM assessment_attempts WHERE id=$1", [
+      attemptId,
+    ])
+  ).rows[0].snapshot.questions as KeyQuestion[];
+const answersFor = async (attempt: AssessmentAttempt, correct = Infinity) =>
+  Object.fromEntries(
+    (await key(attempt.id)).map((q, i) => [
+      q.id,
+      i < correct
+        ? q.correctOptionId
+        : q.options.find((o) => o.id !== q.correctOptionId)!.id,
+    ]),
+  );
+// Moves completed attempts past the retake cooldown.
+const allowRetake = () =>
+  pool.query(
+    "UPDATE assessment_attempts SET completed_at=completed_at-interval '25 hours' WHERE user_id=$1 AND completed_at IS NOT NULL",
+    [owner],
+  );
 beforeEach(async () => {
   process.env.AUTH_APP_ORIGIN = "https://assessment.example.test";
   process.env.SESSION_SECRET =
@@ -165,7 +193,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     it("matches existing profile visibility including unpublished and disabled profiles", async () => {
       const attempt = await start();
       await post(`/api/assessments/attempts/${attempt.id}/submit`, {
-        answers: Object.fromEntries(attempt.questions.map((q) => [q.id, "a"])),
+        answers: await answersFor(attempt),
       });
       await pool.query("UPDATE profiles SET handle=NULL WHERE user_id=$1", [
         owner,
@@ -289,7 +317,10 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         )
       ).rows[0];
       row.snapshot.title = "Earlier question version";
-      row.snapshot.questions[0].correctOptionId = "c";
+      const first = row.snapshot.questions[0];
+      first.correctOptionId = first.options.find(
+        (o: { id: string }) => o.id !== first.correctOptionId,
+      ).id;
       await pool.query(
         "UPDATE assessment_attempts SET snapshot=$2::jsonb,question_version=2 WHERE id=$1",
         [attempt.id, JSON.stringify(row.snapshot)],
@@ -299,15 +330,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       expect(resumed.title).toBe("Earlier question version");
       const response = await post(
         `/api/assessments/attempts/${attempt.id}/submit`,
-        {
-          answers: {
-            "js-const": "c",
-            "js-equality": "a",
-            "js-map": "c",
-            "js-await": "b",
-            "js-nullish": "a",
-          },
-        },
+        { answers: await answersFor(attempt) },
       );
       expect(response.status).toBe(200);
       expect(response.body.result.score).toBe(100);
@@ -336,41 +359,31 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     it("lists only the latest completed result per assessment for owners and public profiles", async () => {
       const old = await start();
       await post(`/api/assessments/attempts/${old.id}/submit`, {
-        answers: Object.fromEntries(old.questions.map((q) => [q.id, "a"])),
+        answers: await answersFor(old, 0),
       });
+      await allowRetake();
       const latest = await start();
       const completed = await post(
         `/api/assessments/attempts/${latest.id}/submit`,
-        {
-          answers: {
-            "js-const": "b",
-            "js-equality": "a",
-            "js-map": "c",
-            "js-await": "b",
-            "js-nullish": "a",
-          },
-        },
+        { answers: await answersFor(latest) },
       );
+      expect(completed.body.result.attempt).toBe(2);
       const accessibility = await start("web-accessibility");
       const second = await post(
         `/api/assessments/attempts/${accessibility.id}/submit`,
-        {
-          answers: {
-            "a11y-button": "c",
-            "a11y-alt": "a",
-            "a11y-label": "b",
-            "a11y-keyboard": "c",
-            "a11y-color": "b",
-          },
-        },
+        { answers: await answersFor(accessibility) },
       );
+      await allowRetake();
       await start(); // A newer incomplete attempt must not replace a completed result.
       const response = await request(app).get(
         "/api/assessments/results?handle=me",
       );
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
-        results: [second.body.result, completed.body.result],
+        results: [
+          { ...second.body.result, attempts: 1 },
+          { ...completed.body.result, attempts: 2 },
+        ],
       });
       expect(JSON.stringify(response.body)).not.toMatch(
         /snapshot|answers|questions|user_id|correctOptionId/,
@@ -383,26 +396,19 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       expect(publicResult.body).toEqual(response.body);
     });
     it.each([
-      [0, "Foundations need practice"],
-      [3, "Developing foundations demonstrated"],
-      [5, "Strong foundations demonstrated"],
+      [0, 0, "Foundations need practice"],
+      [5, 63, "Developing foundations demonstrated"],
+      [8, 100, "Strong foundations demonstrated"],
     ] as const)(
       "reports honest skill-check feedback for %i correct answers",
-      async (correct, prefix) => {
+      async (correct, score, prefix) => {
         const attempt = await start("web-accessibility");
-        const keys = ["c", "a", "b", "c", "b"];
-        const answers = Object.fromEntries(
-          attempt.questions.map((q, i) => [
-            q.id,
-            i < correct ? keys[i] : q.options.find((o) => o.id !== keys[i])!.id,
-          ]),
-        );
         const response = await post(
           `/api/assessments/attempts/${attempt.id}/submit`,
-          { answers },
+          { answers: await answersFor(attempt, correct) },
         );
         expect(response.status).toBe(200);
-        expect(response.body.result.score).toBe(correct * 20);
+        expect(response.body.result.score).toBe(score);
         expect(response.body.result.correct).toBe(correct);
         expect(response.body.result.remark).toBe(
           `${prefix} in this self-directed platform skill check; not proctored or expert verification.`,
@@ -411,18 +417,13 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     );
     it("never regrades a submitted attempt even when the answers change", async () => {
       const attempt = await start();
-      const answers = Object.fromEntries(
-        attempt.questions.map((q) => [q.id, "a"]),
-      );
+      const answers = await answersFor(attempt);
       const first = await post(
         `/api/assessments/attempts/${attempt.id}/submit`,
         { answers },
       );
       expect(first.status).toBe(200);
-      for (const options of [
-        answers,
-        Object.fromEntries(attempt.questions.map((q) => [q.id, "b"])),
-      ]) {
+      for (const options of [answers, await answersFor(attempt, 0)]) {
         const retry = await post(
           `/api/assessments/attempts/${attempt.id}/submit`,
           { answers: options },
@@ -434,60 +435,38 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         (await request(app).get(`/api/assessments/attempts/${attempt.id}`))
           .body,
       ).toEqual(first.body);
+      const cooling = await post("/api/assessments/start", {
+        assessmentId: "javascript-foundations",
+      });
+      expect(cooling.status).toBe(429);
+      expect(cooling.body.error.code).toBe("ASSESSMENT_COOLDOWN");
+      await allowRetake();
       expect((await start()).id).not.toBe(attempt.id);
     });
+    type Answers = Record<string, string>;
+    const firstOnly = (a: Answers) =>
+      Object.fromEntries(Object.entries(a).slice(0, 1));
+    const unknownOption = (a: Answers) => {
+      const [id] = Object.keys(a);
+      return { ...a, [id!]: "not-an-option" };
+    };
     it.each([
-      { answers: {} },
-      { answers: { "js-const": "b" } },
-      {
-        answers: {
-          "js-const": "b",
-          "js-equality": "a",
-          "js-map": "c",
-          "js-await": "b",
-          "js-nullish": "d",
-        },
-      },
-      {
-        answers: {
-          "js-const": "b",
-          "js-equality": "a",
-          "js-map": "c",
-          "js-await": "b",
-          "js-nullish": "a",
-          extra: "a",
-        },
-      },
-      {
-        answers: {
-          "js-const": "b",
-          "js-equality": "a",
-          "js-map": "c",
-          "js-await": "b",
-          "js-nullish": "a",
-        },
-        score: 100,
-      },
-      {
-        answers: {
-          "js-const": "b",
-          "js-equality": "a",
-          "js-map": "c",
-          "js-await": "b",
-          "js-nullish": "a",
-        },
-        userId: "forged",
-      },
-      { answers: [] },
-      { answers: null },
-      { answers: { "js-const": 2 } },
+      () => ({ answers: {} }),
+      (a: Answers) => ({ answers: firstOnly(a) }),
+      (a: Answers) => ({ answers: unknownOption(a) }),
+      (a: Answers) => ({ answers: { ...a, extra: "a" } }),
+      (a: Answers) => ({ answers: a, score: 100 }),
+      (a: Answers) => ({ answers: a, userId: "forged" }),
+      () => ({ answers: [] }),
+      () => ({ answers: null }),
+      (a: Answers) => ({ answers: { [Object.keys(a)[0]!]: 2 } }),
     ])(
       "rejects incomplete, invalid or client-graded submission %# without saving",
-      async (body) => {
+      async (build) => {
         const attempt = await start();
         const response = await post(
           `/api/assessments/attempts/${attempt.id}/submit`,
-          body,
+          build(await answersFor(attempt)),
         );
         expect(response.status).toBe(400);
         expect(response.body.error.code).toBe("INVALID_ASSESSMENT_INPUT");
@@ -506,13 +485,8 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     );
     it("grades answers on the server and persists a non-proctored talent remark", async () => {
       const attempt = await start();
-      const answers = {
-        "js-const": "b",
-        "js-equality": "a",
-        "js-map": "c",
-        "js-await": "b",
-        "js-nullish": "b",
-      };
+      const answers = await answersFor(attempt, 7);
+      const missed = (await key(attempt.id))[7]!.topic;
       const response = await post(
         `/api/assessments/attempts/${attempt.id}/submit`,
         { answers },
@@ -524,13 +498,28 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         assessmentId: "javascript-foundations",
         title: "JavaScript foundations",
         skill: "JavaScript",
-        score: 80,
-        correct: 4,
-        total: 5,
+        score: 88,
+        correct: 7,
+        total: 8,
         remark:
           "Strong foundations demonstrated in this self-directed platform skill check; not proctored or expert verification.",
         completedAt: expect.any(String),
+        attempt: 1,
+        topics: expect.arrayContaining([
+          {
+            topic: missed,
+            correct: expect.any(Number),
+            total: expect.any(Number),
+          },
+        ]),
+        focus: [missed],
       });
+      expect(
+        response.body.result.topics.reduce(
+          (n: number, t: { total: number }) => n + t.total,
+          0,
+        ),
+      ).toBe(8);
       const row = (
         await pool.query("SELECT * FROM assessment_attempts WHERE id=$1", [
           attempt.id,
@@ -547,14 +536,14 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       ).toEqual(response.body);
       expect(JSON.stringify(response.body)).not.toContain("correctOptionId");
     });
-    it("stores a versioned, resumable five-question attempt owned by the signed-in user", async () => {
+    it("stores a versioned, resumable eight-question attempt owned by the signed-in user", async () => {
       const attempt = await start();
       expect(attempt.status).toBe("in_progress");
-      expect(attempt.questions).toHaveLength(5);
-      expect(new Set(attempt.questions.map((q) => q.id)).size).toBe(5);
+      expect(attempt.questions).toHaveLength(8);
+      expect(new Set(attempt.questions.map((q) => q.id)).size).toBe(8);
       for (const q of attempt.questions) {
         expect(Object.keys(q).sort()).toEqual(["id", "options", "prompt"]);
-        expect(q.options).toHaveLength(3);
+        expect(q.options).toHaveLength(4);
         for (const option of q.options)
           expect(Object.keys(option).sort()).toEqual(["id", "label"]);
       }
@@ -565,7 +554,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         ])
       ).rows[0];
       expect(row.user_id).toBe(owner);
-      expect(row.question_version).toBe(1);
+      expect(row.question_version).toBe(2);
       expect(row.started_at).toBeInstanceOf(Date);
       expect(row.completed_at).toBeNull();
       expect(row.result).toBeNull();
@@ -574,7 +563,50 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
           .body,
       ).toEqual(attempt);
       expect((await start()).id).toBe(attempt.id);
-      expect((await start("web-accessibility")).questions).toHaveLength(5);
+      expect((await start("web-accessibility")).questions).toHaveLength(8);
+    });
+    it("draws a new question set with fresh option ids and more questions on missed topics", async () => {
+      const first = await start();
+      const firstKey = await key(first.id);
+      // Miss every question on one topic and answer the rest correctly.
+      const weak = firstKey[0]!.topic;
+      await post(`/api/assessments/attempts/${first.id}/submit`, {
+        answers: Object.fromEntries(
+          firstKey.map((q) => [
+            q.id,
+            q.topic === weak
+              ? q.options.find((o) => o.id !== q.correctOptionId)!.id
+              : q.correctOptionId,
+          ]),
+        ),
+      });
+      await allowRetake();
+      const next = await start();
+      const nextKey = await key(next.id);
+      const previous = new Set(firstKey.map((q) => q.id));
+      expect(nextKey.filter((q) => previous.has(q.id))).toEqual([]);
+      expect(new Set(nextKey.map((q) => q.topic)).size).toBe(6);
+      expect(nextKey.filter((q) => q.topic === weak)).toHaveLength(2);
+      const optionIds = new Set(
+        firstKey.flatMap((q) => q.options.map((o) => o.id)),
+      );
+      expect(
+        nextKey
+          .flatMap((q) => q.options.map((o) => o.id))
+          .some((id) => optionIds.has(id)),
+      ).toBe(false);
+    });
+    it("keeps the retake cooldown per check and explains it", async () => {
+      const attempt = await start();
+      await post(`/api/assessments/attempts/${attempt.id}/submit`, {
+        answers: await answersFor(attempt),
+      });
+      const blocked = await post("/api/assessments/start", {
+        assessmentId: "javascript-foundations",
+      });
+      expect(blocked.status).toBe(429);
+      expect(blocked.body.error.message).toMatch(/new question set/);
+      expect((await start("web-accessibility")).status).toBe("in_progress");
     });
   },
 );

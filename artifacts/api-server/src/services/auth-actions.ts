@@ -92,8 +92,8 @@ export async function runAction(
       };
     }
     case "password-login": {
-      await authLimit(req, "password-login", input.email, 10, 900);
-      await checkLock(input.email);
+      await authLimit(req, "password-login", input.email, 10, 900, true);
+      await checkLock(req, input.email);
       const result = await providerClient().auth.signInWithPassword({
         email: input.email,
         password: input.password,
@@ -109,7 +109,7 @@ export async function runAction(
           "Check your credentials and verification status",
         );
       await createSession(req, res, result.data.session);
-      await clearFailures(input.email);
+      await clearFailures(req, input.email);
       return { message: "Signed in", signedIn: true };
     }
     case "email-otp":
@@ -123,7 +123,7 @@ export async function runAction(
           "PHONE_OTP_SETUP_REQUIRED",
           "Phone OTP is pending MSG91 and Supabase SMS-hook setup",
         );
-      await checkLock(identifier);
+      await checkLock(req, identifier);
       await authLimit(req, "otp-resend", identifier, 1, 60);
       await authLimit(req, "otp-send", identifier, 3, 600);
       await audit(req, "auth.otp_requested", null, null, {
@@ -170,8 +170,8 @@ export async function runAction(
           "INVALID_VERIFICATION",
           "Use the provider verification link for this request",
         );
-      await checkLock(flow.identifier);
-      await authLimit(req, "otp-verify", flow.identifier, 5, 900);
+      await checkLock(req, flow.identifier);
+      await authLimit(req, "otp-verify", flow.identifier, 5, 900, true);
       if (flow.type === "phone_change") {
         const actor = requireAccount(optional);
         if (flow.userId !== actor.user.id)
@@ -218,7 +218,7 @@ export async function runAction(
       }
       await createSession(req, res, result.data.session);
       await consumeFlow(input.handle, res);
-      await clearFailures(flow.identifier);
+      await clearFailures(req, flow.identifier);
       return { message: "Verification complete", signedIn: true };
     }
     case "oauth": {
@@ -449,7 +449,7 @@ export async function authCallback(req: Request, res: Response) {
     providerFailure(result.error);
     if (!result.data.session)
       throw new Error("Provider session was not returned");
-    if (flow.identifier) await checkLock(flow.identifier);
+    if (flow.identifier) await checkLock(req, flow.identifier);
     await createSession(
       req,
       res,

@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CommunityEntry } from './communityEntry';
+import type { CommunityInvitation } from './communityInvitation';
 import type { CommunityMember } from './communityMember';
 import type { CommunityOrganizationVisibility } from './communityOrganizationVisibility';
+import type { CommunityOwnInvitation } from './communityOwnInvitation';
 import type { CommunityProject } from './communityProject';
 import type { CommunityTeam } from './communityTeam';
 
@@ -24,6 +26,10 @@ export interface CommunityOrganization {
   canManage: boolean;
   canManageRoles: boolean;
   members: CommunityMember[];
+  /** Pending invitations */
+  invitations: CommunityInvitation[];
+  /** The viewer's own pending invitation */
+  myInvitation: CommunityOwnInvitation | null;
   teams: CommunityTeam[];
   repositories: CommunityEntry[];
   projects: CommunityProject[];

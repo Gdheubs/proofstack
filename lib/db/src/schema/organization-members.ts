@@ -45,6 +45,39 @@ export const organizationMembersTable = pgTable(
   ],
 );
 
+// Membership starts as an invitation the invited account must accept.
+// A declined invitation is kept briefly so it cannot be re-sent repeatedly.
+export const organizationInvitationsTable = pgTable(
+  "organization_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizationsTable.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    roleId: uuid("role_id")
+      .notNull()
+      .references(() => rolesTable.id, { onDelete: "restrict" }),
+    invitedBy: uuid("invited_by").references(() => usersTable.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    declinedAt: timestamp("declined_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("organization_invitations_org_user_unique").on(
+      table.organizationId,
+      table.userId,
+    ),
+    index("organization_invitations_user_idx").on(table.userId),
+  ],
+);
+
 export const insertOrganizationMemberSchema = createInsertSchema(
   organizationMembersTable,
 ).omit({

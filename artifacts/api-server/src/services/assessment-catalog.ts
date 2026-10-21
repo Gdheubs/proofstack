@@ -1,3 +1,5 @@
+// Hours a user waits after completing a check before a new attempt can start.
+export const RETAKE_COOLDOWN_HOURS = 24;
 export function assessmentCatalog() {
   return {
     assessments: [
@@ -7,8 +9,9 @@ export function assessmentCatalog() {
         skill: "JavaScript",
         description:
           "A self-directed platform skill check covering everyday JavaScript fundamentals.",
-        questionCount: 5,
-        durationMinutes: 10,
+        questionCount: 8,
+        durationMinutes: 12,
+        retakeCooldownHours: RETAKE_COOLDOWN_HOURS,
       },
       {
         id: "web-accessibility",
@@ -16,8 +19,9 @@ export function assessmentCatalog() {
         skill: "Web accessibility",
         description:
           "A self-directed platform skill check covering inclusive web interfaces.",
-        questionCount: 5,
-        durationMinutes: 10,
+        questionCount: 8,
+        durationMinutes: 12,
+        retakeCooldownHours: RETAKE_COOLDOWN_HOURS,
       },
     ],
   };

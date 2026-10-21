@@ -17,16 +17,18 @@ it("serves the curated skill-check catalog without questions or answer keys", as
       title: "JavaScript foundations",
       skill: "JavaScript",
       description: expect.any(String),
-      questionCount: 5,
-      durationMinutes: 10,
+      questionCount: 8,
+      durationMinutes: 12,
+      retakeCooldownHours: 24,
     },
     {
       id: "web-accessibility",
       title: "Web accessibility",
       skill: "Web accessibility",
       description: expect.any(String),
-      questionCount: 5,
-      durationMinutes: 10,
+      questionCount: 8,
+      durationMinutes: 12,
+      retakeCooldownHours: 24,
     },
   ]);
   expect(JSON.stringify(response.body)).not.toMatch(/correct|answer|questions/);

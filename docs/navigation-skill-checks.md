@@ -22,9 +22,19 @@ applications/inbox destination.
 ## Skill-check behavior
 
 Open **Talent → Skill checks** (`/assessments`). The initial platform-curated
-library contains JavaScript foundations and web accessibility, each with five
-multiple-choice questions. The duration is an estimate, not an enforced timer.
+library contains JavaScript foundations and web accessibility. Each has a bank
+of 24 four-option questions across six topics, and each attempt draws eight.
+The duration is an estimate, not an enforced timer.
 
+- Every attempt gets a new question set built from the account's history: each
+  topic appears once, the two remaining questions go to the topics missed most
+  in the last three attempts, unseen questions are preferred, and the previous
+  attempt's questions are not repeated. Answer options are shuffled and get new
+  random ids each attempt, so answer positions and ids cannot be memorized.
+- After completing a check, the same check can be retaken after 24 hours. An
+  open attempt can always be resumed.
+- Results show the score per topic and up to two topics to practice next, and
+  profiles show how many attempts the latest score took.
 - Signed-in accounts start or resume their own open attempt.
 - Questions are shown one at a time with previous/next controls and progress.
 - All answers must be valid before submission; the server independently enforces
@@ -45,7 +55,9 @@ Remarks distinguish strong foundations (80% or more), developing foundations
 (60% or more), and foundations needing practice (below 60%). These are explicitly
 self-directed knowledge checks, **not proctored identity checks, professional
 seniority ratings, or verified employment**. Practical challenges, a platform
-admin question editor and anti-cheating/proctoring are not implemented here.
+admin question editor and proctoring are not implemented here. The rotating
+question sets, retake cooldown and visible attempt count limit score gaming but
+do not stop someone from looking answers up during an attempt.
 
 ## Database and API
 

@@ -1139,6 +1139,36 @@ export interface CommunityMember {
   role: CommunityMemberRole;
 }
 
+export type CommunityInvitationRole = typeof CommunityInvitationRole[keyof typeof CommunityInvitationRole];
+
+
+export const CommunityInvitationRole = {
+  organization_owner: 'organization_owner',
+  organization_admin: 'organization_admin',
+  organization_member: 'organization_member',
+} as const;
+
+export interface CommunityInvitation {
+  person: CommunityPerson;
+  role: CommunityInvitationRole;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export type CommunityOwnInvitationRole = typeof CommunityOwnInvitationRole[keyof typeof CommunityOwnInvitationRole];
+
+
+export const CommunityOwnInvitationRole = {
+  organization_owner: 'organization_owner',
+  organization_admin: 'organization_admin',
+  organization_member: 'organization_member',
+} as const;
+
+export interface CommunityOwnInvitation {
+  role: CommunityOwnInvitationRole;
+  expiresAt: string;
+}
+
 export interface CommunityTeam {
   id: string;
   name: string;
@@ -1167,6 +1197,10 @@ export interface CommunityOrganization {
   canManage: boolean;
   canManageRoles: boolean;
   members: CommunityMember[];
+  /** Pending invitations */
+  invitations: CommunityInvitation[];
+  /** The viewer's own pending invitation */
+  myInvitation: CommunityOwnInvitation | null;
   teams: CommunityTeam[];
   repositories: CommunityEntry[];
   projects: CommunityProject[];
@@ -1231,6 +1265,7 @@ export const CommunityInputAction = {
   'organization-delete': 'organization-delete',
   'member-save': 'member-save',
   'member-remove': 'member-remove',
+  'member-respond': 'member-respond',
   'team-save': 'team-save',
   'team-delete': 'team-delete',
   'team-member': 'team-member',

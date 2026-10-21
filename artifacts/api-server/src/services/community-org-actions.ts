@@ -10,6 +10,139 @@ import {
 import { requireFresh, type AuthSession } from "./auth-sessions";
 import { ApiError } from "../lib/errors";
 import { adminClient, providerFailure } from "./auth-provider";
+import { roleRank } from "./organization-roles";
+// Owner and admin roles require a verified native sign-in factor.
+async function assertTargetMfa(db: CommunityDb, userId: string) {
+  const targetUser = (
+    await db.query(
+      "SELECT auth_subject FROM users WHERE id=$1 AND status='active'",
+      [userId],
+    )
+  ).rows[0];
+  if (!targetUser) throw missing();
+  const native = await adminClient().auth.admin.getUserById(
+    targetUser.auth_subject,
+  );
+  providerFailure(native.error);
+  if (
+    !native.data.user?.factors?.some(
+      (f) =>
+        f.status === "verified" && ["totp", "phone"].includes(f.factor_type),
+    )
+  )
+    throw new ApiError(
+      409,
+      "TARGET_MFA_REQUIRED",
+      "The developer must enroll and verify MFA before receiving an owner or admin role",
+    );
+}
+async function assertMemberCapacity(db: CommunityDb, organizationId: string) {
+  const count = (
+    await db.query(
+      "SELECT count(*)::int AS n FROM organization_members WHERE organization_id=$1 AND status='active'",
+      [organizationId],
+    )
+  ).rows[0].n;
+  if (count >= 500)
+    throw new ApiError(
+      409,
+      "MEMBER_LIMIT",
+      "The organization has reached its member limit",
+    );
+}
+const INVITE_DAYS = 14;
+const DECLINE_COOLDOWN_DAYS = 7;
+const NOTIFY_HOURS = 24;
+async function inviteMember(
+  db: CommunityDb,
+  uid: string,
+  organizationId: string,
+  target: string,
+  role: string,
+) {
+  if (role !== "organization_member") await assertTargetMfa(db, target);
+  await assertMemberCapacity(db, organizationId);
+  const existing = (
+    await db.query(
+      "SELECT declined_at,expires_at,created_at FROM organization_invitations WHERE organization_id=$1 AND user_id=$2 FOR UPDATE",
+      [organizationId, target],
+    )
+  ).rows[0];
+  if (
+    existing?.declined_at &&
+    new Date(existing.declined_at).getTime() >
+      Date.now() - DECLINE_COOLDOWN_DAYS * 86400000
+  )
+    throw new ApiError(
+      409,
+      "INVITATION_DECLINED",
+      "This developer recently declined an invitation. Try again later.",
+    );
+  const pendingNow =
+    existing &&
+    !existing.declined_at &&
+    new Date(existing.expires_at).getTime() > Date.now();
+  // created_at records the last notification; cancelling and re-inviting
+  // within a day reopens the invitation without notifying again.
+  const recentlyNotified =
+    !!existing &&
+    new Date(existing.created_at).getTime() >
+      Date.now() - NOTIFY_HOURS * 3600000;
+  if (!pendingNow) {
+    const pending = (
+      await db.query(
+        "SELECT count(*)::int AS n FROM organization_invitations WHERE organization_id=$1 AND declined_at IS NULL AND expires_at>now()",
+        [organizationId],
+      )
+    ).rows[0].n;
+    if (pending >= 100)
+      throw new ApiError(
+        409,
+        "INVITATION_LIMIT",
+        "This organization has too many pending invitations",
+      );
+  }
+  await db.query(
+    "INSERT INTO roles(key,name) VALUES('organization_member','Organization Member') ON CONFLICT(key) DO NOTHING",
+  );
+  await db.query(
+    `INSERT INTO organization_invitations(organization_id,user_id,role_id,invited_by,expires_at)
+    SELECT $1,$2,id,$4,now()+make_interval(days=>$5::int) FROM roles WHERE key=$3
+    ON CONFLICT(organization_id,user_id) DO UPDATE SET role_id=EXCLUDED.role_id,invited_by=EXCLUDED.invited_by,
+      created_at=CASE WHEN $7::boolean THEN organization_invitations.created_at ELSE now() END,
+      expires_at=CASE WHEN $6::boolean THEN organization_invitations.expires_at ELSE EXCLUDED.expires_at END,declined_at=NULL`,
+    [
+      organizationId,
+      target,
+      role,
+      uid,
+      INVITE_DAYS,
+      Boolean(pendingNow),
+      Boolean(pendingNow) || recentlyNotified,
+    ],
+  );
+  // One notification per invitation; changing a pending invitation's role is silent.
+  if (!pendingNow && !recentlyNotified) {
+    const org = (
+      await db.query("SELECT name,slug FROM organizations WHERE id=$1", [
+        organizationId,
+      ])
+    ).rows[0];
+    await notify(
+      db,
+      target,
+      uid,
+      "Organization invitation",
+      `You are invited to join ${org.name} on ProofStack. You join only if you accept.`,
+      `/organizations/${org.slug}`,
+    );
+  }
+  return {
+    message: pendingNow
+      ? "Pending invitation updated"
+      : "Invitation sent. They join after accepting.",
+  };
+}
 export async function organizationAction(
   db: CommunityDb,
   s: AuthSession,
@@ -75,6 +208,35 @@ export async function organizationAction(
         "Organization and its teams, repositories and projects deleted. Sign in again.",
     };
   }
+  if (input.action === "member-respond") {
+    const invite = (
+      await db.query(
+        `SELECT i.id,r.key,o.slug FROM organization_invitations i JOIN roles r ON r.id=i.role_id
+        JOIN organizations o ON o.id=i.organization_id
+        WHERE i.organization_id=$1 AND i.user_id=$2 AND i.declined_at IS NULL AND i.expires_at>now() FOR UPDATE OF i`,
+        [input.organizationId, uid],
+      )
+    ).rows[0];
+    if (!invite) throw missing();
+    if (!input.accept) {
+      await db.query(
+        "UPDATE organization_invitations SET declined_at=now() WHERE id=$1",
+        [invite.id],
+      );
+      return { message: "Invitation declined" };
+    }
+    if (invite.key !== "organization_member") await assertTargetMfa(db, uid);
+    await assertMemberCapacity(db, input.organizationId);
+    await db.query(
+      `INSERT INTO organization_members(organization_id,user_id,role_id) SELECT $1,$2,id FROM roles WHERE key=$3
+    ON CONFLICT(organization_id,user_id) DO UPDATE SET role_id=EXCLUDED.role_id,status='active',updated_at=now()`,
+      [input.organizationId, uid, invite.key],
+    );
+    await db.query("DELETE FROM organization_invitations WHERE id=$1", [
+      invite.id,
+    ]);
+    return { message: "Invitation accepted", slug: invite.slug };
+  }
   if (input.action === "member-save" || input.action === "member-remove") {
     await authorizeOrg(db, s, input.organizationId, "owner");
     const target =
@@ -88,6 +250,18 @@ export async function organizationAction(
       )
     ).rows[0]?.key;
     const next = input.action === "member-save" ? input.role : null;
+    // Nobody joins an organization without consent: new members are invited.
+    if (!old) {
+      if (input.action === "member-remove") {
+        const cancelled = await db.query(
+          "UPDATE organization_invitations SET expires_at=now() WHERE organization_id=$1 AND user_id=$2 AND declined_at IS NULL AND expires_at>now()",
+          [input.organizationId, target],
+        );
+        if (!cancelled.rowCount) throw missing();
+        return { message: "Invitation cancelled" };
+      }
+      return inviteMember(db, uid, input.organizationId, target, input.role);
+    }
     const owners = (
       await db.query(
         "SELECT count(*)::int AS n FROM organization_members m JOIN roles r ON r.id=m.role_id JOIN users u ON u.id=m.user_id AND u.status='active' WHERE m.organization_id=$1 AND m.status='active' AND r.key='organization_owner'",
@@ -105,49 +279,9 @@ export async function organizationAction(
         "The organization must retain an active owner",
       );
     if (input.action === "member-save") {
-      if (next !== "organization_member") {
-        const targetUser = (
-          await db.query(
-            "SELECT auth_subject FROM users WHERE id=$1 AND status='active'",
-            [target],
-          )
-        ).rows[0];
-        if (!targetUser) throw missing();
-        const native = await adminClient().auth.admin.getUserById(
-          targetUser.auth_subject,
-        );
-        providerFailure(native.error);
-        if (
-          !native.data.user?.factors?.some(
-            (f) =>
-              f.status === "verified" &&
-              ["totp", "phone"].includes(f.factor_type),
-          )
-        )
-          throw new ApiError(
-            409,
-            "TARGET_MFA_REQUIRED",
-            "The developer must enroll and verify MFA before receiving an owner or admin role",
-          );
-      }
-      const count = (
-        await db.query(
-          "SELECT count(*)::int AS n FROM organization_members WHERE organization_id=$1 AND status='active'",
-          [input.organizationId],
-        )
-      ).rows[0].n;
-      if (!old && count >= 500)
-        throw new ApiError(
-          409,
-          "MEMBER_LIMIT",
-          "The organization has reached its member limit",
-        );
+      if (next !== "organization_member") await assertTargetMfa(db, target);
       await db.query(
-        "INSERT INTO roles(key,name) VALUES('organization_member','Organization Member') ON CONFLICT(key) DO NOTHING",
-      );
-      await db.query(
-        `INSERT INTO organization_members(organization_id,user_id,role_id) SELECT $1,$2,id FROM roles WHERE key=$3
-    ON CONFLICT(organization_id,user_id) DO UPDATE SET role_id=EXCLUDED.role_id,status='active',updated_at=now()`,
+        "UPDATE organization_members SET role_id=(SELECT id FROM roles WHERE key=$3),updated_at=now() WHERE organization_id=$1 AND user_id=$2",
         [input.organizationId, target, next],
       );
       await notify(
@@ -159,7 +293,6 @@ export async function organizationAction(
         "/organizations",
       );
     } else {
-      if (!old) throw missing();
       await db.query(
         "UPDATE organization_members SET status='inactive',updated_at=now() WHERE organization_id=$1 AND user_id=$2",
         [input.organizationId, target],
@@ -173,16 +306,20 @@ export async function organizationAction(
         [target, input.organizationId],
       );
     }
-    if (old !== next)
+    // Losing access must take effect at once; a promotion needs no sign-out.
+    const demoted = roleRank(next) < roleRank(old);
+    if (demoted)
       await db.query(
         "UPDATE sessions SET revoked_at=now(),encrypted_credentials=NULL WHERE user_id=$1",
         [target],
       );
     return {
       message:
-        input.action === "member-save"
-          ? "Membership saved. Changed members must sign in again."
-          : "Member removed",
+        input.action === "member-remove"
+          ? "Member removed"
+          : demoted
+            ? "Role updated. The member must sign in again."
+            : "Role updated",
     };
   }
   if (input.action === "team-save") {

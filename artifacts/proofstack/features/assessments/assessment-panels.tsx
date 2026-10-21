@@ -190,8 +190,38 @@ export function AssessmentResultCard({ result }: { result: AssessmentResult }) {
           </p>
         </div>
       </div>
+      {result.topics?.length ? (
+        <ul
+          aria-label="Score by topic"
+          className="mt-4 grid gap-1.5 text-xs sm:grid-cols-2"
+        >
+          {result.topics.map((t) => (
+            <li
+              key={t.topic}
+              className="flex justify-between gap-3 rounded border px-2 py-1"
+            >
+              <span className="min-w-0 break-words">{t.topic}</span>
+              <span className="shrink-0 font-mono">
+                {t.correct}/{t.total}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {result.focus?.length ? (
+        <p className="mt-3 text-sm">
+          <span className="font-medium">Practice next:</span>{" "}
+          {result.focus.join(", ")}. Your next attempt includes more questions
+          on {result.focus.length > 1 ? "these topics" : "this topic"}.
+        </p>
+      ) : null}
       <p className="mt-5 border-t pt-3 font-mono text-xs text-muted-foreground">
         Completed <time dateTime={result.completedAt}>{dateLabel}</time> · UTC
+        {result.attempts
+          ? ` · ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}`
+          : result.attempt
+            ? ` · attempt ${result.attempt}`
+            : ""}
       </p>
     </article>
   );
@@ -263,7 +293,8 @@ export function AssessmentResultsContent({
           <p className="text-xs leading-relaxed text-muted-foreground">
             Scoring: correct answers ÷ total questions × 100. Questions are
             equally weighted. The remark is supplied by the check&apos;s scoring
-            rules.
+            rules. Every attempt draws a new question set, and the attempt count
+            is shown with the latest score.
           </p>
         </>
       ) : (
@@ -325,6 +356,9 @@ export function AssessmentCatalogContent({
               <p className="mb-5 border-t pt-4 font-mono text-xs text-muted-foreground">
                 {assessment.questionCount} questions ·{" "}
                 {assessment.durationMinutes} min estimated
+                {assessment.retakeCooldownHours
+                  ? ` · new questions each attempt · retake after ${assessment.retakeCooldownHours} h`
+                  : ""}
               </p>
               {canAct ? (
                 <button

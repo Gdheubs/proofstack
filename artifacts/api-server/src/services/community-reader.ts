@@ -18,6 +18,10 @@ import {
   missing,
 } from "./community-policy";
 
+// An invited account may see the organization it was invited to, to respond.
+const PENDING_INVITE = (org: string) =>
+  `EXISTS(SELECT 1 FROM organization_invitations i WHERE i.organization_id=${org} AND i.user_id=$1::uuid AND i.declined_at IS NULL AND i.expires_at>now())`;
+
 export class CommunityReader {
   private people = new Map<string, Promise<CommunityPerson | null>>();
   constructor(readonly uid: string | null) {}
@@ -128,8 +132,12 @@ export class CommunityReader {
     }
     return Promise.all(
       r.rows.map(async (p) => {
+        // Pending invitations are visible only to project editors and the invitee.
+        const visible = (contributorGroups.get(p.id) ?? []).filter(
+          (c) => c.status === "active" || p.can_edit || c.user_id === this.uid,
+        );
         const people = await Promise.all(
-          (contributorGroups.get(p.id) ?? []).map(async (c) => ({
+          visible.map(async (c) => ({
             person: await this.person(c.user_id),
             status: c.status,
           })),
@@ -291,7 +299,7 @@ export class CommunityReader {
       `SELECT o.*,coalesce(op.description,'') AS description,coalesce(op.website,'') AS website,coalesce(op.visibility,'public') AS visibility,
     (SELECT count(*)::int FROM organization_members m JOIN users mu ON mu.id=m.user_id AND mu.status='active' WHERE m.organization_id=o.id AND m.status='active') AS member_count
     FROM organizations o LEFT JOIN community_organization_profiles op ON op.organization_id=o.id
-    WHERE (coalesce(op.visibility,'public')='public' OR ${memberAccessWhere("o.id")})
+    WHERE (coalesce(op.visibility,'public')='public' OR ${memberAccessWhere("o.id")} OR ${PENDING_INVITE("o.id")})
     AND (${where}) ORDER BY o.created_at DESC,o.id DESC LIMIT 21 OFFSET $${values.length + 2}`,
       [this.uid, ...values, offset],
     );
@@ -323,6 +331,38 @@ export class CommunityReader {
                 })),
               )
             : [];
+        const myInvite =
+          role || !this.uid
+            ? undefined
+            : (
+                await pool.query(
+                  `SELECT r.key,i.expires_at FROM organization_invitations i JOIN roles r ON r.id=i.role_id
+                WHERE i.organization_id=$1 AND i.user_id=$2::uuid AND i.declined_at IS NULL AND i.expires_at>now()`,
+                  [o.id, this.uid],
+                )
+              ).rows[0];
+        const inviteRows =
+          detail && canManage
+            ? (
+                await pool.query(
+                  `SELECT i.user_id,r.key,i.created_at,i.expires_at FROM organization_invitations i JOIN roles r ON r.id=i.role_id
+                  JOIN users u ON u.id=i.user_id AND u.status='active'
+                  WHERE i.organization_id=$1 AND i.declined_at IS NULL AND i.expires_at>now() ORDER BY i.created_at LIMIT 100`,
+                  [o.id],
+                )
+              ).rows
+            : [];
+        await this.preloadPeople(inviteRows.map((i) => i.user_id));
+        const invitations = (
+          await Promise.all(
+            inviteRows.map(async (i) => ({
+              person: await this.person(i.user_id),
+              role: i.key,
+              createdAt: i.created_at.toISOString(),
+              expiresAt: i.expires_at.toISOString(),
+            })),
+          )
+        ).filter((i) => i.person);
         const teamRows =
           detail && role
             ? (
@@ -369,6 +409,13 @@ export class CommunityReader {
               "community.organization.members",
             )),
           members,
+          invitations,
+          myInvitation: myInvite
+            ? {
+                role: myInvite.key,
+                expiresAt: myInvite.expires_at.toISOString(),
+              }
+            : null,
           teams,
           repositories:
             detail && role

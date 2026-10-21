@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { internalPagesHidden } from "@/lib/internal-pages";
 
 export function SiteFooter() {
   return (
@@ -33,12 +34,16 @@ export function SiteFooter() {
           <Link className="hover:underline" href="/career">
             Career workspace
           </Link>
-          <Link className="hover:underline" href="/foundation">
-            System status
-          </Link>
-          <Link className="hover:underline" href="/design-system">
-            Design system
-          </Link>
+          {!internalPagesHidden() && (
+            <>
+              <Link className="hover:underline" href="/foundation">
+                System status
+              </Link>
+              <Link className="hover:underline" href="/design-system">
+                Design system
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </footer>

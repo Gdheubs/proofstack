@@ -29,6 +29,7 @@ export const CommunityInputAction = {
   'organization-delete': 'organization-delete',
   'member-save': 'member-save',
   'member-remove': 'member-remove',
+  'member-respond': 'member-respond',
   'team-save': 'team-save',
   'team-delete': 'team-delete',
   'team-member': 'team-member',

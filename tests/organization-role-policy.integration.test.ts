@@ -99,6 +99,19 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
     afterAll(async () => {
       await pool.end();
     });
+    // Existing members change role; the community path invites non-members.
+    const join = (role: string) =>
+      pool.query(
+        "INSERT INTO organization_members(organization_id,user_id,role_id) SELECT $1,$2,id FROM roles WHERE key=$3",
+        [org, target, role],
+      );
+    const targetRole = async () =>
+      (
+        await pool.query(
+          "SELECT r.key FROM organization_members m JOIN roles r ON r.id=m.role_id WHERE m.organization_id=$1 AND m.user_id=$2",
+          [org, target],
+        )
+      ).rows[0]?.key ?? null;
     const grant = (path: "legacy" | "community", role: Role) =>
       path === "legacy"
         ? organizationRole(
@@ -134,17 +147,21 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         ).toHaveLength(2);
       });
       it(`${path} rolls back privileges when the identity provider lookup fails`, async () => {
+        if (path === "legacy") await join("organization_member");
         provider.lookup.mockRejectedValue(
           new Error("test-only identity transport unavailable"),
         );
         await expect(grant(path, "organization_admin")).rejects.toThrow(
           "test-only identity transport unavailable",
         );
+        expect(await targetRole()).toBe(
+          path === "legacy" ? "organization_member" : null,
+        );
         expect(
           (
             await pool.query(
-              "SELECT id FROM organization_members WHERE organization_id=$1 AND user_id=$2",
-              [org, target],
+              "SELECT id FROM organization_invitations WHERE organization_id=$1",
+              [org],
             )
           ).rows,
         ).toHaveLength(0);
@@ -184,13 +201,16 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
           "INSERT INTO organization_members(organization_id,user_id,role_id) SELECT $1,uid,r.id FROM unnest($2::uuid[]) ids(uid) CROSS JOIN roles r WHERE r.key='organization_member'",
           [org, extra],
         );
+        // Membership requires an accepted invitation; the limit applies there.
         await expect(grant(path, "organization_admin")).rejects.toMatchObject({
           status: 409,
-          code: "MEMBER_LIMIT",
+          code: path === "legacy" ? "INVITATION_REQUIRED" : "MEMBER_LIMIT",
         });
       });
-      it(`${path} revokes target sessions when a privileged role changes`, async () => {
+      it(`${path} revokes target sessions when a role is lowered`, async () => {
+        await join("organization_owner");
         await grant(path, "organization_admin");
+        expect(await targetRole()).toBe("organization_admin");
         expect(
           (
             await pool.query(
@@ -199,6 +219,35 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
             )
           ).rows,
         ).toHaveLength(0);
+      });
+      it(`${path} keeps target sessions when a role is raised`, async () => {
+        await join("organization_member");
+        await grant(path, "organization_admin");
+        expect(await targetRole()).toBe("organization_admin");
+        expect(
+          (
+            await pool.query(
+              "SELECT id FROM sessions WHERE user_id=$1 AND revoked_at IS NULL AND encrypted_credentials IS NOT NULL",
+              [target],
+            )
+          ).rows,
+        ).toHaveLength(2);
+      });
+      it(`${path} never adds a non-member without their acceptance`, async () => {
+        if (path === "legacy")
+          await expect(grant(path, "organization_admin")).rejects.toMatchObject(
+            { status: 409, code: "INVITATION_REQUIRED" },
+          );
+        else await grant(path, "organization_admin");
+        expect(await targetRole()).toBeNull();
+        expect(
+          (
+            await pool.query(
+              "SELECT id FROM sessions WHERE user_id=$1 AND revoked_at IS NULL AND encrypted_credentials IS NOT NULL",
+              [target],
+            )
+          ).rows,
+        ).toHaveLength(2);
       });
       it(`${path} does not count disabled owners when protecting the final active owner`, async () => {
         await pool.query("UPDATE users SET status='disabled' WHERE id=$1", [
@@ -244,6 +293,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         ])(
           `${path} rejects ${role} grants with %s native MFA`,
           async (_name, factors) => {
+            if (path === "legacy") await join("organization_member");
             provider.lookup.mockResolvedValue({
               data: { user: { id: subject, factors } },
               error: null,
@@ -253,14 +303,9 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
               code: "TARGET_MFA_REQUIRED",
             });
             expect(provider.lookup).toHaveBeenCalledWith(subject);
-            expect(
-              (
-                await pool.query(
-                  "SELECT * FROM organization_members WHERE organization_id=$1 AND user_id=$2",
-                  [org, target],
-                )
-              ).rows,
-            ).toHaveLength(0);
+            expect(await targetRole()).toBe(
+              path === "legacy" ? "organization_member" : null,
+            );
             expect(
               (
                 await pool.query(
