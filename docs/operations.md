@@ -36,7 +36,7 @@ Set external uptime alerts for readiness failure, sustained 5xx errors, oldest q
 - **Privacy safeguards:**
   - Reports go to `/api/monitoring/tunnel`, which relays only to the configured project. The browser never contacts Sentry directly, and the content security policy stays same-origin.
   - Cookies, request bodies, query strings, auth headers and user details other than the internal account ID are removed before anything is sent.
-- **Alerts:** in Sentry, add issue alerts for new issues and for more than 10 events in 5 minutes, and a performance alert on p95 above 2 s. Point UptimeRobot (free) at `/api/healthz` for uptime, never `/api/readyz` (see the Neon notes).
+- **Alerts:** in Sentry, add issue alerts for new issues and for more than 10 events in 5 minutes, and a performance alert on p95 above 2 s. Point UptimeRobot (free) at the website's `https://<site>/api/healthz`, which checks the website and the API together, for uptime, never `/api/readyz` (see the Neon notes).
 
 Run `pnpm --filter @workspace/api-server run ops:benchmark -- http://127.0.0.1:8080` on local staging. The script sends 40 requests per endpoint with concurrency four, uses timeouts and reports failures/p50/p95. It accepts loopback targets only and does not establish a throughput SLO. For launch, seed representative project/contributor/application volumes and measure database plans, latency, memory and queue lag under expected concurrent roles. Project-card reads are batched into four queries for a page; other lists and bounded offset pagination still require scale evaluation. Do not describe the included fixture timing as a production load test.
 

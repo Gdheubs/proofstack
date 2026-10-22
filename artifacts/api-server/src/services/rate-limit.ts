@@ -42,6 +42,16 @@ export async function consumeRateLimit(
   };
 }
 
+// Housekeeping rides on real traffic instead of a timer: a timer would wake
+// a scaled-to-zero database even when nobody is using the site.
+let nextPrune = 0;
+export function pruneWhenDue(now = Date.now()) {
+  if (now < nextPrune) return;
+  nextPrune = now + 15 * 60 * 1000;
+  void pruneRateLimitBuckets().catch(() => {
+    nextPrune = 0;
+  });
+}
 export async function pruneRateLimitBuckets() {
   await databaseQuery(
     "DELETE FROM rate_limit_buckets WHERE window_start < now() - interval '24 hours'",

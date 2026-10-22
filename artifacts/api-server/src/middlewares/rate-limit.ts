@@ -5,7 +5,7 @@ import { digest } from "../lib/auth-crypto";
 import { rateLimitAddress } from "../lib/client-ip";
 import { env } from "../lib/env";
 import { ApiError } from "../lib/errors";
-import { consumeRateLimit } from "../services/rate-limit";
+import { consumeRateLimit, pruneWhenDue } from "../services/rate-limit";
 
 // Carrier-grade NAT and office networks put many people behind one address.
 // Past the per-address allowance, a request with a live session counts
@@ -44,6 +44,7 @@ export const apiRateLimit: RequestHandler = async (
       window,
       max * SHARED_NETWORK_CEILING,
     );
+    pruneWhenDue();
     const used = max * SHARED_NETWORK_CEILING - network.remaining;
     let result = {
       allowed: network.allowed && used <= max,
