@@ -36,7 +36,7 @@ export function providerConfig() {
     throw new ApiError(
       409,
       "AUTH_METHOD_UNAVAILABLE",
-      "Supabase authentication is not selected",
+      "This sign-in method is not available",
     );
   }
   const url = process.env.SUPABASE_URL;

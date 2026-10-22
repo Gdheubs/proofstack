@@ -71,7 +71,6 @@ describe("workspace navigation", () => {
     ["/community", "Build log"],
     ["/posts/example", "Build log"],
     ["/bookmarks", "Build log"],
-    ["/notifications", "Build log"],
   ])("assigns %s to %s only", (path, expected) => {
     const section = getNavigationSection(path);
     expect(section?.label).toBe(expected);
@@ -84,12 +83,17 @@ describe("workspace navigation", () => {
     }
   });
 
-  it.each(["/community-other", "/careers", "/profiled", "/account", "/auth"])(
-    "does not highlight an unrelated group for %s",
-    (path) => {
-      expect(getNavigationSection(path)).toBeUndefined();
-    },
-  );
+  // Notifications live behind the header bell, outside every menu group.
+  it.each([
+    "/community-other",
+    "/careers",
+    "/profiled",
+    "/account",
+    "/auth",
+    "/notifications",
+  ])("does not highlight an unrelated group for %s", (path) => {
+    expect(getNavigationSection(path)).toBeUndefined();
+  });
 
   it.each(["/profile/me", "/profile/settings"])(
     "marks My profile current for the self route %s (N5)",
@@ -144,7 +148,7 @@ const ownership: Record<string, [string | undefined, string | undefined]> = {
   "/community": ["Build log", "/community"],
   "/posts/[id]": ["Build log", "/community"],
   "/bookmarks": ["Build log", "/bookmarks"],
-  "/notifications": ["Build log", "/notifications"],
+  "/notifications": [undefined, undefined],
   "/account": [undefined, undefined],
   "/account/admin": [undefined, undefined],
   "/account/operations": [undefined, undefined],

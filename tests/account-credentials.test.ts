@@ -154,10 +154,10 @@ it("renders Firebase social credentials and read-only native factors, never lega
   expect(html).not.toContain("Generate backup codes");
   expect(html).not.toContain(">Recover<");
   expect(html).toContain("Social sign-in");
-  expect(html).toContain("external identity provider");
+  expect(html).toContain("managed by that account");
   expect(html).toContain("Personal authenticator");
-  expect(html).toContain("Native verification");
-  expect(html).toContain("enrollment and recovery are pending");
+  expect(html).toContain("Your enrolled factors are checked");
+  expect(html).toContain("not available here yet");
   expect(html).toContain("Profile");
   expect(html).toContain("Devices");
 });
@@ -193,7 +193,7 @@ it("routes Firebase step-up to native provider sign-in, not the Supabase challen
   const html = await renderAccount();
   expect(html).not.toContain("Legacy step-up dialog");
   expect(html).toContain("Confirm it is you");
-  expect(html).toContain("native Firebase second-factor");
+  expect(html).toContain("fresh second-factor sign-in");
   expect(html).toContain("Sign out and verify again");
   expect(html).toContain("Cancel verification");
   const { restartFirebaseSignIn } = await import(

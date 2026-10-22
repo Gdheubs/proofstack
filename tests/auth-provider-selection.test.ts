@@ -19,7 +19,7 @@ describe("authentication provider selection", () => {
   it("does not send Firebase authentication through the legacy Supabase client", () => {
     vi.stubEnv("AUTH_PROVIDER", "firebase");
     expect(() => providerClient()).toThrowError(
-      "Supabase authentication is not selected",
+      "This sign-in method is not available",
     );
   });
 

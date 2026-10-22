@@ -54,14 +54,14 @@ authRouter.post("/auth/firebase/session", async (req, res) => {
     throw new ApiError(
       409,
       "AUTH_METHOD_UNAVAILABLE",
-      "Firebase authentication is not selected",
+      "This sign-in method is not available",
     );
   const parsed = firebaseSessionSchema.safeParse(req.body);
   if (!parsed.success)
     throw new ApiError(
       400,
       "INVALID_AUTH_INPUT",
-      "Provide only a valid Firebase ID token",
+      "The sign-in token is not valid",
     );
   await authLimit(req, "firebase-session", undefined, 10, 600);
   await createFirebaseAppSession(req, res, parsed.data.idToken);
@@ -87,7 +87,8 @@ authRouter.get("/auth/context", async (req, res) => {
               (f) => f.status === "verified",
             )))),
     factors: session ? factors(session.providerUser) : [],
-    capabilities: available,
+    // Setup progress is for operators; the public response only says what works.
+    capabilities: { ...available, pendingSetup: [] },
   });
 });
 authRouter.post("/auth/action", async (req, res) => {

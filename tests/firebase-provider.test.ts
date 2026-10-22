@@ -559,13 +559,13 @@ it("exports the lazy Admin auth client and a safe error adapter for integration-
     ),
   ).toMatchObject({
     ...unauthorized,
-    message: "Firebase authentication is invalid or expired",
+    message: "Your sign-in has expired. Sign in again",
   });
   expect(
     provider.mapFirebaseAdminError(new Error("fake-secret")),
   ).toMatchObject({
     ...unavailable,
-    message: "Firebase authentication is unavailable",
+    message: "Sign-in is temporarily unavailable",
   });
 });
 

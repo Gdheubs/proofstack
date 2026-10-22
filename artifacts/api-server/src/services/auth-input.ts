@@ -27,7 +27,7 @@ const phone = z
     "Use an international phone number, including +country code",
   );
 const name = z.string().trim().min(1).max(160);
-const kind = z.enum(["developer", "company", "recruiter"]);
+const kind = z.enum(["developer", "recruiter"]);
 const password = z
   .string()
   .min(12)

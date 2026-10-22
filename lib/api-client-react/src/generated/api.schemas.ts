@@ -10,7 +10,6 @@ export type AccountUserKind = typeof AccountUserKind[keyof typeof AccountUserKin
 
 export const AccountUserKind = {
   developer: 'developer',
-  company: 'company',
   recruiter: 'recruiter',
 } as const;
 
@@ -155,7 +154,6 @@ export type AuthActionInputKind = typeof AuthActionInputKind[keyof typeof AuthAc
 
 export const AuthActionInputKind = {
   developer: 'developer',
-  company: 'company',
   recruiter: 'recruiter',
 } as const;
 
@@ -1007,7 +1005,6 @@ export type CommunityPersonKind = typeof CommunityPersonKind[keyof typeof Commun
 
 export const CommunityPersonKind = {
   developer: 'developer',
-  company: 'company',
   recruiter: 'recruiter',
 } as const;
 

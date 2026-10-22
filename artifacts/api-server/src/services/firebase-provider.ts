@@ -182,7 +182,7 @@ const unauthorized = () =>
   new ApiError(
     401,
     "FIREBASE_UNAUTHORIZED",
-    "Firebase authentication is invalid or expired",
+    "Your sign-in has expired. Sign in again",
   );
 
 function validateTokenInput(value: unknown): asserts value is string {
@@ -361,7 +361,7 @@ const unavailable = () =>
   new ApiError(
     503,
     "FIREBASE_UNAVAILABLE",
-    "Firebase authentication is unavailable",
+    "Sign-in is temporarily unavailable",
   );
 
 export function getFirebaseProjectId(

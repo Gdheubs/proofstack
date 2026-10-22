@@ -11,6 +11,5 @@ export type CommunityPersonKind = typeof CommunityPersonKind[keyof typeof Commun
 
 export const CommunityPersonKind = {
   developer: 'developer',
-  company: 'company',
   recruiter: 'recruiter',
 } as const;

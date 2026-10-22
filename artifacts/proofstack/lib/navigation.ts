@@ -105,7 +105,7 @@ export const NAV: NavigationSection[] = [
   {
     href: "/community",
     label: "Build log",
-    prefixes: ["/community", "/posts", "/bookmarks", "/notifications"],
+    prefixes: ["/community", "/posts", "/bookmarks"],
     children: [
       {
         href: "/community",
@@ -116,11 +116,6 @@ export const NAV: NavigationSection[] = [
         href: "/bookmarks",
         label: "Bookmarks",
         description: "Return to updates you saved",
-      },
-      {
-        href: "/notifications",
-        label: "Notifications",
-        description: "Replies, mentions and activity",
       },
     ],
   },

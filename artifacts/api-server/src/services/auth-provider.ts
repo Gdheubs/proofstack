@@ -108,7 +108,7 @@ export function providerFailure(
     throw new ApiError(
       503,
       "EMAIL_DELIVERY_SETUP_REQUIRED",
-      "Development email delivery is restricted to Supabase project-team addresses",
+      "Email delivery is not available right now. Try again later",
     );
   }
   throw new ApiError(

@@ -172,8 +172,8 @@ export function MfaEnroll({
   if (!totpEnabled && !phoneEnabled)
     return (
       <Notice tone="warn">
-        Second-factor enrollment is pending provider setup. Check back once MFA
-        is enabled.
+        Second-factor enrollment is not available yet. Check back once MFA is
+        enabled.
       </Notice>
     );
 
@@ -221,7 +221,7 @@ export function MfaEnroll({
               onClick={() => setType(v)}
             >
               {l}
-              {!on && " (pending setup)"}
+              {!on && " (not available yet)"}
             </Button>
           ))}
         </div>

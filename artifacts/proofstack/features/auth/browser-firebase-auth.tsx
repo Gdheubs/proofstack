@@ -492,11 +492,10 @@ export function BrowserFirebaseAuth({
           role="status"
           className="rounded-md border border-accent/60 bg-accent/10 p-3 text-sm"
         >
-          Privileged access remains blocked until a native Firebase
-          second-factor sign-in succeeds. If you already enrolled an
-          authenticator, sign in again below to verify it. Native MFA enrollment
-          is pending in this app; contact your administrator if you have not
-          enrolled.
+          Privileged access remains blocked until a second-factor sign-in
+          succeeds. If you already enrolled an authenticator, sign in again
+          below to verify it. Native MFA enrollment is pending in this app;
+          contact your administrator if you have not enrolled.
         </div>
       )}
       {(framed || problem?.openInNewTab) && (

@@ -49,7 +49,7 @@ export const flowCookieOptions = { ...cookieOptions, maxAge: 20 * 60 * 1000 };
 export type AccountUser = {
   id: string;
   displayName: string;
-  kind: "developer" | "company" | "recruiter";
+  kind: "developer" | "recruiter";
   email: string | null;
   phone: string | null;
   emailVerified: boolean;
@@ -215,7 +215,7 @@ export function requireSupabase(session: AuthSession): SupabaseAppSession {
     throw new ApiError(
       409,
       "AUTH_METHOD_UNAVAILABLE",
-      "This security operation is pending Firebase-native support",
+      "This security option is not available yet",
     );
   return session;
 }
@@ -274,9 +274,11 @@ export async function upsertProviderUser(
   if (rows[0].status !== "active")
     throw new ApiError(403, "ACCOUNT_DISABLED", "This account is unavailable");
   const metadata = user.user_metadata || {};
-  const kind = ["developer", "company", "recruiter"].includes(metadata.kind)
-    ? metadata.kind
-    : "developer";
+  // Older sign-ups may carry the retired "company" type; it maps to recruiter.
+  const kind =
+    metadata.kind === "recruiter" || metadata.kind === "company"
+      ? "recruiter"
+      : "developer";
   const name =
     typeof metadata.display_name === "string"
       ? metadata.display_name

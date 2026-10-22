@@ -11,6 +11,5 @@ export type AccountUserKind = typeof AccountUserKind[keyof typeof AccountUserKin
 
 export const AccountUserKind = {
   developer: 'developer',
-  company: 'company',
   recruiter: 'recruiter',
 } as const;

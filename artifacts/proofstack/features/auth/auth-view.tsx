@@ -83,7 +83,7 @@ function Shell({
           </li>
           <li className="border-l-2 border-accent pl-3">
             {firebase
-              ? "Only a Firebase identity token is sent to this app. Provider access tokens are never retained."
+              ? "Only a short-lived sign-in token is sent to this app. Account access tokens are never kept."
               : "Codes are checked by the server. Provider credentials stay there."}
           </li>
         </ul>
@@ -166,7 +166,9 @@ function PasswordTab({ caps }: { caps: AuthCapabilities }) {
   const [birthDate, setBirthDate] = useState("");
   const [accepted, setAccepted] = useState(false);
   if (!caps.password)
-    return <Notice tone="warn">Password sign-in is pending setup.</Notice>;
+    return (
+      <Notice tone="warn">Password sign-in is not available right now.</Notice>
+    );
   return (
     <form
       className="space-y-4"
@@ -295,7 +297,7 @@ function OtpTab({
   if (!enabled)
     return (
       <Notice tone="warn">
-        {via === "email" ? "Email" : "Phone"} codes are pending setup.
+        {via === "email" ? "Email" : "Phone"} codes are not available right now.
       </Notice>
     );
   if (handle)
@@ -554,6 +556,19 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   }
 
   const caps = ctx.capabilities;
+  // Offer only the sign-in methods that work right now.
+  const available = TABS.filter(([k]) =>
+    k === "password"
+      ? caps.password
+      : k === "email"
+        ? caps.emailOtp
+        : k === "phone"
+          ? caps.phoneOtp
+          : caps.socialProviders.length > 0,
+  );
+  const current = available.some(([k]) => k === tab)
+    ? tab
+    : (available[0]?.[0] ?? "password");
   return (
     <Shell>
       {params.get("error") === "callback_failed" && (
@@ -565,23 +580,23 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
         </div>
       )}
       <div role="tablist" className="mb-5 flex flex-wrap gap-1 border-b">
-        {TABS.map(([k, l]) => (
+        {available.map(([k, l]) => (
           <button
             key={k}
             role="tab"
-            aria-selected={tab === k}
+            aria-selected={current === k}
             onClick={() => setTab(k)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === k ? "border-accent font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm ${current === k ? "border-accent font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             {l}
           </button>
         ))}
       </div>
-      {tab === "password" && <PasswordTab caps={caps} />}
-      {tab === "email" && <OtpTab via="email" caps={caps} />}
-      {tab === "phone" && <OtpTab via="phone" caps={caps} />}
-      {tab === "social" && <SocialTab caps={caps} returnTo={returnTo} />}
-      {tab !== "password" && (
+      {current === "password" && <PasswordTab caps={caps} />}
+      {current === "email" && <OtpTab via="email" caps={caps} />}
+      {current === "phone" && <OtpTab via="phone" caps={caps} />}
+      {current === "social" && <SocialTab caps={caps} returnTo={returnTo} />}
+      {current !== "password" && (
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
           New accounts confirm their date of birth (18 or over) and accept the{" "}
           <Link href="/terms" className="underline underline-offset-2">
@@ -592,11 +607,6 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
             Privacy Policy
           </Link>{" "}
           right after signing in.
-        </p>
-      )}
-      {caps.pendingSetup.length > 0 && (
-        <p className="mt-5 font-mono text-[11px] text-muted-foreground">
-          Pending setup: {caps.pendingSetup.join(", ")}
         </p>
       )}
     </Shell>

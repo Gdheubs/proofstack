@@ -12,9 +12,9 @@ import {
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 
+// Two account types. Companies are represented by organizations.
 export const profileKindEnum = pgEnum("profile_kind", [
   "developer",
-  "company",
   "recruiter",
 ]);
 

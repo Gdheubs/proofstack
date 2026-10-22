@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/hooks/use-auth";
-import { ChevronDown, Menu } from "lucide-react";
+import { Bell, ChevronDown, Menu } from "lucide-react";
 import {
   getGetCommunityQueryKey,
   useGetCommunity,
@@ -49,18 +49,8 @@ export function SiteHeader() {
     },
   });
   const unread = notifications.data?.unreadCount ?? 0;
-  const label = (href: string, text: string) => (
-    <span className="flex items-center gap-2">
-      {text}
-      {href === "/notifications" && unread > 0 && (
-        <span
-          aria-label={`${unread} unread notifications`}
-          className="rounded-full bg-accent px-1.5 font-mono text-xs text-accent-foreground"
-        >
-          {unread}
-        </span>
-      )}
-    </span>
+  const label = (_href: string, text: string) => (
+    <span className="flex items-center gap-2">{text}</span>
   );
   const navClass = (active: boolean) =>
     `rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`;
@@ -127,6 +117,28 @@ export function SiteHeader() {
           )}
         </nav>
         <div className="flex items-center gap-1">
+          {session.data?.authenticated && (
+            <Link
+              href="/notifications"
+              aria-label={
+                unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+              }
+              aria-current={
+                pathMatches(path, "/notifications") ? "page" : undefined
+              }
+              className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${pathMatches(path, "/notifications") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+            >
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              {unread > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-0.5 -top-0.5 min-w-[1.125rem] rounded-full bg-accent px-1 text-center font-mono text-[10px] leading-[1.125rem] text-accent-foreground"
+                >
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
+            </Link>
+          )}
           <Link
             href="/account"
             aria-current={pathMatches(path, "/account") ? "page" : undefined}

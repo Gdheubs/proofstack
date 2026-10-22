@@ -30,9 +30,8 @@ export default function TermsPage() {
       <p>
         You must be at least {MINIMUM_AGE} years old and able to enter a binding
         contract under Indian law. You must give your real date of birth and
-        accurate account details, and keep them up to date. Companies and
-        recruiters must be authorised to act for the organization they
-        represent.
+        accurate account details, and keep them up to date. Recruiters must be
+        authorised to act for the organization they represent.
       </p>
 
       <h2>2. Your account</h2>

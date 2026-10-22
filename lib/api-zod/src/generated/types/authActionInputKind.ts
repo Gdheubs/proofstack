@@ -11,6 +11,5 @@ export type AuthActionInputKind = typeof AuthActionInputKind[keyof typeof AuthAc
 
 export const AuthActionInputKind = {
   developer: 'developer',
-  company: 'company',
   recruiter: 'recruiter',
 } as const;

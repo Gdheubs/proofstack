@@ -167,7 +167,7 @@ components:
       properties:
         id: { type: string }
         displayName: { type: string }
-        kind: { type: string, enum: [developer, company, recruiter] }
+        kind: { type: string, enum: [developer, recruiter] }
         email: { type: [string, "null"] }
         phone: { type: [string, "null"] }
         emailVerified: { type: boolean }
@@ -278,7 +278,7 @@ components:
         phone: { type: string }
         password: { type: string }
         displayName: { type: string }
-        kind: { type: string, enum: [developer, company, recruiter] }
+        kind: { type: string, enum: [developer, recruiter] }
         birthDate: { type: string, format: date }
         acceptTerms: { type: boolean }
         confirm: { type: string, enum: [DELETE] }

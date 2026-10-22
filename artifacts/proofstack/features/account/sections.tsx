@@ -163,7 +163,7 @@ export function PhonePanel({ account, ctx, act }: Props) {
           : "No phone number on file."}
       </p>
       {!enabled && (
-        <Notice tone="warn">Phone verification is pending setup.</Notice>
+        <Notice tone="warn">Phone verification is not available yet.</Notice>
       )}
       {enabled && !handle && (
         <form
@@ -226,8 +226,8 @@ export function FirebaseCredentialsPanel() {
   return (
     <Panel title="Social sign-in" eyebrow="Credentials">
       <p className="text-sm text-muted-foreground">
-        You sign in with Google or GitHub through Firebase. Your password is
-        managed by your external identity provider, not by ProofStack.
+        You sign in with Google or GitHub. Your password is managed by that
+        account, not by ProofStack.
       </p>
     </Panel>
   );
@@ -261,10 +261,9 @@ export function FirebaseStepUpPanel({
   return (
     <Panel title="Confirm it is you" eyebrow="Native verification">
       <p className="mb-4 text-sm text-muted-foreground">
-        This action requires a fresh native Firebase second-factor sign-in. Sign
-        out, use your original Google or GitHub identity, and verify your
-        enrolled authenticator. Then return to your account and retry the
-        action. Native enrollment and recovery are pending setup.
+        This action requires a fresh second-factor sign-in. Sign out, sign in
+        again with your original Google or GitHub account, and verify your
+        authenticator. Then return to your account and retry the action.
       </p>
       {error && <Notice tone="error">{error}</Notice>}
       <div className="mt-3 flex flex-wrap gap-2">
@@ -302,7 +301,7 @@ export function FirebaseSecurityPanel({ account }: Pick<Props, "account">) {
   return (
     <Panel id="security" title="Two-step verification" eyebrow="Security">
       <p className="mb-3 text-sm text-muted-foreground">
-        Native verification uses your enrolled Firebase factors during sign-in.
+        Your enrolled factors are checked when you sign in.
       </p>
       <ul className="divide-y">
         {account.factors.map((factor) => (
@@ -316,14 +315,13 @@ export function FirebaseSecurityPanel({ account }: Pick<Props, "account">) {
         ))}
         {account.factors.length === 0 && (
           <li className="py-3 text-sm text-muted-foreground">
-            No enrolled Firebase factors.
+            No enrolled factors.
           </li>
         )}
       </ul>
       <Notice tone="warn">
-        Native MFA enrollment and recovery are pending setup. Factor management
-        and backup codes are not available here. Privileged access still
-        requires native second-factor verification.
+        Factor management and backup codes are not available here yet.
+        Privileged access still requires native second-factor verification.
       </Notice>
     </Panel>
   );

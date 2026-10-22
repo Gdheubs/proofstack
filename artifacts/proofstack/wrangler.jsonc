@@ -5,7 +5,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "proofstack-web",
-  "main": ".open-next/worker.js",
+  // worker.ts wraps the generated .open-next/worker.js (see that file).
+  "main": "worker.ts",
   "compatibility_date": "2026-10-01",
   // global_fetch_strictly_public: the Worker may only fetch public addresses,
   // so the /api rewrite cannot be pointed at internal networks.

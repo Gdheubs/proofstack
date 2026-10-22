@@ -98,7 +98,7 @@ export async function createFirebaseAppSession(
     throw new ApiError(
       409,
       "AUTH_METHOD_UNAVAILABLE",
-      "Firebase authentication is not selected",
+      "This sign-in method is not available",
     );
   const provider = createFirebaseProvider();
   await provider.verifyIdToken(idToken);

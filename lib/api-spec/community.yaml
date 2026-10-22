@@ -189,7 +189,7 @@ components:
         id: { type: string, format: uuid }
         handle: { type: string }
         displayName: { type: string }
-        kind: { type: string, enum: [developer, company, recruiter] }
+        kind: { type: string, enum: [developer, recruiter] }
         avatarPath: { type: string }
         bio: { type: string }
         location: { type: string }

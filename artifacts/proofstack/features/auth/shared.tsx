@@ -30,7 +30,6 @@ export const KINDS = [
     label: "Recruiter",
     hint: "Verify before you reach out",
   },
-  { value: "company", label: "Company", hint: "Represent a team" },
 ] as const;
 export type Kind = (typeof KINDS)[number]["value"];
 

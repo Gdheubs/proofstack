@@ -49,7 +49,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Profile:</strong> display name, handle, profile type
-          (developer, company or recruiter), photo, bio, location and skills.
+          (developer or recruiter), photo, bio, location and skills.
         </li>
         <li>
           <strong>Content you create:</strong> posts, comments, reactions,
@@ -144,8 +144,9 @@ export default function PrivacyPage() {
 
       <h2 id="processors">6. Who processes data for us</h2>
       <p>
-        We use these service providers to run ProofStack. Each processes data
-        only to provide its service to us.
+        We use these kinds of service providers to run ProofStack. We can tell
+        you which company fills each role on request. Each processes data only
+        to provide its service to us.
       </p>
       <div className="overflow-x-auto">
         <table>
@@ -158,32 +159,32 @@ export default function PrivacyPage() {
           </thead>
           <tbody>
             <tr>
-              <td>Supabase</td>
+              <td>Authentication provider</td>
               <td>Sign-in, passwords, verification codes, MFA</td>
               <td>Japan</td>
             </tr>
             <tr>
-              <td>Neon</td>
+              <td>Database hosting provider</td>
               <td>Main database</td>
               <td>Singapore</td>
             </tr>
             <tr>
-              <td>Render</td>
+              <td>Application hosting provider</td>
               <td>Application servers</td>
               <td>United States</td>
             </tr>
             <tr>
-              <td>Cloudflare</td>
+              <td>Content delivery and storage network</td>
               <td>Website delivery, security, image storage and backups</td>
               <td>Global network</td>
             </tr>
             <tr>
-              <td>Email provider (Resend)</td>
+              <td>Email delivery provider</td>
               <td>Sending account emails</td>
               <td>United States</td>
             </tr>
             <tr>
-              <td>MSG91</td>
+              <td>SMS delivery provider</td>
               <td>Sending SMS codes, when phone sign-in is enabled</td>
               <td>India</td>
             </tr>

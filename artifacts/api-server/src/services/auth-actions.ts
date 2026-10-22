@@ -60,7 +60,7 @@ export async function runAction(
     throw new ApiError(
       409,
       "AUTH_METHOD_UNAVAILABLE",
-      "This authentication operation is pending Firebase-native support",
+      "This sign-in option is not available yet",
     );
   if (
     input.action.startsWith("mfa-") ||
@@ -137,7 +137,7 @@ export async function runAction(
         throw new ApiError(
           503,
           "PHONE_OTP_SETUP_REQUIRED",
-          "Phone OTP is pending MSG91 and Supabase SMS-hook setup",
+          "Phone sign-in is not available yet",
         );
       await checkLock(req, identifier);
       await authLimit(req, "otp-resend", identifier, 1, 60);
