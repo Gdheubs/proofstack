@@ -44,6 +44,9 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # GHSA-5j98-mcp5-4vw2 (glob CLI) affects 10.2.0-10.4.x; the build-time
+  # minifier used by the Cloudflare adapter needs the v10 API.
+  '@node-minify/core>glob': 10.5.0
   # Phase 7 security patches: GHSA-jqcg-44mw-7w3h and GHSA-68fv-2mgg-jv7q.
   proxy-addr: 2.0.8
   source-map-js: 1.2.2
