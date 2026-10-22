@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Sign-in incident: API ahead of migrations](2026-10-22-signin-incident.md) — production migrated to 18; schema guard returns 503 while migrations are pending; clearer email-link failure message.
 - [In-browser code editor](2026-10-22-code-editor.md) — VS Code-style editor at /editor for GitHub (OAuth, sealed token) and hosted repositories: explorer, tabs, multi-file commits, branches.
 - [Public surface, profile types and notification bell](2026-10-22-public-surface.md) — provider names and setup progress hidden from visitors, hosting headers stripped, Developer and Recruiter profiles only, header notification bell.
 - [Legal pages, age and consent, data rights](2026-10-22-legal-compliance.md) — privacy policy, terms, guidelines, contact and about pages; 18+ date-of-birth gate with consent records; data export and account deletion with 180-day registration retention; retention purges; real 404 for internal pages.

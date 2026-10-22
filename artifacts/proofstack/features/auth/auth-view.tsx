@@ -574,8 +574,10 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
       {params.get("error") === "callback_failed" && (
         <div className="mb-4">
           <Notice tone="error">
-            That sign-in link could not be completed. It may have expired or
-            been used already. Request a fresh code or link and try again.
+            That link could not sign you in here. Your email is usually verified
+            already, so try signing in with your email and password. Links only
+            sign you in on the same browser and device where you started;
+            otherwise request a new link and open it there.
           </Notice>
         </div>
       )}

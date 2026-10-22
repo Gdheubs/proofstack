@@ -11,6 +11,7 @@ import { trustedProxyClient } from "./lib/client-ip";
 import { ApiError } from "./lib/errors";
 import { errorHandler } from "./middlewares/error-handler";
 import { apiRateLimit } from "./middlewares/rate-limit";
+import { schemaGuard } from "./middlewares/schema-guard";
 import { sendSmsHook } from "./routes/auth-sms";
 
 import { requestMetrics } from "./services/operations";
@@ -82,6 +83,8 @@ app.use("/api", (_req, res, next) => {
   res.set("Cache-Control", "private, no-store");
   next();
 });
+// Refuse work against a database that is behind this code (migrations pending).
+app.use("/api", schemaGuard);
 // Apply protection before parsing, including malformed and oversized requests.
 app.use("/api", apiRateLimit);
 app.use("/api", (req, _res, next) => {
