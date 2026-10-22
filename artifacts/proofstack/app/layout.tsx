@@ -6,7 +6,7 @@ import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { AgreementGate } from "@/features/legal/agreement";
-import { BrowserMonitoring } from "@/features/monitoring/browser-monitoring";
+import { MonitoringLoader } from "@/features/monitoring/monitoring-loader";
 
 const sans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 const serif = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
@@ -47,7 +47,7 @@ export default async function RootLayout({
           </main>
           <SiteFooter />
           <AgreementGate />
-          <BrowserMonitoring />
+          <MonitoringLoader />
         </Providers>
       </body>
     </html>
