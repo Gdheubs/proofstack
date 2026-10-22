@@ -120,6 +120,13 @@
       "when": 1792675898471,
       "tag": "0016_two_profile_kinds",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792676282489,
+      "tag": "0017_github_connections",
+      "breakpoints": true
     }
   ]
 }

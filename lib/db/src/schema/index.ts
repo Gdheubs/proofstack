@@ -32,3 +32,4 @@ export * from "./pull-requests";
 export * from "./intelligence";
 export * from "./operations";
 export * from "./assessments";
+export * from "./github";

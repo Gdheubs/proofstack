@@ -126,6 +126,17 @@ optional identity backup in `docs/operations.md`. Free projects pause after a
 week without activity, which also stops sign-in; keep real usage or an uptime
 check on a sign-in-related endpoint, or upgrade before launch.
 
+### Code editor (GitHub)
+
+The editor at `/editor` edits GitHub repositories through a GitHub OAuth App owned by the operator. Hosted ProofStack repositories appear there only when `REPOSITORY_ROOT` points at a durable disk (a paid Render plan with a disk).
+
+1. Go to GitHub → Settings → Developer settings → OAuth Apps → New OAuth App.
+   - Homepage URL: the website origin.
+   - Authorization callback URL: `<AUTH_APP_ORIGIN>/api/editor/github/callback`.
+2. Set `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` on Render. Without both, the editor shows GitHub as not available.
+
+Users grant the `repo` scope so they can commit to their private repositories. Their token is sealed with `SESSION_SECRET` in `github_connections` and never reaches the browser. It is deleted when they disconnect, delete their account, or GitHub reports it revoked. Rotating `SESSION_SECRET` makes users reconnect.
+
 ## Verification sequence
 
 1. Confirm the Git SHA, clean working tree, and green hosted CI.

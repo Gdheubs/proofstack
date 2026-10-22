@@ -99,6 +99,27 @@ export function receivePackCommands(body: Buffer): ReceivePackCommand[] {
     throw repoError("A push must send one complete feature-branch update.");
   return commands;
 }
+const textContent = z.string().refine(
+  (v) =>
+    Buffer.byteLength(v, "utf8") <= MAX_REPOSITORY_FILE_BYTES &&
+    Array.from(v).every((c) => {
+      const n = c.charCodeAt(0);
+      return (n >= 32 && n !== 127) || n === 9 || n === 10 || n === 13;
+    }),
+  "Use UTF-8 text up to 1 MiB without control characters",
+);
+const commitMessage = z
+  .string()
+  .trim()
+  .min(3)
+  .max(200)
+  .refine(
+    (v) =>
+      Array.from(v).every(
+        (c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127,
+      ),
+    "Use a single-line commit message",
+  );
 export const repoActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), projectId: uuid }).strict(),
   z
@@ -117,28 +138,29 @@ export const repoActionSchema = z.discriminatedUnion("action", [
       branch: branchSchema,
       expectedHead: headSchema,
       path: pathSchema.refine((v) => v.length > 0),
-      content: z.string().refine(
-        (v) =>
-          Buffer.byteLength(v, "utf8") <= MAX_REPOSITORY_FILE_BYTES &&
-          Array.from(v).every((c) => {
-            const n = c.charCodeAt(0);
-            return (n >= 32 && n !== 127) || n === 9 || n === 10 || n === 13;
-          }),
-        "Use UTF-8 text up to 32 KiB without control characters",
-      ),
-      message: z
-        .string()
-        .trim()
-        .min(3)
-        .max(200)
-        .refine(
-          (v) =>
-            Array.from(v).every(
-              (c) => c.charCodeAt(0) >= 32 && c.charCodeAt(0) !== 127,
-            ),
-          "Use a single-line commit message",
-        ),
+      content: textContent,
+      message: commitMessage,
       remove: z.boolean().default(false),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("commit-files"),
+      id: uuid,
+      branch: branchSchema,
+      expectedHead: headSchema,
+      changes: z
+        .array(
+          z
+            .object({
+              path: pathSchema.refine((v) => v.length > 0),
+              content: textContent.nullable(),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(100),
+      message: commitMessage,
     })
     .strict(),
   z

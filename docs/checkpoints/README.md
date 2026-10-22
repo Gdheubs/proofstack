@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [In-browser code editor](2026-10-22-code-editor.md) — VS Code-style editor at /editor for GitHub (OAuth, sealed token) and hosted repositories: explorer, tabs, multi-file commits, branches.
 - [Public surface, profile types and notification bell](2026-10-22-public-surface.md) — provider names and setup progress hidden from visitors, hosting headers stripped, Developer and Recruiter profiles only, header notification bell.
 - [Legal pages, age and consent, data rights](2026-10-22-legal-compliance.md) — privacy policy, terms, guidelines, contact and about pages; 18+ date-of-birth gate with consent records; data export and account deletion with 180-day registration retention; retention purges; real 404 for internal pages.
 - [Security hardening and adaptive skill checks](2026-10-21-security-hardening.md) — consent-based organization invitations, per-network lockouts, masked moderator contact data, hidden pending invitations, adaptive skill-check question sets with a retake cooldown, per-account limits on shared addresses, internal pages hidden in production.

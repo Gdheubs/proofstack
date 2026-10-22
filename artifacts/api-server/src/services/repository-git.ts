@@ -208,29 +208,56 @@ export async function commitFile(
   author: { id: string; name: string },
   remove = false,
 ) {
-  pathSchema.refine((v) => v.length > 0).parse(file);
+  return commitChanges(
+    path,
+    base,
+    [{ path: file, content: remove ? null : content }],
+    message,
+    author,
+  );
+}
+// One commit for several files; content null deletes the path.
+export type FileChange = { path: string; content: string | null };
+export async function commitChanges(
+  path: string,
+  base: string | null,
+  changes: FileChange[],
+  message: string,
+  author: { id: string; name: string },
+) {
+  for (const change of changes)
+    pathSchema.refine((v) => v.length > 0).parse(change.path);
   if (base) headSchema.parse(base);
   const index = join(path, "proofstack-index-" + randomUUID());
   const env = { GIT_INDEX_FILE: index };
   try {
     await git(path, ["read-tree", base ?? "--empty"], "", env);
-    if (remove)
-      await git(
-        path,
-        ["update-index", "-z", "--index-info"],
-        `0 ${"0".repeat(40)}\t${file}\0`,
-        env,
-      );
-    else {
-      const blob = (await git(path, ["hash-object", "-w", "--stdin"], content))
-        .toString()
-        .trim();
-      await git(
-        path,
-        ["update-index", "--add", "--cacheinfo", `100644,${blob},${file}`],
-        "",
-        env,
-      );
+    for (const change of changes) {
+      if (change.content === null)
+        await git(
+          path,
+          ["update-index", "-z", "--index-info"],
+          `0 ${"0".repeat(40)}\t${change.path}\0`,
+          env,
+        );
+      else {
+        const blob = (
+          await git(path, ["hash-object", "-w", "--stdin"], change.content)
+        )
+          .toString()
+          .trim();
+        await git(
+          path,
+          [
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            `100644,${blob},${change.path}`,
+          ],
+          "",
+          env,
+        );
+      }
     }
     const tree = (await git(path, ["write-tree"], "", env)).toString().trim();
     if (base) {
@@ -339,6 +366,21 @@ export async function treeEntries(path: string, head: string, folder: string) {
   return entries.sort(
     (a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name),
   );
+}
+// Every file in a revision, for the editor explorer.
+export async function listFiles(path: string, head: string, limit = 10000) {
+  headSchema.parse(head);
+  const raw = await git(path, ["ls-tree", "-r", "-z", "-l", head]);
+  const files = raw
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .map((line) => {
+      const tab = line.indexOf("\t");
+      const size = line.slice(0, tab).trim().split(/\s+/)[3];
+      return { path: line.slice(tab + 1), size: Number(size) || 0 };
+    });
+  return { files: files.slice(0, limit), truncated: files.length > limit };
 }
 export async function readSource(path: string, head: string, file: string) {
   pathSchema.refine((v) => v.length > 0).parse(file);

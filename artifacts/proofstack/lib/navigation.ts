@@ -19,6 +19,7 @@ export const NAV: NavigationSection[] = [
     prefixes: [
       "/projects",
       "/repositories",
+      "/editor",
       "/pulls",
       "/work",
       "/organizations",
@@ -35,6 +36,11 @@ export const NAV: NavigationSection[] = [
         href: "/repositories",
         label: "Repositories",
         description: "Code, pull requests, releases and security",
+      },
+      {
+        href: "/editor",
+        label: "Code editor",
+        description: "Edit GitHub and ProofStack repositories in the browser",
       },
       {
         href: "/organizations",

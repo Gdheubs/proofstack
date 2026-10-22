@@ -76,6 +76,15 @@ export default function PrivacyPage() {
           <strong>Your consent:</strong> which version of these terms you
           accepted and when.
         </li>
+        <li>
+          <strong>GitHub connection</strong> (only if you connect it in the code
+          editor): your GitHub username and an access token that lets ProofStack
+          read and commit to repositories on your behalf. The token is
+          encrypted, never shown in your browser, and deleted when you
+          disconnect GitHub or delete your account. Code you open in the editor
+          is fetched from GitHub when you open it and is not stored by
+          ProofStack.
+        </li>
       </ul>
       <p>
         We do not collect financial information, government ID numbers,
@@ -191,6 +200,11 @@ export default function PrivacyPage() {
             <tr>
               <td>AI model provider</td>
               <td>The optional AI features in section 4</td>
+              <td>United States</td>
+            </tr>
+            <tr>
+              <td>GitHub, if you connect it</td>
+              <td>Opening and committing your code from the editor</td>
               <td>United States</td>
             </tr>
           </tbody>

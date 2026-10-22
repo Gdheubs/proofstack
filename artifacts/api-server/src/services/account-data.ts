@@ -74,6 +74,7 @@ const NOT_EXPORTED = new Set([
   "device_hash",
   "identifier_hash",
   "lease_token",
+  "encrypted_token",
 ]);
 
 // A copy of the personal data held for one account (DPDP Act s.11). Every

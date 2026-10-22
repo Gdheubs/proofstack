@@ -111,6 +111,11 @@ app.use(
   "/api/repositories/action",
   express.json({ limit: "4mb", strict: true, inflate: false }),
 );
+// A multi-file editor commit carries up to 5 MiB of file content.
+app.use(
+  "/api/editor/commit",
+  express.json({ limit: "6mb", strict: true, inflate: false }),
+);
 app.use(express.json({ limit: "32kb", strict: true, inflate: false }));
 
 app.use("/api", router);

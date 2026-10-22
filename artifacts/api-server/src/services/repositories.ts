@@ -32,6 +32,7 @@ import {
   git,
   initialize,
   commitFile,
+  commitChanges,
   syncRefs,
   quota,
   storageBytes,
@@ -328,7 +329,11 @@ export async function runRepositoryAction(
     } else {
       resultId = d.id;
       const initial = await repositoryAccess(d.id, uid, db);
-      if (d.action === "commit" || d.action === "branch")
+      if (
+        d.action === "commit" ||
+        d.action === "commit-files" ||
+        d.action === "branch"
+      )
         await authorizeProject(db, s, initial.projectId, "contribute");
       const repo = await repositoryAccess(d.id, uid, db, true);
       if (d.action === "token-create") {
@@ -402,16 +407,32 @@ export async function runRepositoryAction(
             );
           const path = await repoPath(d.id);
           await quota(path, repo.quotaBytes);
-          if (d.remove) await readSource(path, branch.head, d.path);
-          const head = await commitFile(
-            path,
-            branch.head,
-            d.path,
-            d.content,
-            d.message,
-            { id: uid, name: profile.display_name },
-            d.remove,
-          );
+          const author = { id: uid, name: profile.display_name };
+          let head: string;
+          if (d.action === "commit-files") {
+            // Deleting a path that does not exist is refused, as for one file.
+            for (const change of d.changes)
+              if (change.content === null)
+                await readSource(path, branch.head, change.path);
+            head = await commitChanges(
+              path,
+              branch.head,
+              d.changes,
+              d.message,
+              author,
+            );
+          } else {
+            if (d.remove) await readSource(path, branch.head, d.path);
+            head = await commitFile(
+              path,
+              branch.head,
+              d.path,
+              d.content,
+              d.message,
+              author,
+              d.remove,
+            );
+          }
           await quota(path, repo.quotaBytes);
           await db.query(
             "UPDATE repository_branches SET head=$3,updated_at=now() WHERE repository_id=$1 AND name=$2",

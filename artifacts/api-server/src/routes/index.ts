@@ -7,6 +7,7 @@ import careersRouter from "./careers";
 import assessmentsRouter from "./assessments";
 
 import repositoriesRouter from "./repositories";
+import editorRouter from "./editor";
 
 import pullsRouter from "./pulls";
 
@@ -23,6 +24,7 @@ router.use(communityRouter);
 router.use(careersRouter);
 router.use(assessmentsRouter);
 router.use(repositoriesRouter);
+router.use(editorRouter);
 router.use(pullsRouter);
 router.use(intelligenceRouter);
 
