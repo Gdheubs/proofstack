@@ -45,6 +45,17 @@ Parent: `300f476` (sign-in callback fix; hosted CI and Security passed). Fixes t
   - Migration `0014` on Neon (`migrate:release` to staging, then production).
   - The flows signed in on the live site.
 
+## Render build fix (October 22)
+
+Hosted CI and Security passed on `cae9d88` (Worker 2,644 of 3,072 KiB). Migration `0014` was applied to Neon staging and then production (15 of 15 migrations; a rerun applied 0; 50 tables).
+
+The Render deploy of `cae9d88` then failed in its first second: `corepack enable` tried to replace the read-only `/usr/bin/pnpm` (`EROFS`). Render had not changed anything in our code, so its build image most likely did. `render.yaml` now:
+
+- builds with the exact pinned package manager (`npx --yes pnpm@11.25.0 install --frozen-lockfile`, then the API build);
+- starts the bundle with `node` directly, so no package manager is needed at runtime.
+
+Both commands were run in a clean Linux checkout with Node 24: the build succeeded, and the server loaded and stopped only on the missing `DATABASE_URL`.
+
 ## Next step
 
 Run `migrate:release` for `0014` on Neon staging and then production, deploy Render and the Worker, and check invitations and skill checks signed in.

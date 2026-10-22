@@ -4,8 +4,11 @@ services:
     runtime: node
     plan: free
     autoDeploy: false
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
-    startCommand: pnpm --filter @workspace/api-server run start
+    # Render's preinstalled pnpm is read-only and unpinned (corepack enable now
+    # fails with EROFS), so the build runs the exact pnpm from packageManager.
+    buildCommand: npx --yes pnpm@11.25.0 install --frozen-lockfile && npx --yes pnpm@11.25.0 --filter @workspace/api-server run build
+    # Start without a package manager: same as the package's start script.
+    startCommand: cd artifacts/api-server && node --enable-source-maps ./dist/index.mjs
     healthCheckPath: /api/healthz
     envVars:
       - key: NODE_ENV
