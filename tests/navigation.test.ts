@@ -151,6 +151,11 @@ const ownership: Record<string, [string | undefined, string | undefined]> = {
   "/auth": [undefined, undefined],
   "/foundation": [undefined, undefined],
   "/design-system": [undefined, undefined],
+  "/about": [undefined, undefined],
+  "/terms": [undefined, undefined],
+  "/privacy": [undefined, undefined],
+  "/community-guidelines": [undefined, undefined],
+  "/contact": [undefined, undefined],
 };
 function pageRoutes(directory: string, segments: string[] = []): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -163,9 +168,9 @@ function pageRoutes(directory: string, segments: string[] = []): string[] {
   });
 }
 describe("complete App Router navigation inventory", () => {
-  it("classifies all 37 actual route patterns with no missing or stale expectations", () => {
+  it("classifies all 42 actual route patterns with no missing or stale expectations", () => {
     const routes = pageRoutes(`${root}/app`);
-    expect(routes).toHaveLength(37);
+    expect(routes).toHaveLength(42);
     expect(routes.sort()).toEqual(Object.keys(ownership).sort());
   });
   it.each(Object.entries(ownership))(

@@ -23,4 +23,6 @@ export interface AccountUser {
   platformRole: AccountUserPlatformRole;
   status: AccountUserStatus;
   mfaRecoveryRequired?: boolean;
+  /** True until a birth date is on file and the current Terms and Privacy Policy are accepted. */
+  agreementRequired?: boolean;
 }

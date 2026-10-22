@@ -18,27 +18,27 @@ paths:
   /intelligence/action:
     $ref: "./intelligence.yaml#/paths/~1intelligence~1action"
   /pulls:
-    $ref: './pulls.yaml#/paths/~1pulls'
+    $ref: "./pulls.yaml#/paths/~1pulls"
   /pulls/action:
-    $ref: './pulls.yaml#/paths/~1pulls~1action'
+    $ref: "./pulls.yaml#/paths/~1pulls~1action"
   /repositories:
-    $ref: './repositories.yaml#/paths/~1repositories'
+    $ref: "./repositories.yaml#/paths/~1repositories"
   /repositories/action:
-    $ref: './repositories.yaml#/paths/~1repositories~1action'
+    $ref: "./repositories.yaml#/paths/~1repositories~1action"
   /careers:
-    $ref: './careers.yaml#/paths/~1careers'
+    $ref: "./careers.yaml#/paths/~1careers"
   /careers/action:
-    $ref: './careers.yaml#/paths/~1careers~1action'
+    $ref: "./careers.yaml#/paths/~1careers~1action"
   /community:
-    $ref: './community.yaml#/paths/~1community'
+    $ref: "./community.yaml#/paths/~1community"
   /community/assets/{id}:
-    $ref: './community.yaml#/paths/~1community~1assets~1{id}'
+    $ref: "./community.yaml#/paths/~1community~1assets~1{id}"
   /community/action:
-    $ref: './community.yaml#/paths/~1community~1action'
+    $ref: "./community.yaml#/paths/~1community~1action"
   /community/assist:
-    $ref: './community.yaml#/paths/~1community~1assist'
+    $ref: "./community.yaml#/paths/~1community~1assist"
   /community/uploads:
-    $ref: './community.yaml#/paths/~1community~1uploads'
+    $ref: "./community.yaml#/paths/~1community~1uploads"
   /healthz:
     get:
       operationId: healthCheck
@@ -114,6 +114,17 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AccountDetails" }
         default: { $ref: "#/components/responses/StandardError" }
+  /auth/account/export:
+    get:
+      operationId: exportAccount
+      tags: [auth]
+      responses:
+        "200":
+          description: A copy of the personal data held for the signed-in account.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        default: { $ref: "#/components/responses/StandardError" }
   /auth/admin/users:
     get:
       operationId: getAccountUsers
@@ -143,7 +154,16 @@ components:
   schemas:
     AccountUser:
       type: object
-      required: [id, displayName, kind, emailVerified, phoneVerified, platformRole, status]
+      required:
+        [
+          id,
+          displayName,
+          kind,
+          emailVerified,
+          phoneVerified,
+          platformRole,
+          status,
+        ]
       properties:
         id: { type: string }
         displayName: { type: string }
@@ -152,9 +172,18 @@ components:
         phone: { type: [string, "null"] }
         emailVerified: { type: boolean }
         phoneVerified: { type: boolean }
-        platformRole: { type: [string, "null"], enum: [moderator, admin, super_admin, null] }
+        platformRole:
+          {
+            type: [string, "null"],
+            enum: [moderator, admin, super_admin, null],
+          }
         status: { type: string, enum: [active, disabled] }
         mfaRecoveryRequired: { type: boolean }
+        agreementRequired:
+          {
+            type: boolean,
+            description: "True until a birth date is on file and the current Terms and Privacy Policy are accepted.",
+          }
     AuthFactor:
       type: object
       required: [id, type, status]
@@ -168,7 +197,19 @@ components:
       enum: [google, github, azure, linkedin_oidc, gitlab, discord, x, facebook]
     AuthCapabilities:
       type: object
-      required: [password, emailOtp, phoneOtp, google, github, socialProviders, totp, phoneMfa, emailDelivery, pendingSetup]
+      required:
+        [
+          password,
+          emailOtp,
+          phoneOtp,
+          google,
+          github,
+          socialProviders,
+          totp,
+          phoneMfa,
+          emailDelivery,
+          pendingSetup,
+        ]
       properties:
         password: { type: boolean }
         emailOtp: { type: boolean }
@@ -185,13 +226,19 @@ components:
         pendingSetup: { type: array, items: { type: string } }
     AuthContext:
       type: object
-      required: [csrfToken, authenticated, user, mfaRequired, factors, capabilities]
+      required:
+        [csrfToken, authenticated, user, mfaRequired, factors, capabilities]
       properties:
         csrfToken: { type: string }
         authenticated: { type: boolean }
-        user: { anyOf: [{ $ref: "#/components/schemas/AccountUser" }, { type: "null" }] }
+        user:
+          {
+            anyOf:
+              [{ $ref: "#/components/schemas/AccountUser" }, { type: "null" }],
+          }
         mfaRequired: { type: boolean }
-        factors: { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
+        factors:
+          { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
         capabilities: { $ref: "#/components/schemas/AuthCapabilities" }
     AuthActionInput:
       type: object
@@ -200,12 +247,41 @@ components:
       properties:
         action:
           type: string
-          enum: [signup, password-login, email-otp, phone-otp, verify-otp, oauth, password-reset, update-password, logout, revoke-session, update-profile, send-phone-verification, mfa-enroll, mfa-challenge, mfa-verify, mfa-remove, recovery-codes, recover-mfa, create-organization, organization-role, user-role, user-status]
+          enum:
+            [
+              signup,
+              password-login,
+              email-otp,
+              phone-otp,
+              verify-otp,
+              oauth,
+              password-reset,
+              update-password,
+              logout,
+              revoke-session,
+              update-profile,
+              send-phone-verification,
+              mfa-enroll,
+              mfa-challenge,
+              mfa-verify,
+              mfa-remove,
+              recovery-codes,
+              recover-mfa,
+              create-organization,
+              organization-role,
+              user-role,
+              user-status,
+              accept-terms,
+              delete-account,
+            ]
         email: { type: string }
         phone: { type: string }
         password: { type: string }
         displayName: { type: string }
         kind: { type: string, enum: [developer, company, recruiter] }
+        birthDate: { type: string, format: date }
+        acceptTerms: { type: boolean }
+        confirm: { type: string, enum: [DELETE] }
         code: { type: string }
         handle: { type: string }
         provider: { $ref: "#/components/schemas/SocialProvider" }
@@ -218,7 +294,19 @@ components:
         slug: { type: string }
         userId: { type: string }
         organizationId: { type: string }
-        role: { type: [string, "null"], enum: [organization_owner, organization_admin, moderator, admin, super_admin, null] }
+        role:
+          {
+            type: [string, "null"],
+            enum:
+              [
+                organization_owner,
+                organization_admin,
+                moderator,
+                admin,
+                super_admin,
+                null,
+              ],
+          }
         status: { type: string, enum: [active, disabled] }
     AuthActionResult:
       type: object
@@ -276,13 +364,32 @@ components:
         createdAt: { type: string }
     AccountDetails:
       type: object
-      required: [user, sessions, memberships, activity, factors, recoveryCodesRemaining, passwordRecovery]
+      required:
+        [
+          user,
+          sessions,
+          memberships,
+          activity,
+          factors,
+          recoveryCodesRemaining,
+          passwordRecovery,
+        ]
       properties:
         user: { $ref: "#/components/schemas/AccountUser" }
-        sessions: { type: array, items: { $ref: "#/components/schemas/DeviceSession" } }
-        memberships: { type: array, items: { $ref: "#/components/schemas/AccountMembership" } }
-        activity: { type: array, items: { $ref: "#/components/schemas/SecurityActivity" } }
-        factors: { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
+        sessions:
+          { type: array, items: { $ref: "#/components/schemas/DeviceSession" } }
+        memberships:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/AccountMembership" },
+          }
+        activity:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/SecurityActivity" },
+          }
+        factors:
+          { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
         recoveryCodesRemaining: { type: integer }
         passwordRecovery: { type: boolean }
     ErrorResponse:
@@ -325,4 +432,3 @@ components:
       required:
         - status
         - checks
-

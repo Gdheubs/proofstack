@@ -19,7 +19,7 @@ import { z } from "zod";
 export const storage = new ObjectStorageService();
 export const MAX_IMAGE_BYTES = 8388608;
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
-function privateAssetDirectory() {
+export function privateAssetDirectory() {
   try {
     storage.assertConfigured();
     return storage.getPrivateObjectDir();

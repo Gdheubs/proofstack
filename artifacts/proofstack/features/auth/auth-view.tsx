@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { errInfo, useAct, useSession } from "@/hooks/use-auth";
+import { AgreementFields, agreementProblem } from "@/features/legal/agreement";
 import type {
   AuthCapabilities,
   SocialProvider,
@@ -162,6 +163,8 @@ function PasswordTab({ caps }: { caps: AuthCapabilities }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [kind, setKind] = useState<Kind>("developer");
+  const [birthDate, setBirthDate] = useState("");
+  const [accepted, setAccepted] = useState(false);
   if (!caps.password)
     return <Notice tone="warn">Password sign-in is pending setup.</Notice>;
   return (
@@ -179,6 +182,8 @@ function PasswordTab({ caps }: { caps: AuthCapabilities }) {
           const p = passwordProblem(password);
           if (p) return s.setErr(p);
           if (!name.trim()) return s.setErr("Add a display name.");
+          const agreement = agreementProblem(birthDate, accepted);
+          if (agreement) return s.setErr(agreement);
           return s.send(async () => {
             const r = await s.raw({
               action: "signup",
@@ -186,6 +191,8 @@ function PasswordTab({ caps }: { caps: AuthCapabilities }) {
               password,
               displayName: name.trim(),
               kind,
+              birthDate,
+              acceptTerms: true,
             });
             s.setMsg(r.message);
           });
@@ -245,6 +252,14 @@ function PasswordTab({ caps }: { caps: AuthCapabilities }) {
         />
       )}
       {mode === "signup" && <KindPicker value={kind} onChange={setKind} />}
+      {mode === "signup" && (
+        <AgreementFields
+          birthDate={birthDate}
+          onBirthDate={setBirthDate}
+          accepted={accepted}
+          onAccepted={setAccepted}
+        />
+      )}
       <Status err={s.err} msg={s.msg} />
       <Button
         type="submit"
@@ -566,6 +581,19 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
       {tab === "email" && <OtpTab via="email" caps={caps} />}
       {tab === "phone" && <OtpTab via="phone" caps={caps} />}
       {tab === "social" && <SocialTab caps={caps} returnTo={returnTo} />}
+      {tab !== "password" && (
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+          New accounts confirm their date of birth (18 or over) and accept the{" "}
+          <Link href="/terms" className="underline underline-offset-2">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline underline-offset-2">
+            Privacy Policy
+          </Link>{" "}
+          right after signing in.
+        </p>
+      )}
       {caps.pendingSetup.length > 0 && (
         <p className="mt-5 font-mono text-[11px] text-muted-foreground">
           Pending setup: {caps.pendingSetup.join(", ")}

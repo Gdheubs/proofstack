@@ -48,6 +48,8 @@ export interface AccountUser {
   platformRole: AccountUserPlatformRole;
   status: AccountUserStatus;
   mfaRecoveryRequired?: boolean;
+  /** True until a birth date is on file and the current Terms and Privacy Policy are accepted. */
+  agreementRequired?: boolean;
 }
 
 export type AuthFactorType = typeof AuthFactorType[keyof typeof AuthFactorType];
@@ -144,6 +146,8 @@ export const AuthActionInputAction = {
   'organization-role': 'organization-role',
   'user-role': 'user-role',
   'user-status': 'user-status',
+  'accept-terms': 'accept-terms',
+  'delete-account': 'delete-account',
 } as const;
 
 export type AuthActionInputKind = typeof AuthActionInputKind[keyof typeof AuthActionInputKind];
@@ -153,6 +157,13 @@ export const AuthActionInputKind = {
   developer: 'developer',
   company: 'company',
   recruiter: 'recruiter',
+} as const;
+
+export type AuthActionInputConfirm = typeof AuthActionInputConfirm[keyof typeof AuthActionInputConfirm];
+
+
+export const AuthActionInputConfirm = {
+  DELETE: 'DELETE',
 } as const;
 
 export type AuthActionInputScope = typeof AuthActionInputScope[keyof typeof AuthActionInputScope];
@@ -200,6 +211,9 @@ export interface AuthActionInput {
   password?: string;
   displayName?: string;
   kind?: AuthActionInputKind;
+  birthDate?: string;
+  acceptTerms?: boolean;
+  confirm?: AuthActionInputConfirm;
   code?: string;
   handle?: string;
   provider?: SocialProvider;
@@ -1598,4 +1612,6 @@ export const GetCommunityFilter = {
   'following-list': 'following-list',
   mine: 'mine',
 } as const;
+
+export type ExportAccount200 = { [key: string]: unknown };
 

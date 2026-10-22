@@ -35,6 +35,7 @@ import type {
   CommunityResult,
   CommunityUpload,
   CommunityUploadInput,
+  ExportAccount200,
   GetCareersDefault,
   GetCareersParams,
   GetCommunityParams,
@@ -1571,6 +1572,77 @@ export function useGetAccount<TData = Awaited<ReturnType<typeof getAccount>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAccountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportAccountUrl = () => {
+
+
+
+
+  return `/api/auth/account/export`
+}
+
+export const exportAccount = async ( options?: Parameters<typeof customFetch>[1]): Promise<ExportAccount200> => {
+
+  return customFetch<ExportAccount200>(getExportAccountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAccountQueryKey = () => {
+    return [
+    `/api/auth/account/export`
+    ] as const;
+    }
+
+
+export const getExportAccountQueryOptions = <TData = Awaited<ReturnType<typeof exportAccount>>, TError = ErrorType<StandardErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAccountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAccount>>> = ({ signal }) => exportAccount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAccount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAccountQueryResult = NonNullable<Awaited<ReturnType<typeof exportAccount>>>
+export type ExportAccountQueryError = ErrorType<StandardErrorResponse>
+
+
+
+export function useExportAccount<TData = Awaited<ReturnType<typeof exportAccount>>, TError = ErrorType<StandardErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAccountQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -26,6 +26,13 @@ import {
   type Credentials,
 } from "./auth-provider";
 import { writeAuditEvent } from "./audit";
+import {
+  AGREEMENT_REQUIRED_SQL,
+  MINIMUM_AGE,
+  TERMS_VERSION,
+  ageOn,
+  birthDateSchema,
+} from "./legal";
 
 export const SESSION_COOKIE = "__Host-ps-session";
 export const CSRF_COOKIE = "__Host-ps-csrf";
@@ -50,6 +57,8 @@ export type AccountUser = {
   platformRole: "moderator" | "admin" | "super_admin" | null;
   status: "active" | "disabled";
   mfaRecoveryRequired: boolean;
+  /** True until a birth date is on file and the current terms are accepted. */
+  agreementRequired?: boolean;
 };
 export type SessionRow = {
   id: string;
@@ -171,7 +180,12 @@ export function factors(user: ProviderIdentity) {
       name: f.friendly_name || "Security factor",
     }));
 }
-export function requireAccount(session: AuthSession | null): AuthSession {
+// allowPendingAgreement: export and deletion stay available to someone who
+// declines the current terms.
+export function requireAccount(
+  session: AuthSession | null,
+  { allowPendingAgreement = false } = {},
+): AuthSession {
   if (!session)
     throw new ApiError(401, "SIGN_IN_REQUIRED", "Sign in to continue");
   if (
@@ -184,6 +198,12 @@ export function requireAccount(session: AuthSession | null): AuthSession {
       403,
       "MFA_REQUIRED",
       "Verify a security factor before continuing",
+    );
+  if (!allowPendingAgreement && session.user.agreementRequired === true)
+    throw new ApiError(
+      403,
+      "AGREEMENT_REQUIRED",
+      "Confirm your date of birth and accept the Terms and Privacy Policy to continue",
     );
   return session;
 }
@@ -268,12 +288,29 @@ export async function upsertProviderUser(
     ON CONFLICT(user_id) DO NOTHING`,
     [rows[0].id, name.trim().slice(0, 160) || "Verified account", kind],
   );
+  // Agreement given on the sign-up form travels in the provider metadata.
+  const birthDate = birthDateSchema.safeParse(metadata.birth_date);
+  if (
+    birthDate.success &&
+    metadata.terms_version === TERMS_VERSION &&
+    ageOn(birthDate.data) >= MINIMUM_AGE
+  ) {
+    await tx.query(
+      "UPDATE users SET birth_date=COALESCE(birth_date,$2::date) WHERE id=$1",
+      [rows[0].id, birthDate.data],
+    );
+    await tx.query(
+      "INSERT INTO consent_records(user_id,purpose,version) SELECT $1,'terms',$2 FROM users WHERE id=$1 AND birth_date IS NOT NULL ON CONFLICT DO NOTHING",
+      [rows[0].id, TERMS_VERSION],
+    );
+  }
   const result = await tx.query(
     `SELECT u.id,u.email,u.phone,u.platform_role AS "platformRole",u.status,
     u.email_verified_at IS NOT NULL AS "emailVerified",u.phone_verified_at IS NOT NULL AS "phoneVerified",
-    u.mfa_recovery_required AS "mfaRecoveryRequired",p.display_name AS "displayName",p.kind
+    u.mfa_recovery_required AS "mfaRecoveryRequired",p.display_name AS "displayName",p.kind,
+    ${AGREEMENT_REQUIRED_SQL} AS "agreementRequired"
     FROM users u JOIN profiles p ON p.user_id=u.id WHERE u.id=$1`,
-    [rows[0].id],
+    [rows[0].id, TERMS_VERSION],
   );
   return result.rows[0] as AccountUser;
 }

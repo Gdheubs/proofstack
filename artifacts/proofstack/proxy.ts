@@ -1,6 +1,10 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { buildContentSecurityPolicy } from "./lib/security";
+import { internalPagesHidden } from "./lib/internal-pages";
+
+// Development tools that answer 404 in production.
+const INTERNAL_PAGES = ["/design-system", "/foundation"];
 
 // Must match artifacts/api-server/src/lib/client-ip.ts.
 export const CLIENT_IP_HEADER = "x-proofstack-client-ip";
@@ -42,7 +46,15 @@ export function proxy(request: NextRequest) {
   headers.set("x-nonce", nonce);
   headers.set("x-request-id", requestId);
   headers.set("Content-Security-Policy", policy);
-  const response = NextResponse.next({ request: { headers } });
+  // A rewrite to an unmatched path renders the not-found page with status 404.
+  const hidden =
+    internalPagesHidden() &&
+    INTERNAL_PAGES.some((p) => path === p || path.startsWith(`${p}/`));
+  const response = hidden
+    ? NextResponse.rewrite(new URL("/_internal-page-hidden", request.url), {
+        request: { headers },
+      })
+    : NextResponse.next({ request: { headers } });
   response.headers.set("Content-Security-Policy", policy);
   response.headers.set("X-Request-ID", requestId);
   response.headers.set("Cache-Control", "private, no-store");

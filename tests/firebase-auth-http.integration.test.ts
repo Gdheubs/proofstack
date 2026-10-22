@@ -132,7 +132,20 @@ async function login(b = browser(), idToken = native().idToken) {
   expect(session).toContain("Secure");
   expect(session).toContain("Path=/");
   const handle = session.split(";")[0].slice(SESSION_COOKIE.length + 1);
-  return { ...b, handle, cookies: [...b.cookies, session.split(";")[0]] };
+  const cookies = [...b.cookies, session.split(";")[0]];
+  // New accounts confirm their age and accept the terms before using the API.
+  const agreed = await supertest(app())
+    .post("/api/auth/action")
+    .set("Origin", origin)
+    .set("Cookie", cookies)
+    .set("X-CSRF-Token", b.csrf)
+    .send({
+      action: "accept-terms",
+      birthDate: "1990-01-01",
+      acceptTerms: true,
+    });
+  expect(agreed.status, JSON.stringify(agreed.body)).toBe(200);
+  return { ...b, handle, cookies };
 }
 beforeEach(async () => {
   for (const [name, value] of Object.entries({

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AuthActionInputAction } from './authActionInputAction';
+import type { AuthActionInputConfirm } from './authActionInputConfirm';
 import type { AuthActionInputFactorType } from './authActionInputFactorType';
 import type { AuthActionInputKind } from './authActionInputKind';
 import type { AuthActionInputRole } from './authActionInputRole';
@@ -20,6 +21,9 @@ export interface AuthActionInput {
   password?: string;
   displayName?: string;
   kind?: AuthActionInputKind;
+  birthDate?: Date;
+  acceptTerms?: boolean;
+  confirm?: AuthActionInputConfirm;
   code?: string;
   handle?: string;
   provider?: SocialProvider;

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { birthDateSchema } from "./legal";
 
 // Supabase provider ids, in display order. `azure` is Microsoft; `x` is the
 // OAuth 2.0 X provider (not legacy OAuth 1.0a `twitter`).
@@ -57,6 +58,8 @@ export const authActionSchema = z.discriminatedUnion("action", [
       password,
       displayName: name,
       kind,
+      birthDate: birthDateSchema,
+      acceptTerms: z.literal(true),
     })
     .strict(),
   z
@@ -96,6 +99,19 @@ export const authActionSchema = z.discriminatedUnion("action", [
     })
     .strict(),
   z.object({ action: z.literal("password-reset"), email }).strict(),
+  z
+    .object({
+      action: z.literal("accept-terms"),
+      birthDate: birthDateSchema,
+      acceptTerms: z.literal(true),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("delete-account"),
+      confirm: z.literal("DELETE"),
+    })
+    .strict(),
   z.object({ action: z.literal("update-password"), password }).strict(),
   z
     .object({ action: z.literal("logout"), scope: z.enum(["local", "global"]) })

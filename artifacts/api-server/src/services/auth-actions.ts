@@ -7,7 +7,14 @@ import {
   clearFailures,
   failedAttempt,
 } from "./auth-limits";
-import { capabilities, providerClient, providerFailure } from "./auth-provider";
+import {
+  adminClient,
+  capabilities,
+  providerClient,
+  providerFailure,
+} from "./auth-provider";
+import { assertAdult, recordAgreement, TERMS_VERSION } from "./legal";
+import { eraseAccount } from "./account-data";
 import {
   audit,
   createSession,
@@ -19,6 +26,7 @@ import {
   transaction,
   SESSION_COOKIE,
   cookieOptions,
+  factors,
   type AuthSession,
 } from "./auth-sessions";
 import { createFlow, readFlow, consumeFlow } from "./auth-flows";
@@ -46,6 +54,7 @@ export async function runAction(
       "organization-role",
       "user-role",
       "user-status",
+      "accept-terms",
     ].includes(input.action)
   )
     throw new ApiError(
@@ -63,6 +72,8 @@ export async function runAction(
   switch (input.action) {
     case "signup": {
       await authLimit(req, "signup", input.email, 3, 3600);
+      // Refuse before any account exists, so nothing is stored for under-18s.
+      assertAdult(input.birthDate);
       const storage: Record<string, string> = {};
       const client = providerClient(storage);
       await audit(req, "auth.signup_requested");
@@ -71,7 +82,12 @@ export async function runAction(
         password: input.password,
         options: {
           emailRedirectTo: `${authOrigin()}/api/auth/callback`,
-          data: { display_name: input.displayName, kind: input.kind },
+          data: {
+            display_name: input.displayName,
+            kind: input.kind,
+            birth_date: input.birthDate,
+            terms_version: TERMS_VERSION,
+          },
         },
       });
       providerFailure(result.error);
@@ -288,6 +304,38 @@ export async function runAction(
         signedOut: true,
       };
     }
+    case "accept-terms": {
+      const session = requirePrimary(optional);
+      await authLimit(req, "accept-terms", session.user.id, 10, 600);
+      try {
+        await transaction((tx) =>
+          recordAgreement(tx, session.user.id, input.birthDate),
+        );
+      } catch (error) {
+        // An under-18 account must not be kept: erase it and sign out.
+        if (error instanceof ApiError && error.code === "AGE_REQUIREMENT")
+          await deleteAccount(req, res, session);
+        throw error;
+      }
+      await audit(req, "legal.terms_accepted", session.user.id);
+      return { message: "Thank you. You can continue." };
+    }
+    case "delete-account": {
+      const session = requirePrimary(optional);
+      requireSupabase(session);
+      // Deletion cannot be undone: require a fresh sign-in or MFA check.
+      requireFresh(
+        session,
+        factors(session.providerUser).some((f) => f.status === "verified"),
+      );
+      await authLimit(req, "delete-account", session.user.id, 3, 3600);
+      await deleteAccount(req, res, session);
+      return {
+        message:
+          "Your account and content were deleted. Registration details are kept for 180 days as Indian law requires, then erased.",
+        signedOut: true,
+      };
+    }
     case "logout": {
       const session = requirePrimary(optional);
       if (input.scope === "global") requireAccount(session);
@@ -434,6 +482,21 @@ function continueTo(
     .send(
       `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${path}"><title>Signing in</title><a href="${path}">Continue</a>`,
     );
+}
+
+async function deleteAccount(
+  req: Request,
+  res: Response,
+  session: AuthSession,
+) {
+  await audit(req, "account.deleted", session.user.id, session.user.id);
+  await transaction(async (tx) => {
+    const subject = await eraseAccount(tx, session.user.id);
+    // Inside the transaction: if the identity provider refuses, nothing is erased.
+    const removed = await adminClient().auth.admin.deleteUser(subject);
+    providerFailure(removed.error);
+  });
+  res.clearCookie(SESSION_COOKIE, cookieOptions);
 }
 
 export async function authCallback(req: Request, res: Response) {

@@ -24,6 +24,7 @@ import {
   SecurityPanel,
   SessionsPanel,
 } from "@/features/account/sections";
+import { PrivacyPanel } from "@/features/legal/privacy-panel";
 
 export function AccountView() {
   const { q, ctx, ok } = useGate();
@@ -150,6 +151,7 @@ export function AccountView() {
             ) : null}
             <SessionsPanel account={account} ctx={ctx} act={act} />
             <OrganizationSummaryPanel account={account} />
+            {provider === "supabase" && <PrivacyPanel act={act} />}
           </div>
         </div>
       )}

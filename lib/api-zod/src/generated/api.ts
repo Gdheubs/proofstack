@@ -1396,7 +1396,8 @@ export const GetAuthContextResponse = zod.object({
   "phoneVerified": zod.boolean(),
   "platformRole": zod.union([zod.literal('moderator'),zod.literal('admin'),zod.literal('super_admin'),zod.literal(null)]).nullable(),
   "status": zod.enum(['active', 'disabled']),
-  "mfaRecoveryRequired": zod.boolean().optional()
+  "mfaRecoveryRequired": zod.boolean().optional(),
+  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.')
 }),zod.null()]),
   "mfaRequired": zod.boolean(),
   "factors": zod.array(zod.object({
@@ -1424,12 +1425,15 @@ export const GetAuthContextResponse = zod.object({
  * Server-owned authentication operations. Requires the context CSRF token and same-origin cookies.
  */
 export const RunAuthActionBody = zod.object({
-  "action": zod.enum(['signup', 'password-login', 'email-otp', 'phone-otp', 'verify-otp', 'oauth', 'password-reset', 'update-password', 'logout', 'revoke-session', 'update-profile', 'send-phone-verification', 'mfa-enroll', 'mfa-challenge', 'mfa-verify', 'mfa-remove', 'recovery-codes', 'recover-mfa', 'create-organization', 'organization-role', 'user-role', 'user-status']),
+  "action": zod.enum(['signup', 'password-login', 'email-otp', 'phone-otp', 'verify-otp', 'oauth', 'password-reset', 'update-password', 'logout', 'revoke-session', 'update-profile', 'send-phone-verification', 'mfa-enroll', 'mfa-challenge', 'mfa-verify', 'mfa-remove', 'recovery-codes', 'recover-mfa', 'create-organization', 'organization-role', 'user-role', 'user-status', 'accept-terms', 'delete-account']),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "password": zod.string().optional(),
   "displayName": zod.string().optional(),
   "kind": zod.enum(['developer', 'company', 'recruiter']).optional(),
+  "birthDate": zod.coerce.date().optional(),
+  "acceptTerms": zod.boolean().optional(),
+  "confirm": zod.enum(['DELETE']).optional(),
   "code": zod.string().optional(),
   "handle": zod.string().optional(),
   "provider": zod.enum(['google', 'github', 'azure', 'linkedin_oidc', 'gitlab', 'discord', 'x', 'facebook']).optional(),
@@ -1475,7 +1479,8 @@ export const GetAccountResponse = zod.object({
   "phoneVerified": zod.boolean(),
   "platformRole": zod.union([zod.literal('moderator'),zod.literal('admin'),zod.literal('super_admin'),zod.literal(null)]).nullable(),
   "status": zod.enum(['active', 'disabled']),
-  "mfaRecoveryRequired": zod.boolean().optional()
+  "mfaRecoveryRequired": zod.boolean().optional(),
+  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.')
 }),
   "sessions": zod.array(zod.object({
   "id": zod.string(),
@@ -1512,6 +1517,9 @@ export const GetAccountResponse = zod.object({
 })
 
 
+export const ExportAccountResponse = zod.record(zod.string(), zod.unknown())
+
+
 export const GetAccountUsersResponseItem = zod.object({
   "id": zod.string(),
   "displayName": zod.string(),
@@ -1522,7 +1530,8 @@ export const GetAccountUsersResponseItem = zod.object({
   "phoneVerified": zod.boolean(),
   "platformRole": zod.union([zod.literal('moderator'),zod.literal('admin'),zod.literal('super_admin'),zod.literal(null)]).nullable(),
   "status": zod.enum(['active', 'disabled']),
-  "mfaRecoveryRequired": zod.boolean().optional()
+  "mfaRecoveryRequired": zod.boolean().optional(),
+  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.')
 })
 export const GetAccountUsersResponse = zod.array(GetAccountUsersResponseItem)
 

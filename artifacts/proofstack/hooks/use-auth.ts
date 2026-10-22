@@ -41,6 +41,8 @@ const IDENTITY_ACTIONS = new Set([
   "password-login",
   "verify-otp",
   "signup",
+  "accept-terms",
+  "delete-account",
 ]);
 
 export type StepUpState = { resolve: () => void; reject: () => void } | null;

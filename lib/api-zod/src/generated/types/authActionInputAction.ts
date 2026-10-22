@@ -32,4 +32,6 @@ export const AuthActionInputAction = {
   'organization-role': 'organization-role',
   'user-role': 'user-role',
   'user-status': 'user-status',
+  'accept-terms': 'accept-terms',
+  'delete-account': 'delete-account',
 } as const;

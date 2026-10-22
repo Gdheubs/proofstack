@@ -126,6 +126,8 @@ describe("strict signup and privilege input", () => {
     password: "Test-only-password123!",
     displayName: "Unit account",
     kind: "developer",
+    birthDate: "1990-01-01",
+    acceptTerms: true,
   };
   it("accepts only unprivileged profile categories", () => {
     expect(authActionSchema.safeParse(signup).success).toBe(true);

@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { AgreementGate } from "@/features/legal/agreement";
 
 const sans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 const serif = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
@@ -44,6 +45,7 @@ export default async function RootLayout({
             {children}
           </main>
           <SiteFooter />
+          <AgreementGate />
         </Providers>
       </body>
     </html>
