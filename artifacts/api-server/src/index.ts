@@ -1,9 +1,11 @@
+import "./instrument";
 import app from "./app";
 import { configureHttpServer } from "./lib/transport";
 import { logger } from "./lib/logger";
 import { env } from "./lib/env";
 import { pool } from "@workspace/db";
 import { pruneRateLimitBuckets } from "./services/rate-limit";
+import { flushMonitoring } from "./lib/monitoring";
 
 const server = app.listen(env.PORT, env.BIND_HOST, (err) => {
   if (err) {
@@ -30,7 +32,7 @@ function shutdown(signal: string) {
   clearInterval(housekeeping);
   const timeout = setTimeout(() => process.exit(1), 80000).unref();
   server.close(() => {
-    void pool.end().then(() => {
+    void Promise.all([pool.end(), flushMonitoring()]).then(() => {
       clearTimeout(timeout);
       process.exit(0);
     });

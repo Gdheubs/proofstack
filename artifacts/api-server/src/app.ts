@@ -28,6 +28,29 @@ app.use(trustedProxyClient(env.PROXY_SHARED_SECRET));
 app.use(
   pinoHttp({
     logger,
+    // Health probes run every few seconds; logging them would bury real traffic.
+    autoLogging: {
+      ignore: (req) => req.url === "/api/healthz" || req.url === "/api/readyz",
+    },
+    customLogLevel: (_req, res, err) =>
+      err || res.statusCode >= 500
+        ? "error"
+        : res.statusCode >= 400
+          ? "warn"
+          : "info",
+    // pino-http invents an Error for every 5xx; real errors are logged by the
+    // error handler and sent to monitoring, so keep only the status here.
+    customErrorObject: (_req, _res, error, value) =>
+      error?.message?.startsWith("failed with status code")
+        ? { ...value, err: undefined }
+        : value,
+    customErrorMessage: (req, res) =>
+      `${req.method} ${req.url?.split("?")[0]} ${res.statusCode}`,
+    customSuccessMessage: (req, res) =>
+      `${req.method} ${req.url?.split("?")[0]} ${res.statusCode}`,
+    customProps: (_req, res) => ({
+      userId: res.locals?.principal?.userId,
+    }),
     genReqId: (_req, res) => {
       const id = randomUUID();
       res.setHeader("X-Request-ID", id);
@@ -113,6 +136,11 @@ app.post(
 app.use(
   "/api/repositories/action",
   express.json({ limit: "4mb", strict: true, inflate: false }),
+);
+// Browser error reports are relayed byte for byte.
+app.use(
+  "/api/monitoring/tunnel",
+  express.raw({ type: () => true, limit: "256kb", inflate: false }),
 );
 // A multi-file editor commit carries up to 5 MiB of file content.
 app.use(

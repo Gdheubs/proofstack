@@ -19,6 +19,25 @@ The dashboard exposes process uptime, RSS, request/in-flight/5xx counts, recent 
 
 Set external uptime alerts for readiness failure, sustained 5xx errors, oldest queued job over five minutes, absent worker heartbeat, pool saturation, storage exhaustion and backup failure. Choose thresholds after measuring actual traffic. Restrict external metric access and do not put user content in log labels.
 
+### Logs and error monitoring
+
+- **Logs:** the API and both workers write one structured JSON line per event with pino, carrying `service`, `release`, an ISO time and, inside a monitored request, `traceId`.
+  - Each request produces one line, such as `GET /api/community 200`, with `req.id` (also returned as `X-Request-ID` and in error bodies), `responseTime` in milliseconds and `userId` when signed in.
+  - Levels follow status: 5xx is `error` and 4xx is `warn`. Health probes are not logged. Cookies, auth headers and token fields are redacted, and query strings are never logged.
+  - Render keeps the output under the service's Logs tab.
+  - Morgan and winston are deliberately not used: they would duplicate pino-http and pino.
+- **Errors and performance (Sentry, free Developer plan):**
+  1. Create a Sentry organization with two projects, "Node.js" (API) and "Browser JavaScript" (web).
+  2. On Render, set `SENTRY_DSN` (API project), `SENTRY_BROWSER_DSN` (web project, used only by the relay), `SENTRY_ENVIRONMENT=production` and optionally `SENTRY_TRACES_SAMPLE_RATE` (default 0.1). Render supplies `RENDER_GIT_COMMIT` as the release.
+  3. In the Cloudflare Worker build variables, set `NEXT_PUBLIC_SENTRY_DSN` (web project) and optionally `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` (default 0.05).
+- **What Sentry receives:**
+  - **API:** unexpected errors with the request ID, account ID and error code, plus a performance trace for sampled requests. Deliberate API errors such as 4xx or "being updated" are not reported. The API is bundled, so database queries are not timed individually.
+  - **Browser:** JavaScript errors and page-load traces. Browser traces link to the matching API trace.
+- **Privacy safeguards:**
+  - Reports go to `/api/monitoring/tunnel`, which relays only to the configured project. The browser never contacts Sentry directly, and the content security policy stays same-origin.
+  - Cookies, request bodies, query strings, auth headers and user details other than the internal account ID are removed before anything is sent.
+- **Alerts:** in Sentry, add issue alerts for new issues and for more than 10 events in 5 minutes, and a performance alert on p95 above 2 s. Point UptimeRobot (free) at `/api/healthz` for uptime, never `/api/readyz` (see the Neon notes).
+
 Run `pnpm --filter @workspace/api-server run ops:benchmark -- http://127.0.0.1:8080` on local staging. The script sends 40 requests per endpoint with concurrency four, uses timeouts and reports failures/p50/p95. It accepts loopback targets only and does not establish a throughput SLO. For launch, seed representative project/contributor/application volumes and measure database plans, latency, memory and queue lag under expected concurrent roles. Project-card reads are batched into four queries for a page; other lists and bounded offset pagination still require scale evaluation. Do not describe the included fixture timing as a production load test.
 
 ## Maintenance and rollback

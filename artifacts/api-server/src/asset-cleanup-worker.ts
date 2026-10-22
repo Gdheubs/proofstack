@@ -1,8 +1,11 @@
+import { initMonitoring } from "./lib/monitoring";
 import {
   assertAssetCleanupConfiguration,
   drainAssetCleanup,
   superviseAssetCleanup,
 } from "./services/asset-cleanup-runtime";
+
+initMonitoring("asset-cleanup");
 
 async function main() {
   // Default off. In particular, do not import @workspace/db (which constructs a

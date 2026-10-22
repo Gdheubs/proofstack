@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { ApiError } from "../lib/errors";
+import { captureError } from "../lib/monitoring";
 
 export const errorHandler: ErrorRequestHandler = (
   error: unknown,
@@ -35,6 +36,13 @@ export const errorHandler: ErrorRequestHandler = (
         "Request body exceeds the allowed size",
       );
   }
+  // Unexpected failures (not deliberate API errors) go to error monitoring.
+  if (!(error instanceof ApiError) && safe.status >= 500)
+    captureError(error, {
+      requestId: String(req.id),
+      userId: res.locals?.principal?.userId,
+      code: safe.code,
+    });
   if (safe.status >= 500) {
     req.log.error(
       {

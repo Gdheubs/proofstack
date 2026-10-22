@@ -8,6 +8,7 @@ import assessmentsRouter from "./assessments";
 
 import repositoriesRouter from "./repositories";
 import editorRouter from "./editor";
+import monitoringRouter from "./monitoring";
 
 import pullsRouter from "./pulls";
 
@@ -25,6 +26,7 @@ router.use(careersRouter);
 router.use(assessmentsRouter);
 router.use(repositoriesRouter);
 router.use(editorRouter);
+router.use(monitoringRouter);
 router.use(pullsRouter);
 router.use(intelligenceRouter);
 

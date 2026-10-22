@@ -7,6 +7,9 @@ import {
   runIntelligenceOnce,
   pruneIntelligenceJobs,
 } from "./services/intelligence-worker";
+import { initMonitoring } from "./lib/monitoring";
+
+initMonitoring("intelligence");
 let stopping = false;
 for (const signal of ["SIGTERM", "SIGINT"])
   process.once(signal, () => {

@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Structured logging and Sentry monitoring](2026-10-22-logging-monitoring.md) — pino with trace IDs and status-based levels; Sentry for API errors/traces and browser errors through a same-origin relay; morgan and winston deliberately not added.
 - [Sign-in incident: API ahead of migrations](2026-10-22-signin-incident.md) — production migrated to 18; schema guard returns 503 while migrations are pending; clearer email-link failure message.
 - [In-browser code editor](2026-10-22-code-editor.md) — VS Code-style editor at /editor for GitHub (OAuth, sealed token) and hosted repositories: explorer, tabs, multi-file commits, branches.
 - [Public surface, profile types and notification bell](2026-10-22-public-surface.md) — provider names and setup progress hidden from visitors, hosting headers stripped, Developer and Recruiter profiles only, header notification bell.

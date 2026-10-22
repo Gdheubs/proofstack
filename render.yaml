@@ -43,6 +43,12 @@ services:
         sync: false
       - key: R2_SECRET_ACCESS_KEY
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_BROWSER_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
       - key: GITHUB_OAUTH_CLIENT_ID
         sync: false
       - key: GITHUB_OAUTH_CLIENT_SECRET

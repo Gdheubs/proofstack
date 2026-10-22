@@ -203,6 +203,14 @@ export default function PrivacyPage() {
               <td>United States</td>
             </tr>
             <tr>
+              <td>Error monitoring provider</td>
+              <td>
+                Details of errors and slow pages: page address, browser type and
+                your account ID, never your content
+              </td>
+              <td>United States</td>
+            </tr>
+            <tr>
               <td>GitHub, if you connect it</td>
               <td>Opening and committing your code from the editor</td>
               <td>United States</td>
