@@ -13,8 +13,10 @@ import {
 } from "../services/auth-sessions";
 import { authLimit } from "../services/auth-limits";
 import { ApiError } from "../lib/errors";
+import { publicContent, publicForVisitors } from "../lib/cache-control";
 const router: IRouter = Router();
 router.get("/assessments", (_req, res) => {
+  publicContent(res, 300);
   res.json(assessmentCatalog());
 });
 router.post("/assessments/start", async (req, res) => {
@@ -37,7 +39,9 @@ router.get("/assessments/results", async (req, res) => {
       if (!(error instanceof ApiError && error.status === 403)) throw error;
     }
   }
-  res.json(await getAssessmentResults(uid, req.query));
+  const results = await getAssessmentResults(uid, req.query);
+  if (!session) publicForVisitors(res);
+  res.json(results);
 });
 router.post("/assessments/attempts/:id/submit", async (req, res) => {
   requireCsrf(req);

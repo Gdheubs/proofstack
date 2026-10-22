@@ -154,8 +154,12 @@ describe("signed-in users behind a shared address", () => {
       "INSERT INTO sessions(user_id,provider_session_id,handle_hash,expires_at,encrypted_credentials) VALUES($1,$2,$3,now()+interval '1 hour','fixture')",
       [user, randomUUID(), digest(handle)],
     );
-    for (let i = 0; i < env.RATE_LIMIT_MAX; i++)
-      expect(await call(request())).toBeUndefined();
+    // Use up the address allowance directly; looping could cross a window.
+    expect(await call(request())).toBeUndefined();
+    await pool.query(
+      "UPDATE rate_limit_buckets SET hits=$1 WHERE key NOT LIKE 'api:account:%'",
+      [env.RATE_LIMIT_MAX],
+    );
     expect((await call(request()))?.status).toBe(429);
     expect(
       (await call(request(`__Host-ps-session=${opaqueHandle()}`)))?.status,

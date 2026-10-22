@@ -10,7 +10,10 @@ beforeEach(() => {
 it("serves the curated skill-check catalog without questions or answer keys", async () => {
   const response = await request(app).get("/api/assessments");
   expect(response.status).toBe(200);
-  expect(response.headers["cache-control"]).toBe("private, no-store");
+  // The catalog is identical for everyone, so browsers and the edge may cache it.
+  expect(response.headers["cache-control"]).toBe(
+    "public, max-age=300, s-maxage=300",
+  );
   expect(response.body.assessments).toEqual([
     {
       id: "javascript-foundations",

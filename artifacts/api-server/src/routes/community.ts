@@ -18,6 +18,7 @@ import {
   MAX_IMAGE_BYTES,
 } from "../services/community-assets";
 import { ApiError } from "../lib/errors";
+import { publicContent, publicForVisitors } from "../lib/cache-control";
 import { ObjectNotFoundError } from "../lib/objectStorage";
 const imageId = (raw: unknown) => {
   if (!z.string().uuid().safeParse(raw).success)
@@ -39,7 +40,10 @@ router.get("/community", async (req, res) => {
       if (!(e instanceof ApiError && e.status === 403)) throw e;
     }
   }
-  res.json(await getCommunity(req.query, uid));
+  const data = await getCommunity(req.query, uid);
+  // Signed-out visitors all see the same public data.
+  if (!session) publicForVisitors(res);
+  res.json(data);
 });
 router.post("/community/action", async (req, res) => {
   requireCsrf(req);
@@ -133,8 +137,11 @@ router.get("/community/assets/:id", async (req, res) => {
     "Content-Type": access.row.content_type,
     "X-Content-Type-Options": "nosniff",
     "Content-Security-Policy": "default-src 'none'",
-    "Cache-Control": "private, no-store",
   });
+  // Public images (published profiles, public projects) may be cached; a
+  // private image is never stored outside the browser tab that asked for it.
+  if (access.isPublic) publicContent(res, 3600);
+  else res.set("Cache-Control", "private, no-store");
   body
     .on("error", (err) => {
       req.log?.error({ errorType: err.name }, "Image stream failed");
