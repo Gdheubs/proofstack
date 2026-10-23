@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useSession } from "@/hooks/use-auth";
-import { Bell, ChevronDown, Menu } from "lucide-react";
+import { Bell, ChevronDown, Menu, Search } from "lucide-react";
 import {
   getGetCommunityQueryKey,
   useGetCommunity,
@@ -109,8 +109,13 @@ export function SiteHeader() {
                 key={n.href}
                 href={n.href}
                 aria-current={section === n ? "page" : undefined}
-                className={navClass(section === n)}
+                className={
+                  navClass(section === n) + " inline-flex items-center gap-1.5"
+                }
               >
+                {n.href === "/search" && (
+                  <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
                 {n.label}
               </Link>
             ),
@@ -139,22 +144,32 @@ export function SiteHeader() {
               )}
             </Link>
           )}
-          <Link
-            href="/account"
-            aria-current={pathMatches(path, "/account") ? "page" : undefined}
-            className={
-              navClass(pathMatches(path, "/account")) + " hidden lg:inline-flex"
-            }
-          >
-            Account
-          </Link>
-          {!session.data?.authenticated && (
+          {session.data?.authenticated ? (
             <Link
-              href="/auth"
-              className="hidden rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:inline-flex"
+              href="/account"
+              aria-current={pathMatches(path, "/account") ? "page" : undefined}
+              className={
+                navClass(pathMatches(path, "/account")) +
+                " hidden lg:inline-flex"
+              }
             >
-              Sign in
+              Account
             </Link>
+          ) : (
+            <>
+              <Link
+                href="/auth"
+                className={navClass(false) + " hidden sm:inline-flex"}
+              >
+                Log in
+              </Link>
+              <Link
+                href="/auth?mode=signup"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                Get started
+              </Link>
+            </>
           )}
           <ThemeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
@@ -226,21 +241,31 @@ export function SiteHeader() {
                     </Link>
                   ),
                 )}
-                <Link
-                  href="/account"
-                  onClick={() => setOpen(false)}
-                  className="py-4 font-medium"
-                >
-                  Account & security
-                </Link>
-                {!session.data?.authenticated && (
+                {session.data?.authenticated ? (
                   <Link
-                    href="/auth"
+                    href="/account"
                     onClick={() => setOpen(false)}
-                    className="rounded-md bg-primary px-3 py-3 text-center text-primary-foreground"
+                    className="py-4 font-medium"
                   >
-                    Sign in
+                    Account & security
                   </Link>
+                ) : (
+                  <div className="mt-4 grid gap-2">
+                    <Link
+                      href="/auth?mode=signup"
+                      onClick={() => setOpen(false)}
+                      className="rounded-md bg-primary px-3 py-3 text-center font-medium text-primary-foreground"
+                    >
+                      Get started
+                    </Link>
+                    <Link
+                      href="/auth"
+                      onClick={() => setOpen(false)}
+                      className="rounded-md border px-3 py-3 text-center"
+                    >
+                      Log in
+                    </Link>
+                  </div>
                 )}
               </nav>
             </SheetContent>

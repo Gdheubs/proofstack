@@ -154,30 +154,29 @@ describe("signed-in users behind a shared address", () => {
       "INSERT INTO sessions(user_id,provider_session_id,handle_hash,expires_at,encrypted_credentials) VALUES($1,$2,$3,now()+interval '1 hour','fixture')",
       [user, randomUUID(), digest(handle)],
     );
-    // Use up the address allowance directly; looping could cross a window.
+    // Set counters directly, pinned to the current window, so a window
+    // boundary during the test cannot reset them.
+    const setHits = (account: boolean, hits: number) =>
+      pool.query(
+        `UPDATE rate_limit_buckets SET hits=$1,
+         window_start=to_timestamp(floor(extract(epoch FROM clock_timestamp())/$2)*$2)
+         WHERE key ${account ? "" : "NOT "}LIKE 'api:account:%'`,
+        [hits, env.RATE_LIMIT_WINDOW_SECONDS],
+      );
     expect(await call(request())).toBeUndefined();
-    await pool.query(
-      "UPDATE rate_limit_buckets SET hits=$1 WHERE key NOT LIKE 'api:account:%'",
-      [env.RATE_LIMIT_MAX],
-    );
+    await setHits(false, env.RATE_LIMIT_MAX);
     expect((await call(request()))?.status).toBe(429);
     expect(
       (await call(request(`__Host-ps-session=${opaqueHandle()}`)))?.status,
     ).toBe(429);
     const signedIn = request(`theme=dark; __Host-ps-session=${handle}`);
+    await setHits(false, env.RATE_LIMIT_MAX);
     expect(await call(signedIn)).toBeUndefined();
-    await pool.query(
-      "UPDATE rate_limit_buckets SET hits=$1 WHERE key LIKE 'api:account:%'",
-      [env.RATE_LIMIT_MAX],
-    );
+    await setHits(false, env.RATE_LIMIT_MAX);
+    await setHits(true, env.RATE_LIMIT_MAX);
     expect((await call(signedIn))?.status).toBe(429);
-    await pool.query(
-      "UPDATE rate_limit_buckets SET hits=0 WHERE key LIKE 'api:account:%'",
-    );
-    await pool.query(
-      "UPDATE rate_limit_buckets SET hits=$1 WHERE key NOT LIKE 'api:account:%'",
-      [env.RATE_LIMIT_MAX * SHARED_NETWORK_CEILING],
-    );
+    await setHits(true, 0);
+    await setHits(false, env.RATE_LIMIT_MAX * SHARED_NETWORK_CEILING);
     expect((await call(signedIn))?.status).toBe(429);
   });
 });

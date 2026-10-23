@@ -156,9 +156,15 @@ function OtpVerify({ handle, onBack }: { handle: string; onBack: () => void }) {
   );
 }
 
-function PasswordTab({ caps }: { caps: AuthCapabilities }) {
+function PasswordTab({
+  caps,
+  initialMode = "login",
+}: {
+  caps: AuthCapabilities;
+  initialMode?: "login" | "signup";
+}) {
   const s = useSend();
-  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "reset">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -594,7 +600,13 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
           </button>
         ))}
       </div>
-      {current === "password" && <PasswordTab caps={caps} />}
+      {current === "password" && (
+        <PasswordTab
+          caps={caps}
+          // "Get started" links open straight to account creation.
+          initialMode={params.get("mode") === "signup" ? "signup" : "login"}
+        />
+      )}
       {current === "email" && <OtpTab via="email" caps={caps} />}
       {current === "phone" && <OtpTab via="phone" caps={caps} />}
       {current === "social" && <SocialTab caps={caps} returnTo={returnTo} />}

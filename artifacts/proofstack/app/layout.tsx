@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 import { AgreementGate } from "@/features/legal/agreement";
 import { MonitoringLoader } from "@/features/monitoring/monitoring-loader";
 
@@ -16,9 +17,35 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "ProofStack", template: "%s | ProofStack" },
-  description:
-    "Show your projects, build with collaborators, and discover your next career opportunity.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "ProofStack — Build something. Let it open doors.",
+    template: "%s | ProofStack",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: "ProofStack",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "ProofStack",
+    title: "ProofStack — Build something. Let it open doors.",
+    description: SITE_DESCRIPTION,
+    url: "/",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "ProofStack: Build something. Let it open doors.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ProofStack — Build something. Let it open doors.",
+    description: SITE_DESCRIPTION,
+    images: ["/og.png"],
+  },
 };
 
 export default async function RootLayout({

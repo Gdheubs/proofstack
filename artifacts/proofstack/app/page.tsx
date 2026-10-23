@@ -1,12 +1,6 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Code2,
-  Users,
-  Briefcase,
-  GitPullRequest,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Code2, Users, Briefcase, GitPullRequest } from "lucide-react";
+import { HeroCta } from "@/features/home/hero-cta";
 const paths = [
   {
     icon: Code2,
@@ -18,9 +12,9 @@ const paths = [
   {
     icon: GitPullRequest,
     title: "Make progress together",
-    body: "Explore projects and open a project’s Work board to define tasks, assign ownership, and attach evidence of completed work.",
-    href: "/projects",
-    cta: "Explore project boards",
+    body: "Build with a team in an organization. Members join by invitation, and each project’s Work board tracks tasks, owners and evidence of completed work.",
+    href: "/organizations",
+    cta: "Browse organizations",
   },
   {
     icon: Briefcase,
@@ -56,16 +50,7 @@ export default function Home() {
             Bring your projects, collaborators, and career together. Show how
             you solve problems. Find people who want to build with you.
           </p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Button size="lg" asChild>
-              <Link href="/projects">
-                Explore the work <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/opportunities">Find your next opportunity</Link>
-            </Button>
-          </div>
+          <HeroCta />
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-5 py-16">
@@ -80,7 +65,10 @@ export default function Home() {
         <div className="grid gap-5 md:grid-cols-2">
           {paths.map((p) => (
             <article key={p.title} className="rounded-xl border bg-card p-7">
-              <p.icon className="mb-5 h-6 w-6 text-primary" />
+              <p.icon
+                aria-hidden="true"
+                className="mb-5 h-6 w-6 text-primary"
+              />
               <h3 className="text-xl font-semibold">{p.title}</h3>
               <p className="mb-5 mt-3 text-muted-foreground">{p.body}</p>
               <Link className="font-medium underline" href={p.href}>

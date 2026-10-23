@@ -109,13 +109,14 @@ describe("career navigation content ownership (N1)", () => {
   });
 });
 
-it("takes the overview task-collaboration card to project discovery with work-board guidance (N11)", () => {
+it("takes the overview collaboration card to organizations, with work-board guidance (N11)", () => {
   const home = source("app/page.tsx");
   const card = home.match(
     /title: "Make progress together"[\s\S]*?cta: [^\n]+/,
   )?.[0];
   expect(card).toBeDefined();
-  expect(card).toContain('href: "/projects"');
+  // Each home-page call to action leads somewhere different.
+  expect(card).toContain('href: "/organizations"');
   expect(card).toMatch(/work board/i);
   expect(card).not.toContain("Join the build log");
 });

@@ -12,18 +12,25 @@ export type NavigationSection = {
 
 /** Each tool has one home. Desktop and mobile use this same hierarchy. */
 export const NAV: NavigationSection[] = [
-  { href: "/", label: "Overview", prefixes: ["/"], children: [] },
+  {
+    href: "/search",
+    label: "Search",
+    prefixes: ["/search"],
+    children: [],
+  },
   {
     href: "/projects",
-    label: "Community",
+    label: "Explore",
     prefixes: [
       "/projects",
+      "/community",
+      "/posts",
       "/repositories",
       "/editor",
       "/pulls",
       "/work",
       "/organizations",
-      "/search",
+      "/bookmarks",
       "/assist",
     ],
     children: [
@@ -31,6 +38,11 @@ export const NAV: NavigationSection[] = [
         href: "/projects",
         label: "Projects",
         description: "Discover work and build with collaborators",
+      },
+      {
+        href: "/community",
+        label: "Latest updates",
+        description: "Share progress and follow what others build",
       },
       {
         href: "/repositories",
@@ -48,14 +60,41 @@ export const NAV: NavigationSection[] = [
         description: "Teams, members and shared work",
       },
       {
-        href: "/search",
-        label: "Search community",
-        description: "Find people, projects and updates",
+        href: "/bookmarks",
+        label: "Bookmarks",
+        description: "Return to updates you saved",
       },
       {
         href: "/assist",
         label: "Writing assist",
         description: "Draft profiles, project descriptions and documentation",
+      },
+    ],
+  },
+  {
+    href: "/opportunities",
+    label: "Opportunities",
+    prefixes: ["/opportunities", "/career", "/applications", "/intelligence"],
+    children: [
+      {
+        href: "/opportunities",
+        label: "Opportunities",
+        description: "Explore jobs and collaboration roles",
+      },
+      {
+        href: "/career",
+        label: "Career preferences",
+        description: "Manage availability, evidence and hiring",
+      },
+      {
+        href: "/career/applications",
+        label: "Applications & hiring inbox",
+        description: "Track applications and conversations",
+      },
+      {
+        href: "/intelligence",
+        label: "Intelligence workspace",
+        description: "Explore matches and plan your next steps",
       },
     ],
   },
@@ -78,50 +117,6 @@ export const NAV: NavigationSection[] = [
         href: "/profile/me",
         label: "My profile",
         description: "Your projects, experience and skill results",
-      },
-    ],
-  },
-  {
-    href: "/career",
-    label: "Career workspace",
-    prefixes: ["/career", "/opportunities", "/applications", "/intelligence"],
-    children: [
-      {
-        href: "/career",
-        label: "Career preferences",
-        description: "Manage availability, evidence and hiring",
-      },
-      {
-        href: "/career/applications",
-        label: "Applications & hiring inbox",
-        description: "Track applications and conversations",
-      },
-      {
-        href: "/opportunities",
-        label: "Opportunities",
-        description: "Explore jobs and collaboration roles",
-      },
-      {
-        href: "/intelligence",
-        label: "Intelligence workspace",
-        description: "Explore matches and plan your next steps",
-      },
-    ],
-  },
-  {
-    href: "/community",
-    label: "Build log",
-    prefixes: ["/community", "/posts", "/bookmarks"],
-    children: [
-      {
-        href: "/community",
-        label: "Latest updates",
-        description: "Share progress and follow what others build",
-      },
-      {
-        href: "/bookmarks",
-        label: "Bookmarks",
-        description: "Return to updates you saved",
       },
     ],
   },

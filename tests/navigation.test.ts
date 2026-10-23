@@ -14,13 +14,12 @@ describe("workspace navigation", () => {
     expect(layout).not.toContain("<CommunityNav");
   });
 
-  it("groups related tools beneath the four named workspaces", () => {
+  it("offers Search, Explore, Opportunities and Talent as the main menu", () => {
     expect(NAV.map((n) => n.label)).toEqual([
-      "Overview",
-      "Community",
+      "Search",
+      "Explore",
+      "Opportunities",
       "Talent",
-      "Career workspace",
-      "Build log",
     ]);
     expect(NAV.find((n) => n.label === "Talent")?.children).toEqual(
       expect.arrayContaining([
@@ -53,24 +52,23 @@ describe("workspace navigation", () => {
   });
 
   it.each([
-    ["/", "Overview"],
-    ["/projects/example", "Community"],
-    ["/repositories/example/security", "Community"],
-    ["/pulls/example", "Community"],
-    ["/work/example", "Community"],
-    ["/organizations/example", "Community"],
-    ["/search", "Community"],
-    ["/assist", "Community"],
+    ["/projects/example", "Explore"],
+    ["/repositories/example/security", "Explore"],
+    ["/pulls/example", "Explore"],
+    ["/work/example", "Explore"],
+    ["/organizations/example", "Explore"],
+    ["/search", "Search"],
+    ["/assist", "Explore"],
     ["/talent", "Talent"],
     ["/profile/someone", "Talent"],
     ["/assessments/example", "Talent"],
-    ["/career/applications", "Career workspace"],
-    ["/opportunities/example", "Career workspace"],
-    ["/applications/example", "Career workspace"],
-    ["/intelligence/plan/example", "Career workspace"],
-    ["/community", "Build log"],
-    ["/posts/example", "Build log"],
-    ["/bookmarks", "Build log"],
+    ["/career/applications", "Opportunities"],
+    ["/opportunities/example", "Opportunities"],
+    ["/applications/example", "Opportunities"],
+    ["/intelligence/plan/example", "Opportunities"],
+    ["/community", "Explore"],
+    ["/posts/example", "Explore"],
+    ["/bookmarks", "Explore"],
   ])("assigns %s to %s only", (path, expected) => {
     const section = getNavigationSection(path);
     expect(section?.label).toBe(expected);
@@ -118,36 +116,36 @@ describe("workspace navigation", () => {
 // Every App Router page must be classified. Another person's profile intentionally
 // belongs to Talent without claiming that the viewer's My profile page is current.
 const ownership: Record<string, [string | undefined, string | undefined]> = {
-  "/": ["Overview", undefined],
-  "/projects": ["Community", "/projects"],
-  "/projects/[slug]": ["Community", "/projects"],
-  "/work/[id]": ["Community", "/projects"],
-  "/repositories": ["Community", "/repositories"],
-  "/repositories/[id]": ["Community", "/repositories"],
-  "/repositories/[id]/pulls": ["Community", "/repositories"],
-  "/repositories/[id]/releases": ["Community", "/repositories"],
-  "/repositories/[id]/security": ["Community", "/repositories"],
-  "/pulls/[id]": ["Community", "/repositories"],
-  "/organizations": ["Community", "/organizations"],
-  "/organizations/[slug]": ["Community", "/organizations"],
-  "/search": ["Community", "/search"],
-  "/assist": ["Community", "/assist"],
+  "/": [undefined, undefined],
+  "/projects": ["Explore", "/projects"],
+  "/projects/[slug]": ["Explore", "/projects"],
+  "/work/[id]": ["Explore", "/projects"],
+  "/repositories": ["Explore", "/repositories"],
+  "/repositories/[id]": ["Explore", "/repositories"],
+  "/repositories/[id]/pulls": ["Explore", "/repositories"],
+  "/repositories/[id]/releases": ["Explore", "/repositories"],
+  "/repositories/[id]/security": ["Explore", "/repositories"],
+  "/pulls/[id]": ["Explore", "/repositories"],
+  "/organizations": ["Explore", "/organizations"],
+  "/organizations/[slug]": ["Explore", "/organizations"],
+  "/search": ["Search", undefined],
+  "/assist": ["Explore", "/assist"],
   "/talent": ["Talent", "/talent"],
   "/assessments": ["Talent", "/assessments"],
   "/assessments/[id]": ["Talent", "/assessments"],
   "/profile/[handle]": ["Talent", undefined],
   "/profile/settings": ["Talent", "/profile/me"],
-  "/career": ["Career workspace", "/career"],
-  "/career/applications": ["Career workspace", "/career/applications"],
-  "/applications/[id]": ["Career workspace", "/career/applications"],
-  "/opportunities": ["Career workspace", "/opportunities"],
-  "/opportunities/[id]": ["Career workspace", "/opportunities"],
-  "/intelligence": ["Career workspace", "/intelligence"],
-  "/intelligence/[id]": ["Career workspace", "/intelligence"],
-  "/intelligence/plan/[id]": ["Career workspace", "/intelligence"],
-  "/community": ["Build log", "/community"],
-  "/posts/[id]": ["Build log", "/community"],
-  "/bookmarks": ["Build log", "/bookmarks"],
+  "/career": ["Opportunities", "/career"],
+  "/career/applications": ["Opportunities", "/career/applications"],
+  "/applications/[id]": ["Opportunities", "/career/applications"],
+  "/opportunities": ["Opportunities", "/opportunities"],
+  "/opportunities/[id]": ["Opportunities", "/opportunities"],
+  "/intelligence": ["Opportunities", "/intelligence"],
+  "/intelligence/[id]": ["Opportunities", "/intelligence"],
+  "/intelligence/plan/[id]": ["Opportunities", "/intelligence"],
+  "/community": ["Explore", "/community"],
+  "/posts/[id]": ["Explore", "/community"],
+  "/bookmarks": ["Explore", "/bookmarks"],
   "/notifications": [undefined, undefined],
   "/account": [undefined, undefined],
   "/account/admin": [undefined, undefined],
@@ -160,7 +158,7 @@ const ownership: Record<string, [string | undefined, string | undefined]> = {
   "/privacy": [undefined, undefined],
   "/community-guidelines": [undefined, undefined],
   "/contact": [undefined, undefined],
-  "/editor": ["Community", "/editor"],
+  "/editor": ["Explore", "/editor"],
 };
 function pageRoutes(directory: string, segments: string[] = []): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
