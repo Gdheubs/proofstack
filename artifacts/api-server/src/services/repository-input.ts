@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ApiError } from "../lib/errors";
 export const repoError = (message: string, status = 400) =>
   new ApiError(status, "REPOSITORY_ERROR", message);

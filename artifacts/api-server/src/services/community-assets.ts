@@ -15,7 +15,7 @@ import {
 import type { CommunityAction } from "./community-input";
 import { transaction, audit, type AuthSession } from "./auth-sessions";
 import { images } from "./image-canonical";
-import { z } from "zod";
+import { z } from "zod/v3";
 export const storage = new ObjectStorageService();
 export const MAX_IMAGE_BYTES = 8388608;
 export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;

@@ -1,6 +1,6 @@
 import { pool } from "@workspace/db";
 import type { CareerData } from "@workspace/api-zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ApiError } from "../lib/errors";
 import {
   id,

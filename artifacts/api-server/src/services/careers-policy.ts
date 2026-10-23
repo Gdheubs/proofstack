@@ -1,5 +1,5 @@
 import { pool } from "@workspace/db";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ApiError } from "../lib/errors";
 import { memberAccessWhere, type CommunityDb } from "./community-policy";
 export const id = z.string().uuid();

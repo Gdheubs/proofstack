@@ -1,5 +1,5 @@
 import { AssistCommunityBody } from "@workspace/api-zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ApiError } from "../lib/errors";
 const outputSchema = z.object({
   content: z.string().max(20000),

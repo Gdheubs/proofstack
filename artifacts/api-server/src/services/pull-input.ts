@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { uuid, branchSchema, headSchema, repoError } from "./repository-input";
 const text = (max: number) => z.string().trim().max(max);
 export const releaseTag = z

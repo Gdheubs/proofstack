@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { id, short, tags, proofIds, fail } from "./careers-policy";
 import { linkSchema } from "./community-input";
 export const careerActionSchema = z.discriminatedUnion("action", [

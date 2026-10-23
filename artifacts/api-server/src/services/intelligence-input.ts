@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ApiError } from "../lib/errors";
 import { uuid, branchSchema, headSchema } from "./repository-input";
 export const intelligenceEnabled = () =>

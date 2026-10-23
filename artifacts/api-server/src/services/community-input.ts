@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v3";
 import { ApiError } from "../lib/errors";
 const id = z.string().uuid();
 const text = (max: number) => z.string().trim().max(max);

@@ -32,7 +32,8 @@ catalog:
   tsx: ^4.21.0
   vite: ^7.3.2
   wouter: ^3.3.5
-  zod: 3.25.76
+  # GHSA-mrhx-c7xc-m3w5: patched in 4.6.6. Code written for v3 imports zod/v3.
+  zod: 4.6.6
 
 minimumReleaseAge: 1440
 
@@ -44,6 +45,8 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # GHSA-27r3-jxmh-p828 (body-parser DoS), used by Express 5.
+  body-parser: 2.4.0
   # GHSA-5j98-mcp5-4vw2 (glob CLI) affects 10.2.0-10.4.x; the build-time
   # minifier used by the Cloudflare adapter needs the v10 API.
   '@node-minify/core>glob': 10.5.0

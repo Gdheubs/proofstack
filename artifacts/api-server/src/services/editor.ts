@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { pool } from "@workspace/db";
 import { ApiError } from "../lib/errors";
 import type { AuthSession } from "./auth-sessions";
