@@ -59,6 +59,8 @@ export type AccountUser = {
   mfaRecoveryRequired: boolean;
   /** True until a birth date is on file and the current terms are accepted. */
   agreementRequired?: boolean;
+  /** True until the sign-up wizard is finished or skipped. */
+  onboardingRequired?: boolean;
 };
 export type SessionRow = {
   id: string;
@@ -310,7 +312,7 @@ export async function upsertProviderUser(
     `SELECT u.id,u.email,u.phone,u.platform_role AS "platformRole",u.status,
     u.email_verified_at IS NOT NULL AS "emailVerified",u.phone_verified_at IS NOT NULL AS "phoneVerified",
     u.mfa_recovery_required AS "mfaRecoveryRequired",p.display_name AS "displayName",p.kind,
-    ${AGREEMENT_REQUIRED_SQL} AS "agreementRequired"
+    ${AGREEMENT_REQUIRED_SQL} AS "agreementRequired",p.onboarded_at IS NULL AS "onboardingRequired"
     FROM users u JOIN profiles p ON p.user_id=u.id WHERE u.id=$1`,
     [rows[0].id, TERMS_VERSION],
   );

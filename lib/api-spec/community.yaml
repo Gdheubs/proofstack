@@ -168,6 +168,13 @@ components:
           release,
           documentation,
         ]
+    ProfileLinks:
+      type: object
+      required: [website, github, linkedin]
+      properties:
+        website: { type: string }
+        github: { type: string }
+        linkedin: { type: string }
     CommunityPerson:
       type: object
       required:
@@ -180,6 +187,8 @@ components:
           bio,
           location,
           skills,
+          headline,
+          links,
           followers,
           following,
           followingByMe,
@@ -194,6 +203,8 @@ components:
         bio: { type: string }
         location: { type: string }
         skills: { type: array, items: { type: string } }
+        headline: { type: string }
+        links: { $ref: "#/components/schemas/ProfileLinks" }
         followers: { type: integer }
         following: { type: integer }
         followingByMe: { type: boolean }
@@ -632,6 +643,7 @@ components:
                 team-delete,
                 team-member,
                 notification-read,
+                onboarding-complete,
                 asset-complete,
                 asset-delete,
               ],
@@ -643,6 +655,8 @@ components:
         organizationId: { type: [string, "null"], format: uuid }
         handle: { type: string }
         displayName: { type: string }
+        headline: { type: string }
+        links: { $ref: "#/components/schemas/ProfileLinks" }
         avatarPath: { type: string }
         bio: { type: string }
         location: { type: string }

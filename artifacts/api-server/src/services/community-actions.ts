@@ -33,7 +33,7 @@ export async function runCommunityAction(
           [old?.avatar_url || ""],
         );
       await db.query(
-        "UPDATE profiles SET handle=$2,display_name=$3,bio=$4,location=$5,skills=$6::jsonb,avatar_url=$7,updated_at=now() WHERE user_id=$1",
+        "UPDATE profiles SET handle=$2,display_name=$3,bio=$4,location=$5,skills=$6::jsonb,avatar_url=$7,headline=$8,links=$9::jsonb,updated_at=now() WHERE user_id=$1",
         [
           s.user.id,
           input.handle,
@@ -44,9 +44,17 @@ export async function runCommunityAction(
           input.avatarPath === undefined
             ? old?.avatar_url
             : input.avatarPath || null,
+          input.headline,
+          JSON.stringify(input.links),
         ],
       );
       result = { message: "Public profile saved", handle: input.handle };
+    } else if (input.action === "onboarding-complete") {
+      await db.query(
+        "UPDATE profiles SET onboarded_at=coalesce(onboarded_at,now()) WHERE user_id=$1",
+        [s.user.id],
+      );
+      result = { message: "Welcome aboard" };
     } else if (input.action === "notification-read") {
       await db.query(
         `UPDATE notifications n SET read_at=coalesce(n.read_at,now()) WHERE ${notificationReadWhere()} ${input.id ? "AND n.id=$2" : ""}`,

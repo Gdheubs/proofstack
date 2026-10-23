@@ -9,7 +9,8 @@ import { Empty, PageHead, PagedList } from "./ui";
 import { PostCard } from "./post-card";
 import { PostDialog } from "./post-dialog";
 
-export function FeedView() {
+// embedded: rendered inside the home page's columns, without its own width.
+export function FeedView({ embedded = false }: { embedded?: boolean }) {
   const [filter, setFilter] = useState<"discover" | "following">("discover");
   const [compose, setCompose] = useState(false);
   const { canAct } = useCsrf();
@@ -18,8 +19,8 @@ export function FeedView() {
     filter === "discover" || canAct,
   );
   return (
-    <div className="mx-auto max-w-2xl">
-      <PageHead eyebrow="Community" title="Build log">
+    <div className={embedded ? "" : "mx-auto max-w-2xl"}>
+      <PageHead eyebrow="Feed" title="What builders are shipping">
         {canAct ? (
           <Button onClick={() => setCompose(true)}>
             <PenLine className="h-4 w-4" /> Share an update

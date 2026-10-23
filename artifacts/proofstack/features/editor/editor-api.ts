@@ -97,8 +97,9 @@ export const editorApi = {
       expectedHead: string;
     },
   ) => post<CommitResult>("/branch", csrf, body),
-  connectGithub: (csrf: string) =>
-    post<{ authorizeUrl: string }>("/github/connect", csrf),
+  // returnTo: where GitHub sends the member back (the editor or the wizard).
+  connectGithub: (csrf: string, returnTo: "code" | "welcome" = "code") =>
+    post<{ authorizeUrl: string }>("/github/connect", csrf, { returnTo }),
   disconnectGithub: (csrf: string) =>
     post<{ message: string }>("/github/disconnect", csrf),
 };

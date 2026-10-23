@@ -27,6 +27,9 @@ import {
 } from "../services/editor";
 
 const STATE_COOKIE = "__Host-ps-github-state";
+// Where to send the member after GitHub answers: the editor or the wizard.
+const RETURN_COOKIE = "__Host-ps-github-return";
+const RETURNS = { code: "/code", welcome: "/welcome" } as const;
 const callbackUrl = () => `${authOrigin()}/api/editor/github/callback`;
 const router: IRouter = Router();
 
@@ -87,7 +90,10 @@ router.post("/editor/github/connect", async (req, res) => {
   await authLimit(req, "github-connect", session.user.id, 10, 600);
   const state = signedNonce();
   const authorizeUrl = githubAuthorizeUrl(state, callbackUrl());
+  const returnTo =
+    req.body?.returnTo === "welcome" ? "welcome" : ("code" as const);
   res.cookie(STATE_COOKIE, state, { ...cookieOptions, maxAge: 600000 });
+  res.cookie(RETURN_COOKIE, returnTo, { ...cookieOptions, maxAge: 600000 });
   res.json({ authorizeUrl });
 });
 router.post("/editor/github/disconnect", async (req, res) => {
@@ -99,9 +105,18 @@ router.post("/editor/github/disconnect", async (req, res) => {
 });
 // Answers with a page that navigates on: the web tier's proxy follows HTTP
 // redirects itself, which would lose this response's cookies.
-function continueTo(res: Response, result: "connected" | "failed") {
+function continueTo(
+  res: Response,
+  result: "connected" | "failed",
+  returnTo: unknown,
+) {
   res.clearCookie(STATE_COOKIE, cookieOptions);
-  const path = `/editor?github=${result}`;
+  res.clearCookie(RETURN_COOKIE, cookieOptions);
+  const base =
+    typeof returnTo === "string" && returnTo in RETURNS
+      ? RETURNS[returnTo as keyof typeof RETURNS]
+      : RETURNS.code;
+  const path = `${base}?github=${result}`;
   res
     .status(200)
     .set("Referrer-Policy", "no-referrer")
@@ -111,6 +126,7 @@ function continueTo(res: Response, result: "connected" | "failed") {
     );
 }
 router.get("/editor/github/callback", async (req, res) => {
+  const returnTo = req.cookies?.[RETURN_COOKIE];
   try {
     const session = requireAccount(await readSession(req, res));
     const state = req.cookies?.[STATE_COOKIE];
@@ -126,9 +142,9 @@ router.get("/editor/github/callback", async (req, res) => {
       throw new Error("GitHub state mismatch");
     await completeGithubConnection(session.user.id, code, callbackUrl());
     await audit(req, "editor.github_connected", session.user.id);
-    continueTo(res, "connected");
+    continueTo(res, "connected", returnTo);
   } catch {
-    continueTo(res, "failed");
+    continueTo(res, "failed", returnTo);
   }
 });
 

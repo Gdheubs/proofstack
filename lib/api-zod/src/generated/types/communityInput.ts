@@ -10,6 +10,7 @@ import type { CommunityInputKind } from './communityInputKind';
 import type { CommunityInputRole } from './communityInputRole';
 import type { CommunityInputTargetType } from './communityInputTargetType';
 import type { CommunityInputVisibility } from './communityInputVisibility';
+import type { ProfileLinks } from './profileLinks';
 
 export interface CommunityInput {
   action: CommunityInputAction;
@@ -22,6 +23,8 @@ export interface CommunityInput {
   organizationId?: string | null;
   handle?: string;
   displayName?: string;
+  headline?: string;
+  links?: ProfileLinks;
   avatarPath?: string;
   bio?: string;
   location?: string;

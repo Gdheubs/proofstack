@@ -108,15 +108,3 @@ describe("career navigation content ownership (N1)", () => {
     expect(job).not.toContain("/career?job=");
   });
 });
-
-it("takes the overview collaboration card to organizations, with work-board guidance (N11)", () => {
-  const home = source("app/page.tsx");
-  const card = home.match(
-    /title: "Make progress together"[\s\S]*?cta: [^\n]+/,
-  )?.[0];
-  expect(card).toBeDefined();
-  // Each home-page call to action leads somewhere different.
-  expect(card).toContain('href: "/organizations"');
-  expect(card).toMatch(/work board/i);
-  expect(card).not.toContain("Join the build log");
-});

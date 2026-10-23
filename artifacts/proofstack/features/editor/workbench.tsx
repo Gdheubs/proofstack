@@ -294,7 +294,7 @@ export function Workbench() {
           browser.
         </p>
         <Button asChild>
-          <Link href="/auth?next=%2Feditor">Sign in</Link>
+          <Link href="/auth?next=%2Fcode">Sign in</Link>
         </Button>
       </section>
     );

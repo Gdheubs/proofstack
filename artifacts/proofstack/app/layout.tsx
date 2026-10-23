@@ -5,6 +5,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { BottomTabs } from "@/components/bottom-tabs";
+import { OnboardingGate } from "@/features/onboarding/onboarding-gate";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
 import { AgreementGate } from "@/features/legal/agreement";
 import { MonitoringLoader } from "@/features/monitoring/monitoring-loader";
@@ -73,7 +75,9 @@ export default async function RootLayout({
             {children}
           </main>
           <SiteFooter />
+          <BottomTabs />
           <AgreementGate />
+          <OnboardingGate />
           <MonitoringLoader />
         </Providers>
       </body>

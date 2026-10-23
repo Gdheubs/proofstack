@@ -34,6 +34,7 @@ export const CommunityInputAction = {
   'team-delete': 'team-delete',
   'team-member': 'team-member',
   'notification-read': 'notification-read',
+  'onboarding-complete': 'onboarding-complete',
   'asset-complete': 'asset-complete',
   'asset-delete': 'asset-delete',
 } as const;

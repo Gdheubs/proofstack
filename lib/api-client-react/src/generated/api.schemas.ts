@@ -49,6 +49,8 @@ export interface AccountUser {
   mfaRecoveryRequired?: boolean;
   /** True until a birth date is on file and the current Terms and Privacy Policy are accepted. */
   agreementRequired?: boolean;
+  /** True until the sign-up wizard is finished or skipped. */
+  onboardingRequired?: boolean;
 }
 
 export type AuthFactorType = typeof AuthFactorType[keyof typeof AuthFactorType];
@@ -1000,6 +1002,12 @@ export const CommunityEntryKind = {
   documentation: 'documentation',
 } as const;
 
+export interface ProfileLinks {
+  website: string;
+  github: string;
+  linkedin: string;
+}
+
 export type CommunityPersonKind = typeof CommunityPersonKind[keyof typeof CommunityPersonKind];
 
 
@@ -1017,6 +1025,8 @@ export interface CommunityPerson {
   bio: string;
   location: string;
   skills: string[];
+  headline: string;
+  links: ProfileLinks;
   followers: number;
   following: number;
   followingByMe: boolean;
@@ -1281,6 +1291,7 @@ export const CommunityInputAction = {
   'team-delete': 'team-delete',
   'team-member': 'team-member',
   'notification-read': 'notification-read',
+  'onboarding-complete': 'onboarding-complete',
   'asset-complete': 'asset-complete',
   'asset-delete': 'asset-delete',
 } as const;
@@ -1340,6 +1351,8 @@ export interface CommunityInput {
   organizationId?: string | null;
   handle?: string;
   displayName?: string;
+  headline?: string;
+  links?: ProfileLinks;
   avatarPath?: string;
   bio?: string;
   location?: string;

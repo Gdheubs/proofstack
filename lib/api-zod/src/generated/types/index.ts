@@ -126,6 +126,7 @@ export * from './operationsData';
 export * from './operationsDataConfiguration';
 export * from './operationsDataQueue';
 export * from './operationsDataRuntime';
+export * from './profileLinks';
 export * from './pullBranch';
 export * from './pullCheck';
 export * from './pullComment';

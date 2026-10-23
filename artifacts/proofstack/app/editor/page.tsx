@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
-import { EditorLoader } from "@/features/editor/editor-loader";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Code editor",
-  description: "Edit your GitHub and ProofStack repositories in the browser.",
-};
-
+// The editor moved under Code; keep old links working.
 export default function EditorPage() {
-  return <EditorLoader />;
+  redirect("/code");
 }

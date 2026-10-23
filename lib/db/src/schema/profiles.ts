@@ -18,6 +18,13 @@ export const profileKindEnum = pgEnum("profile_kind", [
   "recruiter",
 ]);
 
+// Who may open a profile: everyone, or signed-in members only.
+export const profileVisibilityEnum = pgEnum("profile_visibility", [
+  "public",
+  "members",
+]);
+export type ProfileLinks = { website?: string; github?: string; linkedin?: string };
+
 export const profilesTable = pgTable(
   "profiles",
   {
@@ -31,6 +38,11 @@ export const profilesTable = pgTable(
     bio: text("bio").notNull().default(""),
     location: text("location").notNull().default(""),
     skills: jsonb("skills").$type<string[]>().notNull().default([]),
+    headline: text("headline").notNull().default(""),
+    links: jsonb("links").$type<ProfileLinks>().notNull().default({}),
+    visibility: profileVisibilityEnum("visibility").notNull().default("public"),
+    // Set when the sign-up wizard is finished or skipped.
+    onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

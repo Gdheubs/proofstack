@@ -444,7 +444,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("Code editor", () => {
         .set("Cookie", cookie);
       expect(bad.status).toBe(200);
       expect(bad.headers.location).toBeUndefined();
-      expect(bad.text).toContain("/editor?github=failed");
+      expect(bad.text).toContain("/code?github=failed");
       // The fake GitHub API answers the token exchange and the user lookup.
       vi.stubGlobal(
         "fetch",
@@ -464,7 +464,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("Code editor", () => {
         .get("/api/editor/github/callback")
         .query({ code: "abc", state })
         .set("Cookie", cookie);
-      expect(good.text).toContain("/editor?github=connected");
+      expect(good.text).toContain("/code?github=connected");
       const row = (
         await pool.query(
           "SELECT login,encrypted_token FROM github_connections WHERE user_id=$1",

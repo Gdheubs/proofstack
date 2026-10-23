@@ -82,7 +82,17 @@ const schemas = {
     location: text(160).default(""),
     skills: tags.default([]),
     avatarPath: assetPath.optional(),
+    headline: text(160).default(""),
+    links: z
+      .object({
+        website: linkSchema.default(""),
+        github: linkSchema.default(""),
+        linkedin: linkSchema.default(""),
+      })
+      .strict()
+      .default({ website: "", github: "", linkedin: "" }),
   }),
+  "onboarding-complete": z.object({ action: z.literal("onboarding-complete") }),
   "entry-save": z
     .object({
       action: z.literal("entry-save"),

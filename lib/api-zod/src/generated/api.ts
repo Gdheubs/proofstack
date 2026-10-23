@@ -600,6 +600,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -614,6 +620,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -638,6 +650,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -654,6 +672,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -704,6 +728,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -721,6 +751,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -747,6 +783,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -788,6 +830,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -804,6 +852,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -845,6 +899,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -875,6 +935,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -898,6 +964,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -913,6 +985,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -928,6 +1006,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -952,6 +1036,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -968,6 +1058,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1018,6 +1114,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1035,6 +1137,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1061,6 +1169,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1102,6 +1216,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1118,6 +1238,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1159,6 +1285,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1189,6 +1321,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1212,6 +1350,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1227,6 +1371,12 @@ export const GetCommunityResponse = zod.object({
   "bio": zod.string(),
   "location": zod.string(),
   "skills": zod.array(zod.string()),
+  "headline": zod.string(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}),
   "followers": zod.number().int(),
   "following": zod.number().int(),
   "followingByMe": zod.boolean(),
@@ -1279,7 +1429,7 @@ export const GetCommunityImageResponse = zod.unknown()
 
 
 export const RunCommunityActionBody = zod.object({
-  "action": zod.enum(['profile-save', 'entry-save', 'entry-delete', 'follow', 'post-save', 'post-delete', 'comment-save', 'comment-delete', 'reaction', 'bookmark', 'project-save', 'project-delete', 'contributor-invite', 'contributor-respond', 'contributor-remove', 'organization-save', 'organization-delete', 'member-save', 'member-remove', 'member-respond', 'team-save', 'team-delete', 'team-member', 'notification-read', 'asset-complete', 'asset-delete']),
+  "action": zod.enum(['profile-save', 'entry-save', 'entry-delete', 'follow', 'post-save', 'post-delete', 'comment-save', 'comment-delete', 'reaction', 'bookmark', 'project-save', 'project-delete', 'contributor-invite', 'contributor-respond', 'contributor-remove', 'organization-save', 'organization-delete', 'member-save', 'member-remove', 'member-respond', 'team-save', 'team-delete', 'team-member', 'notification-read', 'onboarding-complete', 'asset-complete', 'asset-delete']),
   "id": zod.string().uuid().optional(),
   "targetId": zod.string().uuid().optional(),
   "targetType": zod.enum(['post', 'comment', 'project']).optional(),
@@ -1287,6 +1437,12 @@ export const RunCommunityActionBody = zod.object({
   "organizationId": zod.string().uuid().nullish(),
   "handle": zod.string().optional(),
   "displayName": zod.string().optional(),
+  "headline": zod.string().optional(),
+  "links": zod.object({
+  "website": zod.string(),
+  "github": zod.string(),
+  "linkedin": zod.string()
+}).optional(),
   "avatarPath": zod.string().optional(),
   "bio": zod.string().optional(),
   "location": zod.string().optional(),
@@ -1397,7 +1553,8 @@ export const GetAuthContextResponse = zod.object({
   "platformRole": zod.union([zod.literal('moderator'),zod.literal('admin'),zod.literal('super_admin'),zod.literal(null)]).nullable(),
   "status": zod.enum(['active', 'disabled']),
   "mfaRecoveryRequired": zod.boolean().optional(),
-  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.')
+  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.'),
+  "onboardingRequired": zod.boolean().optional().describe('True until the sign-up wizard is finished or skipped.')
 }),zod.null()]),
   "mfaRequired": zod.boolean(),
   "factors": zod.array(zod.object({
@@ -1480,7 +1637,8 @@ export const GetAccountResponse = zod.object({
   "platformRole": zod.union([zod.literal('moderator'),zod.literal('admin'),zod.literal('super_admin'),zod.literal(null)]).nullable(),
   "status": zod.enum(['active', 'disabled']),
   "mfaRecoveryRequired": zod.boolean().optional(),
-  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.')
+  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.'),
+  "onboardingRequired": zod.boolean().optional().describe('True until the sign-up wizard is finished or skipped.')
 }),
   "sessions": zod.array(zod.object({
   "id": zod.string(),
@@ -1531,7 +1689,8 @@ export const GetAccountUsersResponseItem = zod.object({
   "platformRole": zod.union([zod.literal('moderator'),zod.literal('admin'),zod.literal('super_admin'),zod.literal(null)]).nullable(),
   "status": zod.enum(['active', 'disabled']),
   "mfaRecoveryRequired": zod.boolean().optional(),
-  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.')
+  "agreementRequired": zod.boolean().optional().describe('True until a birth date is on file and the current Terms and Privacy Policy are accepted.'),
+  "onboardingRequired": zod.boolean().optional().describe('True until the sign-up wizard is finished or skipped.')
 })
 export const GetAccountUsersResponse = zod.array(GetAccountUsersResponseItem)
 

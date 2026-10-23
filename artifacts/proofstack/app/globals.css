@@ -380,3 +380,98 @@
     animation: none;
   }
 }
+
+/* Landing-page product previews. */
+@keyframes mock-card {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(6px);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes mock-type {
+  0% {
+    width: 0;
+  }
+  60%,
+  100% {
+    width: 100%;
+  }
+}
+@keyframes mock-fill {
+  0% {
+    width: 38%;
+  }
+  60%,
+  100% {
+    width: 92%;
+  }
+}
+@keyframes mock-bar {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+@keyframes mock-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0);
+  }
+}
+@keyframes mock-pct {
+  0% {
+    content: "38%";
+  }
+  60%,
+  100% {
+    content: "92%";
+  }
+}
+.mock-card {
+  animation: mock-card 4.5s ease-in-out infinite;
+}
+.mock-type {
+  width: 0;
+  animation: mock-type 4s steps(28) infinite;
+}
+.mock-fill {
+  animation: mock-fill 4s ease-in-out infinite alternate;
+}
+.mock-bar {
+  transform-origin: left;
+  animation: mock-bar 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.mock-pulse {
+  animation: mock-pulse 2s ease-out infinite;
+}
+.mock-pct::after {
+  content: "92%";
+  animation: mock-pct 4s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mock-card,
+  .mock-type,
+  .mock-fill,
+  .mock-bar,
+  .mock-pulse,
+  .mock-pct::after {
+    animation: none;
+  }
+  .mock-type {
+    width: 100%;
+  }
+  .mock-fill {
+    width: 92%;
+  }
+}

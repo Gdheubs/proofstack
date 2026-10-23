@@ -1,27 +1,42 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { useSession } from "@/hooks/use-auth";
-import { Bell, ChevronDown, Menu, Search } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import {
-  getGetCommunityQueryKey,
-  useGetCommunity,
-} from "@workspace/api-client-react";
-import { useCsrf } from "@/hooks/use-community";
+  Bell,
+  Bookmark,
+  Briefcase,
+  Code2,
+  FolderKanban,
+  GraduationCap,
+  Home,
+  LogOut,
+  Menu,
+  Moon,
+  Search,
+  Settings,
+  Sparkles,
+  Sun,
+  User,
+  Users,
+} from "lucide-react";
+import { useAct, useSession } from "@/hooks/use-auth";
+import { useViewer } from "@/hooks/use-viewer";
 import {
   NAV,
+  PROFILE_MENU,
   getNavigationSection,
-  isNavigationLinkActive,
   pathMatches,
 } from "@/lib/navigation";
 import { Logo } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -31,147 +46,217 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { PersonAvatar } from "@/features/community/ui";
+
+const ICONS: Record<string, typeof Home> = {
+  "/home": Home,
+  "/projects": FolderKanban,
+  "/code": Code2,
+  "/organizations": Users,
+  "/opportunities": Briefcase,
+  "/talent": Sparkles,
+  "/assessments": GraduationCap,
+};
+const MENU_ICONS: Record<string, typeof Home> = {
+  "/profile/me": User,
+  "/bookmarks": Bookmark,
+  "/account": Settings,
+};
+
+function SearchBox({ className = "" }: { className?: string }) {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  return (
+    <form
+      role="search"
+      className={className}
+      onSubmit={(e) => {
+        e.preventDefault();
+        router.push(
+          q.trim() ? `/search?q=${encodeURIComponent(q.trim())}` : "/search",
+        );
+      }}
+    >
+      <label className="relative block">
+        <span className="sr-only">Search people, projects and posts</span>
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search"
+          className="h-9 w-44 rounded-md border bg-background pl-8 pr-3 text-sm transition-[width] focus:w-64 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring xl:w-56"
+        />
+      </label>
+    </form>
+  );
+}
+
+function ThemeItem() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const dark = mounted && resolvedTheme === "dark";
+  return (
+    <DropdownMenuItem
+      onSelect={(e) => {
+        e.preventDefault();
+        setTheme(dark ? "light" : "dark");
+      }}
+    >
+      {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {dark ? "Light mode" : "Dark mode"}
+    </DropdownMenuItem>
+  );
+}
+
+function ProfileMenu() {
+  const { viewer } = useViewer();
+  const session = useSession();
+  const { act } = useAct();
+  const router = useRouter();
+  const name = viewer?.displayName ?? session.data?.user?.displayName ?? "";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Open your menu"
+          className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <PersonAvatar
+            person={{
+              displayName: name || "?",
+              avatarPath: viewer?.avatarPath ?? "",
+            }}
+            size={34}
+          />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="w-60">
+        <DropdownMenuLabel className="truncate">
+          {name}
+          {viewer?.handle && (
+            <span className="block truncate text-xs font-normal text-muted-foreground">
+              @{viewer.handle}
+            </span>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {PROFILE_MENU.map((item) => {
+          const Icon = MENU_ICONS[item.href] ?? User;
+          return (
+            <DropdownMenuItem key={item.href} asChild>
+              <Link href={item.href}>
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+        <ThemeItem />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() =>
+            act({ action: "logout", scope: "local" })
+              .catch(() => {})
+              .finally(() => router.push("/"))
+          }
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export function SiteHeader() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const section = getNavigationSection(path);
-  const [expanded, setExpanded] = useState<string | undefined>(section?.href);
   const session = useSession();
-  const { canAct } = useCsrf();
-  const params = { view: "notifications" } as const;
-  const notifications = useGetCommunity(params, {
-    query: {
-      queryKey: getGetCommunityQueryKey(params),
-      enabled: canAct,
-      staleTime: 30_000,
-      retry: false,
-    },
-  });
-  const unread = notifications.data?.unreadCount ?? 0;
-  const label = (_href: string, text: string) => (
-    <span className="flex items-center gap-2">{text}</span>
-  );
+  const signedIn = !!session.data?.authenticated;
+  const { unread } = useViewer();
   const navClass = (active: boolean) =>
-    `rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`;
+    `inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`;
+
+  if (!signedIn)
+    return (
+      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+          <Link href="/" aria-label="ProofStack home">
+            <Logo />
+          </Link>
+          <nav aria-label="Account" className="flex items-center gap-2">
+            <Link href="/auth" className={navClass(path === "/auth")}>
+              Log in
+            </Link>
+            <Button asChild size="sm">
+              <Link href="/auth?mode=signup">Get started</Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
+    );
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-        <Link href="/" aria-label="ProofStack home">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-5">
+        <Link href="/home" aria-label="ProofStack home" className="shrink-0">
           <Logo />
         </Link>
-        <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
-          {NAV.map((n) =>
-            n.children.length ? (
-              <DropdownMenu key={n.href}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-current={section === n ? "true" : undefined}
-                    className={
-                      navClass(section === n) +
-                      " inline-flex items-center gap-1.5"
-                    }
-                  >
-                    {n.label}
-                    <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  sideOffset={10}
-                  className="w-80 max-w-[calc(100vw-2rem)] p-2"
-                >
-                  {n.children.map((child) => (
-                    <DropdownMenuItem key={child.href} asChild className="p-3">
-                      <Link
-                        href={child.href}
-                        aria-current={
-                          isNavigationLinkActive(path, child.href)
-                            ? "page"
-                            : undefined
-                        }
-                        className="flex flex-col items-start gap-1"
-                      >
-                        <span className="font-medium">
-                          {label(child.href, child.label)}
-                        </span>
-                        <span className="text-xs leading-relaxed text-muted-foreground">
-                          {child.description}
-                        </span>
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
+        <nav
+          aria-label="Primary"
+          className="hidden items-center gap-0.5 lg:flex"
+        >
+          {NAV.map((n) => {
+            const Icon = ICONS[n.href] ?? Home;
+            return (
               <Link
                 key={n.href}
                 href={n.href}
                 aria-current={section === n ? "page" : undefined}
-                className={
-                  navClass(section === n) + " inline-flex items-center gap-1.5"
-                }
+                className={navClass(section === n)}
               >
-                {n.href === "/search" && (
-                  <Search className="h-3.5 w-3.5" aria-hidden="true" />
-                )}
+                <Icon className="h-4 w-4" aria-hidden="true" />
                 {n.label}
               </Link>
-            ),
-          )}
+            );
+          })}
         </nav>
-        <div className="flex items-center gap-1">
-          {session.data?.authenticated && (
-            <Link
-              href="/notifications"
-              aria-label={
-                unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
-              }
-              aria-current={
-                pathMatches(path, "/notifications") ? "page" : undefined
-              }
-              className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${pathMatches(path, "/notifications") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-            >
-              <Bell className="h-5 w-5" aria-hidden="true" />
-              {unread > 0 && (
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-0.5 -top-0.5 min-w-[1.125rem] rounded-full bg-accent px-1 text-center font-mono text-[10px] leading-[1.125rem] text-accent-foreground"
-                >
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              )}
-            </Link>
-          )}
-          {session.data?.authenticated ? (
-            <Link
-              href="/account"
-              aria-current={pathMatches(path, "/account") ? "page" : undefined}
-              className={
-                navClass(pathMatches(path, "/account")) +
-                " hidden lg:inline-flex"
-              }
-            >
-              Account
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/auth"
-                className={navClass(false) + " hidden sm:inline-flex"}
+        <div className="ml-auto flex items-center gap-1.5">
+          <SearchBox className="hidden md:block" />
+          <Link
+            href="/search"
+            aria-label="Search"
+            className={`${navClass(pathMatches(path, "/search"))} md:hidden`}
+          >
+            <Search className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <Link
+            href="/notifications"
+            aria-label={
+              unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+            }
+            aria-current={
+              pathMatches(path, "/notifications") ? "page" : undefined
+            }
+            className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${pathMatches(path, "/notifications") ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+          >
+            <Bell className="h-5 w-5" aria-hidden="true" />
+            {unread > 0 && (
+              <span
+                aria-hidden="true"
+                className="absolute -right-0.5 -top-0.5 min-w-[1.125rem] rounded-full bg-accent px-1 text-center font-mono text-[10px] leading-[1.125rem] text-accent-foreground"
               >
-                Log in
-              </Link>
-              <Link
-                href="/auth?mode=signup"
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                Get started
-              </Link>
-            </>
-          )}
-          <ThemeToggle />
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
+          </Link>
+          <ProfileMenu />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button
@@ -179,94 +264,44 @@ export function SiteHeader() {
                 size="icon"
                 aria-label="Open menu"
                 className="lg:hidden"
-                onClick={() => setExpanded(section?.href)}
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="overflow-y-auto">
               <SheetHeader>
-                <SheetTitle>Navigate</SheetTitle>
+                <SheetTitle>Workspace</SheetTitle>
               </SheetHeader>
               <nav aria-label="Mobile" className="mt-4 flex flex-col px-4 pb-6">
-                {NAV.map((n) =>
-                  n.children.length ? (
-                    <div key={n.href} className="border-b py-1">
-                      <button
-                        type="button"
-                        aria-expanded={expanded === n.href}
-                        aria-controls={`mobile-${n.label.replaceAll(" ", "-")}`}
-                        className="flex min-h-12 w-full items-center justify-between py-3 text-left font-medium focus-visible:outline-2 focus-visible:outline-ring"
-                        onClick={() =>
-                          setExpanded(expanded === n.href ? undefined : n.href)
-                        }
-                      >
-                        {n.label}
-                        <ChevronDown
-                          aria-hidden="true"
-                          className={`h-4 w-4 transition-transform motion-reduce:transition-none ${expanded === n.href ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                      <div
-                        id={`mobile-${n.label.replaceAll(" ", "-")}`}
-                        hidden={expanded !== n.href}
-                        className="space-y-1 pb-3"
-                      >
-                        {n.children.map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            onClick={() => setOpen(false)}
-                            aria-current={
-                              isNavigationLinkActive(path, child.href)
-                                ? "page"
-                                : undefined
-                            }
-                            className={`block rounded-md px-3 py-3 text-sm focus-visible:outline-2 focus-visible:outline-ring ${isNavigationLinkActive(path, child.href) ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted"}`}
-                          >
-                            {label(child.href, child.label)}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
+                {NAV.map((n) => {
+                  const Icon = ICONS[n.href] ?? Home;
+                  return (
                     <Link
                       key={n.href}
                       href={n.href}
                       onClick={() => setOpen(false)}
                       aria-current={section === n ? "page" : undefined}
-                      className="border-b py-4 font-medium"
+                      className={`flex min-h-12 items-center gap-3 border-b py-3 ${section === n ? "font-medium" : ""}`}
                     >
+                      <Icon className="h-5 w-5" aria-hidden="true" />
                       {n.label}
                     </Link>
-                  ),
-                )}
-                {session.data?.authenticated ? (
-                  <Link
-                    href="/account"
-                    onClick={() => setOpen(false)}
-                    className="py-4 font-medium"
-                  >
-                    Account & security
-                  </Link>
-                ) : (
-                  <div className="mt-4 grid gap-2">
+                  );
+                })}
+                {PROFILE_MENU.map((item) => {
+                  const Icon = MENU_ICONS[item.href] ?? User;
+                  return (
                     <Link
-                      href="/auth?mode=signup"
+                      key={item.href}
+                      href={item.href}
                       onClick={() => setOpen(false)}
-                      className="rounded-md bg-primary px-3 py-3 text-center font-medium text-primary-foreground"
+                      className="flex min-h-12 items-center gap-3 border-b py-3 text-muted-foreground"
                     >
-                      Get started
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                      {item.label}
                     </Link>
-                    <Link
-                      href="/auth"
-                      onClick={() => setOpen(false)}
-                      className="rounded-md border px-3 py-3 text-center"
-                    >
-                      Log in
-                    </Link>
-                  </div>
-                )}
+                  );
+                })}
               </nav>
             </SheetContent>
           </Sheet>

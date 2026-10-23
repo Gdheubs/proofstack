@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  MOBILE_TABS,
   NAV,
+  PROFILE_MENU,
   getNavigationSection,
   isNavigationLinkActive,
 } from "../artifacts/proofstack/lib/navigation";
@@ -14,25 +16,32 @@ describe("workspace navigation", () => {
     expect(layout).not.toContain("<CommunityNav");
   });
 
-  it("offers Search, Explore, Opportunities and Talent as the main menu", () => {
+  it("offers one page per tool in the signed-in menu, with no dropdowns", () => {
     expect(NAV.map((n) => n.label)).toEqual([
-      "Search",
-      "Explore",
+      "Home",
+      "Projects",
+      "Code",
+      "Collab",
       "Opportunities",
       "Talent",
+      "Skills",
     ]);
-    expect(NAV.find((n) => n.label === "Talent")?.children).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ href: "/talent" }),
-        expect.objectContaining({ href: "/assessments" }),
-        expect.objectContaining({ href: "/profile/me" }),
-      ]),
-    );
+    for (const section of NAV) expect(section.children).toEqual([]);
   });
 
-  it("does not put the same tool in multiple groups", () => {
-    const destinations = NAV.flatMap((n) => n.children.map((c) => c.href));
-    expect(new Set(destinations).size).toBe(destinations.length);
+  it("keeps personal pages in the profile menu and five tabs on phones", () => {
+    expect(PROFILE_MENU.map((l) => l.href)).toEqual([
+      "/profile/me",
+      "/bookmarks",
+      "/account",
+    ]);
+    expect(MOBILE_TABS.map((t) => t.href)).toEqual([
+      "/home",
+      "/projects",
+      "/code",
+      "/opportunities",
+      "/profile/me",
+    ]);
   });
 
   it("provides a real standalone application workspace", () => {
@@ -41,124 +50,106 @@ describe("workspace navigation", () => {
     ).toBe(true);
   });
 
-  it("describes the existing profile, project and documentation writing tasks (N10)", () => {
-    const assist = NAV.flatMap((section) => section.children).find(
-      (child) => child.href === "/assist",
-    );
-    expect(assist?.description).toMatch(/profile/i);
-    expect(assist?.description).toMatch(/project/i);
-    expect(assist?.description).toMatch(/documentation/i);
-    expect(assist?.description).not.toMatch(/post|update/i);
-  });
-
   it.each([
-    ["/projects/example", "Explore"],
-    ["/repositories/example/security", "Explore"],
-    ["/pulls/example", "Explore"],
-    ["/work/example", "Explore"],
-    ["/organizations/example", "Explore"],
-    ["/search", "Search"],
-    ["/assist", "Explore"],
-    ["/talent", "Talent"],
-    ["/profile/someone", "Talent"],
-    ["/assessments/example", "Talent"],
-    ["/career/applications", "Opportunities"],
+    ["/home", "Home"],
+    ["/community", "Home"],
+    ["/posts/example", "Home"],
+    ["/bookmarks", "Home"],
+    ["/projects/example", "Projects"],
+    ["/work/example", "Projects"],
+    ["/code", "Code"],
+    ["/editor", "Code"],
+    ["/repositories/example/security", "Code"],
+    ["/pulls/example", "Code"],
+    ["/organizations/example", "Collab"],
     ["/opportunities/example", "Opportunities"],
+    ["/career/applications", "Opportunities"],
     ["/applications/example", "Opportunities"],
     ["/intelligence/plan/example", "Opportunities"],
-    ["/community", "Explore"],
-    ["/posts/example", "Explore"],
-    ["/bookmarks", "Explore"],
+    ["/talent", "Talent"],
+    ["/profile/someone", "Talent"],
+    ["/assessments/example", "Skills"],
   ])("assigns %s to %s only", (path, expected) => {
-    const section = getNavigationSection(path);
-    expect(section?.label).toBe(expected);
-    if (section?.children.length) {
-      expect(
-        section.children.filter((link) =>
-          isNavigationLinkActive(path, link.href),
-        ),
-      ).toHaveLength(path === "/profile/someone" ? 0 : 1);
-    }
+    expect(getNavigationSection(path)?.label).toBe(expected);
   });
 
-  // Notifications live behind the header bell, outside every menu group.
+  // The landing page, search, notifications and account pages sit outside the menu.
   it.each([
+    "/",
+    "/search",
     "/community-other",
     "/careers",
     "/profiled",
     "/account",
     "/auth",
     "/notifications",
-  ])("does not highlight an unrelated group for %s", (path) => {
+    "/welcome",
+  ])("does not highlight a group for %s", (path) => {
     expect(getNavigationSection(path)).toBeUndefined();
   });
 
   it.each(["/profile/me", "/profile/settings"])(
-    "marks My profile current for the self route %s (N5)",
+    "marks Your profile current for the self route %s (N5)",
     (path) => {
       expect(isNavigationLinkActive(path, "/profile/me")).toBe(true);
     },
   );
   it.each(["/profile/someone", "/profile/me-other", "/profile/settings-other"])(
-    "keeps Talent active but no personal child current on %s (N5)",
+    "keeps Talent active but Your profile not current on %s (N5)",
     (path) => {
-      const section = getNavigationSection(path);
-      expect(section?.label).toBe("Talent");
-      expect(
-        section?.children.filter((link) =>
-          isNavigationLinkActive(path, link.href),
-        ),
-      ).toEqual([]);
+      expect(getNavigationSection(path)?.label).toBe("Talent");
+      expect(isNavigationLinkActive(path, "/profile/me")).toBe(false);
     },
   );
 });
 
-// Every App Router page must be classified. Another person's profile intentionally
-// belongs to Talent without claiming that the viewer's My profile page is current.
-const ownership: Record<string, [string | undefined, string | undefined]> = {
-  "/": [undefined, undefined],
-  "/projects": ["Explore", "/projects"],
-  "/projects/[slug]": ["Explore", "/projects"],
-  "/work/[id]": ["Explore", "/projects"],
-  "/repositories": ["Explore", "/repositories"],
-  "/repositories/[id]": ["Explore", "/repositories"],
-  "/repositories/[id]/pulls": ["Explore", "/repositories"],
-  "/repositories/[id]/releases": ["Explore", "/repositories"],
-  "/repositories/[id]/security": ["Explore", "/repositories"],
-  "/pulls/[id]": ["Explore", "/repositories"],
-  "/organizations": ["Explore", "/organizations"],
-  "/organizations/[slug]": ["Explore", "/organizations"],
-  "/search": ["Search", undefined],
-  "/assist": ["Explore", "/assist"],
-  "/talent": ["Talent", "/talent"],
-  "/assessments": ["Talent", "/assessments"],
-  "/assessments/[id]": ["Talent", "/assessments"],
-  "/profile/[handle]": ["Talent", undefined],
-  "/profile/settings": ["Talent", "/profile/me"],
-  "/career": ["Opportunities", "/career"],
-  "/career/applications": ["Opportunities", "/career/applications"],
-  "/applications/[id]": ["Opportunities", "/career/applications"],
-  "/opportunities": ["Opportunities", "/opportunities"],
-  "/opportunities/[id]": ["Opportunities", "/opportunities"],
-  "/intelligence": ["Opportunities", "/intelligence"],
-  "/intelligence/[id]": ["Opportunities", "/intelligence"],
-  "/intelligence/plan/[id]": ["Opportunities", "/intelligence"],
-  "/community": ["Explore", "/community"],
-  "/posts/[id]": ["Explore", "/community"],
-  "/bookmarks": ["Explore", "/bookmarks"],
-  "/notifications": [undefined, undefined],
-  "/account": [undefined, undefined],
-  "/account/admin": [undefined, undefined],
-  "/account/operations": [undefined, undefined],
-  "/auth": [undefined, undefined],
-  "/foundation": [undefined, undefined],
-  "/design-system": [undefined, undefined],
-  "/about": [undefined, undefined],
-  "/terms": [undefined, undefined],
-  "/privacy": [undefined, undefined],
-  "/community-guidelines": [undefined, undefined],
-  "/contact": [undefined, undefined],
-  "/editor": ["Explore", "/editor"],
+// Every App Router page must be classified: its section, or none.
+const ownership: Record<string, string | undefined> = {
+  "/": undefined,
+  "/home": "Home",
+  "/community": "Home",
+  "/posts/[id]": "Home",
+  "/bookmarks": "Home",
+  "/projects": "Projects",
+  "/projects/[slug]": "Projects",
+  "/work/[id]": "Projects",
+  "/code": "Code",
+  "/editor": "Code",
+  "/repositories": "Code",
+  "/repositories/[id]": "Code",
+  "/repositories/[id]/pulls": "Code",
+  "/repositories/[id]/releases": "Code",
+  "/repositories/[id]/security": "Code",
+  "/pulls/[id]": "Code",
+  "/organizations": "Collab",
+  "/organizations/[slug]": "Collab",
+  "/opportunities": "Opportunities",
+  "/opportunities/[id]": "Opportunities",
+  "/career": "Opportunities",
+  "/career/applications": "Opportunities",
+  "/applications/[id]": "Opportunities",
+  "/intelligence": "Opportunities",
+  "/intelligence/[id]": "Opportunities",
+  "/intelligence/plan/[id]": "Opportunities",
+  "/talent": "Talent",
+  "/profile/[handle]": "Talent",
+  "/profile/settings": "Talent",
+  "/assessments": "Skills",
+  "/assessments/[id]": "Skills",
+  "/search": undefined,
+  "/notifications": undefined,
+  "/account": undefined,
+  "/account/admin": undefined,
+  "/account/operations": undefined,
+  "/auth": undefined,
+  "/welcome": undefined,
+  "/foundation": undefined,
+  "/design-system": undefined,
+  "/about": undefined,
+  "/terms": undefined,
+  "/privacy": undefined,
+  "/community-guidelines": undefined,
+  "/contact": undefined,
 };
 function pageRoutes(directory: string, segments: string[] = []): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -171,39 +162,15 @@ function pageRoutes(directory: string, segments: string[] = []): string[] {
   });
 }
 describe("complete App Router navigation inventory", () => {
-  it("classifies all 43 actual route patterns with no missing or stale expectations", () => {
+  it("classifies every actual route pattern with no missing or stale expectations", () => {
     const routes = pageRoutes(`${root}/app`);
-    expect(routes).toHaveLength(43);
     expect(routes.sort()).toEqual(Object.keys(ownership).sort());
   });
   it.each(Object.entries(ownership))(
-    "assigns %s to its exact section and intended current child",
-    (route, [owner, child]) => {
+    "assigns %s to its exact section",
+    (route, owner) => {
       const path = route.replace(/\[[^\]]+\]/g, "someone");
-      const section = getNavigationSection(path);
-      expect(section?.label).toBe(owner);
-      expect(
-        section?.children
-          .filter((link) => isNavigationLinkActive(path, link.href))
-          .map((link) => link.href) ?? [],
-      ).toEqual(child ? [child] : []);
+      expect(getNavigationSection(path)?.label).toBe(owner);
     },
   );
-  it("resolves every primary child href to an implemented page", () => {
-    const patterns = pageRoutes(`${root}/app`).map((route) => route.split("/"));
-    for (const child of NAV.flatMap((section) => section.children)) {
-      const segments = child.href.split("/");
-      expect(
-        patterns.some(
-          (pattern) =>
-            pattern.length === segments.length &&
-            pattern.every(
-              (segment, i) =>
-                /^\[[^\]]+\]$/.test(segment) || segment === segments[i],
-            ),
-        ),
-        child.href,
-      ).toBe(true);
-    }
-  });
 });

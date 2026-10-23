@@ -184,6 +184,11 @@ components:
             type: boolean,
             description: "True until a birth date is on file and the current Terms and Privacy Policy are accepted.",
           }
+        onboardingRequired:
+          {
+            type: boolean,
+            description: "True until the sign-up wizard is finished or skipped.",
+          }
     AuthFactor:
       type: object
       required: [id, type, status]
