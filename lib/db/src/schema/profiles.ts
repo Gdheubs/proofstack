@@ -23,7 +23,11 @@ export const profileVisibilityEnum = pgEnum("profile_visibility", [
   "public",
   "members",
 ]);
-export type ProfileLinks = { website?: string; github?: string; linkedin?: string };
+export type ProfileLinks = {
+  website?: string;
+  github?: string;
+  linkedin?: string;
+};
 
 export const profilesTable = pgTable(
   "profiles",
