@@ -15,3 +15,11 @@ Parent: `9cd69fd`. The owner approved a written proposal (recorded in `docs/ui-r
 ## Validation
 
 See the end of this file for the local and hosted results recorded before pushing.
+
+## Validation
+
+- Unit: 780 passed. Embedded PostgreSQL: 222 passed, 2 skipped. Typecheck, lint and the format check pass.
+- Pages rendered in Cloudflare's runtime (workerd): `/`, `/home`, `/welcome`, `/code`, `/editor`, `/privacy`, `/sitemap.xml`, `/og.png` return 200; the removed `/assist` returns 404. Build files carry `max-age=31536000, immutable`. Worker: 1,941 of 3,072 KiB.
+- Hosted CI and Security passed on `7f6c7e1`, after two dependency advisories were fixed on the way (`zod` 4.6.6 with v3-style code importing `zod/v3`, `body-parser` 2.4.0) and the generated zod client was switched to zod 4 syntax.
+- Migration `0018` applied to Neon staging (19 migrations, 53 tables). **Production is pending the owner's approval**, and Render must then be redeployed: until both happen, the new website sends `headline`/`links` fields the old API rejects, so profile saves and the wizard fail on the live site.
+- Live: the landing page and `/home`, `/welcome`, `/code` are served by Cloudflare; `/assist` is 404.
