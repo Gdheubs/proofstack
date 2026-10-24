@@ -15,3 +15,7 @@ Parent: `ace1b79`. Owner feedback on the live `/auth` page: the "Password / Emai
 - Rendered in Cloudflare's runtime: `/`, `/auth`, `/auth?mode=signup`, `/home`, `/settings`, `/privacy` all 200; the page no longer contains the "Email code" tab text.
 - Hosted CI and Security passed on `634d771`; the live site serves the new page.
 - No API or database change; the Render deploy of the phase 1+2 API (`ace1b79` or later) is still pending the owner.
+
+## Live pass (owner, October 24, 2026)
+
+After the Render deploy of the phase 1+2 API, the owner ran the signed-in pass on the live site with a new account: landing → Create your account (no tab bar) → confirmation email → sign-in → `/welcome` wizard → `/home`; headline and links saved on `/settings/profile`; a notification category switched off and kept; members-only visibility hides the profile from a signed-out window while the member still sees it; the email-change flow sends to both addresses; sign-out returns to the landing page. Every step passed.
