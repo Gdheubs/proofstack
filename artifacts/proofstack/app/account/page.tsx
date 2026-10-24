@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { AccountView } from "@/features/account/account-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Account" };
-
-export default function Page() {
-  return <AccountView />;
+// Account settings moved under /settings; administration pages stay here.
+export default function AccountPage() {
+  redirect("/settings/account");
 }

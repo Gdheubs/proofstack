@@ -60,7 +60,7 @@ const ICONS: Record<string, typeof Home> = {
 const MENU_ICONS: Record<string, typeof Home> = {
   "/profile/me": User,
   "/bookmarks": Bookmark,
-  "/account": Settings,
+  "/settings": Settings,
 };
 
 function SearchBox({ className = "" }: { className?: string }) {

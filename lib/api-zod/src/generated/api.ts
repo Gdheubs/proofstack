@@ -606,6 +606,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -626,6 +627,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -656,6 +658,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -678,6 +681,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -734,6 +738,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -757,6 +762,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -789,6 +795,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -836,6 +843,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -858,6 +866,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -905,6 +914,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -941,6 +951,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -970,6 +981,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -991,6 +1003,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1012,6 +1025,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1042,6 +1056,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1064,6 +1079,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1120,6 +1136,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1143,6 +1160,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1175,6 +1193,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1222,6 +1241,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1244,6 +1264,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1291,6 +1312,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1327,6 +1349,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1356,6 +1379,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1377,6 +1401,7 @@ export const GetCommunityResponse = zod.object({
   "github": zod.string(),
   "linkedin": zod.string()
 }),
+  "visibility": zod.enum(['public', 'members']),
   "followers": zod.int(),
   "following": zod.int(),
   "followingByMe": zod.boolean(),
@@ -1429,7 +1454,7 @@ export const GetCommunityImageResponse = zod.unknown()
 
 
 export const RunCommunityActionBody = zod.object({
-  "action": zod.enum(['profile-save', 'entry-save', 'entry-delete', 'follow', 'post-save', 'post-delete', 'comment-save', 'comment-delete', 'reaction', 'bookmark', 'project-save', 'project-delete', 'contributor-invite', 'contributor-respond', 'contributor-remove', 'organization-save', 'organization-delete', 'member-save', 'member-remove', 'member-respond', 'team-save', 'team-delete', 'team-member', 'notification-read', 'onboarding-complete', 'asset-complete', 'asset-delete']),
+  "action": zod.enum(['profile-save', 'entry-save', 'entry-delete', 'follow', 'post-save', 'post-delete', 'comment-save', 'comment-delete', 'reaction', 'bookmark', 'project-save', 'project-delete', 'contributor-invite', 'contributor-respond', 'contributor-remove', 'organization-save', 'organization-delete', 'member-save', 'member-remove', 'member-respond', 'team-save', 'team-delete', 'team-member', 'notification-read', 'onboarding-complete', 'notification-preferences-save', 'privacy-save', 'asset-complete', 'asset-delete']),
   "id": zod.uuid().optional(),
   "targetId": zod.uuid().optional(),
   "targetType": zod.enum(['post', 'comment', 'project']).optional(),
@@ -1468,6 +1493,11 @@ export const RunCommunityActionBody = zod.object({
   "role": zod.enum(['organization_owner', 'organization_admin', 'organization_member']).optional(),
   "enabled": zod.boolean().optional(),
   "accept": zod.boolean().optional(),
+  "preferences": zod.record(zod.string(), zod.object({
+  "inApp": zod.boolean(),
+  "email": zod.boolean()
+})).optional(),
+  "profileVisibility": zod.enum(['public', 'members']).optional(),
   "tags": zod.array(zod.string()).optional()
 })
 
@@ -1582,7 +1612,7 @@ export const GetAuthContextResponse = zod.object({
  * Server-owned authentication operations. Requires the context CSRF token and same-origin cookies.
  */
 export const RunAuthActionBody = zod.object({
-  "action": zod.enum(['signup', 'password-login', 'email-otp', 'phone-otp', 'verify-otp', 'oauth', 'password-reset', 'update-password', 'logout', 'revoke-session', 'update-profile', 'send-phone-verification', 'mfa-enroll', 'mfa-challenge', 'mfa-verify', 'mfa-remove', 'recovery-codes', 'recover-mfa', 'create-organization', 'organization-role', 'user-role', 'user-status', 'accept-terms', 'delete-account']),
+  "action": zod.enum(['signup', 'password-login', 'email-otp', 'phone-otp', 'verify-otp', 'oauth', 'password-reset', 'update-password', 'logout', 'revoke-session', 'update-profile', 'send-phone-verification', 'mfa-enroll', 'mfa-challenge', 'mfa-verify', 'mfa-remove', 'recovery-codes', 'recover-mfa', 'create-organization', 'organization-role', 'user-role', 'user-status', 'accept-terms', 'delete-account', 'update-email']),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "password": zod.string().optional(),
@@ -1671,7 +1701,11 @@ export const GetAccountResponse = zod.object({
   "name": zod.string().optional()
 })),
   "recoveryCodesRemaining": zod.int(),
-  "passwordRecovery": zod.boolean()
+  "passwordRecovery": zod.boolean(),
+  "notificationPreferences": zod.record(zod.string(), zod.object({
+  "inApp": zod.boolean(),
+  "email": zod.boolean()
+})).describe('Per-category in-app and email switches.')
 })
 
 

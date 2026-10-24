@@ -113,6 +113,7 @@ export const authActionSchema = z.discriminatedUnion("action", [
     })
     .strict(),
   z.object({ action: z.literal("update-password"), password }).strict(),
+  z.object({ action: z.literal("update-email"), email }).strict(),
   z
     .object({ action: z.literal("logout"), scope: z.enum(["local", "global"]) })
     .strict(),

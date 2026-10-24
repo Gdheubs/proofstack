@@ -1,4 +1,5 @@
 import { z } from "zod/v3";
+import { NOTIFICATION_CATEGORIES } from "./notification-preferences";
 import { ApiError } from "../lib/errors";
 const id = z.string().uuid();
 const text = (max: number) => z.string().trim().max(max);
@@ -93,6 +94,23 @@ const schemas = {
       .default({ website: "", github: "", linkedin: "" }),
   }),
   "onboarding-complete": z.object({ action: z.literal("onboarding-complete") }),
+  "notification-preferences-save": z.object({
+    action: z.literal("notification-preferences-save"),
+    preferences: z
+      .object(
+        Object.fromEntries(
+          NOTIFICATION_CATEGORIES.map((c) => [
+            c,
+            z.object({ inApp: z.boolean(), email: z.boolean() }).strict(),
+          ]),
+        ),
+      )
+      .strict(),
+  }),
+  "privacy-save": z.object({
+    action: z.literal("privacy-save"),
+    profileVisibility: z.enum(["public", "members"]),
+  }),
   "entry-save": z
     .object({
       action: z.literal("entry-save"),

@@ -4,6 +4,7 @@ import { ApiError } from "../lib/errors";
 import { adminClient, providerFailure } from "./auth-provider";
 import { hasPermission } from "./authorization";
 import { roleRank } from "./organization-roles";
+import { normalizePreferences } from "./notification-preferences";
 import {
   requireFresh,
   requireSupabase,
@@ -68,6 +69,13 @@ export async function getAccount(session: AuthSession) {
     factors: factors(session.providerUser),
     recoveryCodesRemaining: codes.rows[0].remaining,
     passwordRecovery: session.row.password_recovery,
+    notificationPreferences: normalizePreferences(
+      (
+        await pool.query("SELECT notification_prefs FROM users WHERE id=$1", [
+          session.user.id,
+        ])
+      ).rows[0]?.notification_prefs,
+    ),
   };
 }
 // Moderators need to identify accounts, not contact them.

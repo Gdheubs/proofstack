@@ -33,7 +33,7 @@ describe("workspace navigation", () => {
     expect(PROFILE_MENU.map((l) => l.href)).toEqual([
       "/profile/me",
       "/bookmarks",
-      "/account",
+      "/settings",
     ]);
     expect(MOBILE_TABS.map((t) => t.href)).toEqual([
       "/home",
@@ -150,6 +150,17 @@ const ownership: Record<string, string | undefined> = {
   "/privacy": undefined,
   "/community-guidelines": undefined,
   "/contact": undefined,
+  "/settings": undefined,
+  "/settings/profile": undefined,
+  "/settings/account": undefined,
+  "/settings/security": undefined,
+  "/settings/notifications": undefined,
+  "/settings/career": undefined,
+  "/settings/connections": undefined,
+  "/settings/organizations": undefined,
+  "/settings/privacy": undefined,
+  "/settings/appearance": undefined,
+  "/settings/admin": undefined,
 };
 function pageRoutes(directory: string, segments: string[] = []): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

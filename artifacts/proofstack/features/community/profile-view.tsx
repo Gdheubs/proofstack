@@ -113,7 +113,7 @@ export function ProfileView({ handle }: { handle: string }) {
         action={
           handle === "me" ? (
             <Button asChild>
-              <Link href="/profile/settings">Claim your handle</Link>
+              <Link href="/settings/profile">Claim your handle</Link>
             </Button>
           ) : undefined
         }
@@ -136,7 +136,7 @@ export function ProfileView({ handle }: { handle: string }) {
               <div className="flex gap-2">
                 {p.isMe && (
                   <Button asChild variant="outline" size="sm">
-                    <Link href="/profile/settings">
+                    <Link href="/settings/profile">
                       <Settings className="h-4 w-4" /> Edit profile
                     </Link>
                   </Button>

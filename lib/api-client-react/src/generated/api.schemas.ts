@@ -149,6 +149,7 @@ export const AuthActionInputAction = {
   'user-status': 'user-status',
   'accept-terms': 'accept-terms',
   'delete-account': 'delete-account',
+  'update-email': 'update-email',
 } as const;
 
 export type AuthActionInputKind = typeof AuthActionInputKind[keyof typeof AuthActionInputKind];
@@ -287,6 +288,14 @@ export interface SecurityActivity {
   createdAt: string;
 }
 
+/**
+ * Per-category in-app and email switches.
+ */
+export type AccountDetailsNotificationPreferences = {[key: string]: {
+  inApp: boolean;
+  email: boolean;
+}};
+
 export interface AccountDetails {
   user: AccountUser;
   sessions: DeviceSession[];
@@ -295,6 +304,8 @@ export interface AccountDetails {
   factors: AuthFactor[];
   recoveryCodesRemaining: number;
   passwordRecovery: boolean;
+  /** Per-category in-app and email switches. */
+  notificationPreferences: AccountDetailsNotificationPreferences;
 }
 
 export type ErrorResponseError = {
@@ -1016,6 +1027,14 @@ export const CommunityPersonKind = {
   recruiter: 'recruiter',
 } as const;
 
+export type CommunityPersonVisibility = typeof CommunityPersonVisibility[keyof typeof CommunityPersonVisibility];
+
+
+export const CommunityPersonVisibility = {
+  public: 'public',
+  members: 'members',
+} as const;
+
 export interface CommunityPerson {
   id: string;
   handle: string;
@@ -1027,6 +1046,7 @@ export interface CommunityPerson {
   skills: string[];
   headline: string;
   links: ProfileLinks;
+  visibility: CommunityPersonVisibility;
   followers: number;
   following: number;
   followingByMe: boolean;
@@ -1292,6 +1312,8 @@ export const CommunityInputAction = {
   'team-member': 'team-member',
   'notification-read': 'notification-read',
   'onboarding-complete': 'onboarding-complete',
+  'notification-preferences-save': 'notification-preferences-save',
+  'privacy-save': 'privacy-save',
   'asset-complete': 'asset-complete',
   'asset-delete': 'asset-delete',
 } as const;
@@ -1340,6 +1362,19 @@ export const CommunityInputRole = {
   organization_member: 'organization_member',
 } as const;
 
+export type CommunityInputPreferences = {[key: string]: {
+  inApp: boolean;
+  email: boolean;
+}};
+
+export type CommunityInputProfileVisibility = typeof CommunityInputProfileVisibility[keyof typeof CommunityInputProfileVisibility];
+
+
+export const CommunityInputProfileVisibility = {
+  public: 'public',
+  members: 'members',
+} as const;
+
 export interface CommunityInput {
   action: CommunityInputAction;
   id?: string;
@@ -1378,6 +1413,8 @@ export interface CommunityInput {
   role?: CommunityInputRole;
   enabled?: boolean;
   accept?: boolean;
+  preferences?: CommunityInputPreferences;
+  profileVisibility?: CommunityInputProfileVisibility;
   tags?: string[];
 }
 

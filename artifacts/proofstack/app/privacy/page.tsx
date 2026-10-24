@@ -258,7 +258,8 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Get a copy</strong> of your personal data: use{" "}
-          <em>Download my data</em> on your <Link href="/account">account</Link>{" "}
+          <em>Download my data</em> under{" "}
+          <Link href="/settings/privacy">Settings → Privacy &amp; data</Link>{" "}
           page.
         </li>
         <li>

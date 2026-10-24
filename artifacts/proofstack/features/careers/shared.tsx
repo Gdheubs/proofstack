@@ -93,7 +93,7 @@ export function CareerForm({
         {action.error}
       </p>
       {/security factor|verification/i.test(action.error) && (
-        <Link href="/account" className="underline">
+        <Link href="/settings/security" className="underline">
           Verify your account
         </Link>
       )}

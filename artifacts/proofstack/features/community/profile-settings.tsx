@@ -17,7 +17,7 @@ import { EntryList } from "./entry-list";
 import { Empty, Fld, PageHead, PersonAvatar, QueryError } from "./ui";
 import { ImagePicker } from "./uploader";
 
-export function ProfileSettings() {
+export function ProfileSettings({ embedded = false }: { embedded?: boolean }) {
   const { canAct, session } = useCsrf();
   const params = { view: "profile", handle: "me" } as const;
   const q = useGetCommunity(params, {
@@ -40,6 +40,10 @@ export function ProfileSettings() {
     location: "",
     skills: "",
     avatarPath: "",
+    headline: "",
+    website: "",
+    github: "",
+    linkedin: "",
   });
   useEffect(() => {
     if (me)
@@ -50,6 +54,10 @@ export function ProfileSettings() {
         location: me.location,
         skills: me.skills.join(", "),
         avatarPath: me.avatarPath,
+        headline: me.headline,
+        website: me.links.website,
+        github: me.links.github,
+        linkedin: me.links.linkedin,
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.id]);
@@ -72,17 +80,27 @@ export function ProfileSettings() {
     return <QueryError error={q.error} onRetry={() => q.refetch()} />;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <PageHead
-        eyebrow="Profile"
-        title={me ? "Edit your profile" : "Claim your handle"}
-      >
-        {me && (
-          <Button asChild variant="outline">
-            <Link href={`/profile/${me.handle}`}>View public profile</Link>
-          </Button>
-        )}
-      </PageHead>
+    <div className={embedded ? "space-y-8" : "mx-auto max-w-3xl space-y-8"}>
+      {!embedded && (
+        <PageHead
+          eyebrow="Profile"
+          title={me ? "Edit your profile" : "Claim your handle"}
+        >
+          {me && (
+            <Button asChild variant="outline">
+              <Link href={`/profile/${me.handle}`}>View public profile</Link>
+            </Button>
+          )}
+        </PageHead>
+      )}
+      {embedded && me && (
+        <Link
+          href={`/profile/${me.handle}`}
+          className="text-sm underline underline-offset-2"
+        >
+          View your public profile
+        </Link>
+      )}
       {!me && (
         <Notice>
           Your handle is your public address, like
@@ -102,6 +120,12 @@ export function ProfileSettings() {
               location: f.location.trim(),
               skills: csv(f.skills),
               avatarPath: f.avatarPath,
+              headline: f.headline.trim(),
+              links: {
+                website: f.website.trim(),
+                github: f.github.trim(),
+                linkedin: f.linkedin.trim(),
+              },
             },
             me ? "Profile saved." : "Handle claimed.",
           );
@@ -157,6 +181,17 @@ export function ProfileSettings() {
             />
           </Fld>
         </div>
+        <Fld
+          label="Headline"
+          hint="One line under your name, like a job title."
+        >
+          <Input
+            maxLength={160}
+            value={f.headline}
+            onChange={(e) => set("headline", e.target.value)}
+            placeholder="Full-stack developer · TypeScript, Postgres"
+          />
+        </Fld>
         <Fld label="Bio">
           <Textarea
             rows={4}
@@ -179,6 +214,24 @@ export function ProfileSettings() {
               onChange={(e) => set("skills", e.target.value)}
             />
           </Fld>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {(
+            [
+              ["website", "Website"],
+              ["github", "GitHub"],
+              ["linkedin", "LinkedIn"],
+            ] as const
+          ).map(([key, label]) => (
+            <Fld key={key} label={label} hint="https://…">
+              <Input
+                type="url"
+                value={f[key]}
+                onChange={(e) => set(key, e.target.value)}
+                placeholder={`https://${key === "website" ? "example.com" : key + ".com/you"}`}
+              />
+            </Fld>
+          ))}
         </div>
         <AssistInline
           tasks={["profile-summary", "skill-extraction"]}

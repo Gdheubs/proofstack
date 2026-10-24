@@ -30,7 +30,7 @@ export class CommunityReader {
     if (!pending.length) return;
     const result = pool
       .query(
-        `SELECT p.user_id AS id,coalesce(p.handle,'') AS handle,p.display_name AS "displayName",p.kind,coalesce(p.avatar_url,'') AS "avatarPath",p.bio,p.location,p.skills,p.headline,jsonb_build_object('website',coalesce(p.links->>'website',''),'github',coalesce(p.links->>'github',''),'linkedin',coalesce(p.links->>'linkedin','')) AS links,
+        `SELECT p.user_id AS id,coalesce(p.handle,'') AS handle,p.display_name AS "displayName",p.kind,coalesce(p.avatar_url,'') AS "avatarPath",p.bio,p.location,p.skills,p.headline,p.visibility,jsonb_build_object('website',coalesce(p.links->>'website',''),'github',coalesce(p.links->>'github',''),'linkedin',coalesce(p.links->>'linkedin','')) AS links,
       (SELECT count(*)::int FROM community_follows f JOIN users fu ON fu.id=f.follower_id AND fu.status='active' WHERE f.following_id=p.user_id) AS followers,
       (SELECT count(*)::int FROM community_follows f JOIN users fu ON fu.id=f.following_id AND fu.status='active' WHERE f.follower_id=p.user_id) AS following,
       EXISTS(SELECT 1 FROM community_follows f WHERE f.following_id=p.user_id AND f.follower_id=$2::uuid) AS "followingByMe",p.user_id=$2::uuid AS "isMe"

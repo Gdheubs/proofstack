@@ -23,7 +23,7 @@ import {
 } from "./shared";
 import { JobEditor } from "./job";
 import { JobCard } from "./boards";
-function Preferences({
+export function CareerPreferences({
   profile: p,
   projects,
 }: {
@@ -170,9 +170,16 @@ export function CareerWorkspace() {
       </PageHead>
       <div className="grid gap-8 lg:grid-cols-[1fr_1.3fr]">
         <div className="space-y-6">
-          {d.profile && (
-            <Preferences profile={d.profile} projects={d.ownProjects} />
-          )}
+          <section className={card}>
+            <h2 className="text-xl font-semibold">Career preferences</h2>
+            <p className="text-sm text-muted-foreground">
+              Availability, roles and whether recruiters can find you now live
+              in Settings.
+            </p>
+            <Link className="underline" href="/settings/career">
+              Edit career preferences →
+            </Link>
+          </section>
           <section className={card}>
             <h2 className="text-xl font-semibold">Build your hiring team</h2>
             <p className="text-sm text-muted-foreground">

@@ -29,7 +29,11 @@ import {
 const STATE_COOKIE = "__Host-ps-github-state";
 // Where to send the member after GitHub answers: the editor or the wizard.
 const RETURN_COOKIE = "__Host-ps-github-return";
-const RETURNS = { code: "/code", welcome: "/welcome" } as const;
+const RETURNS = {
+  code: "/code",
+  welcome: "/welcome",
+  settings: "/settings/connections",
+} as const;
 const callbackUrl = () => `${authOrigin()}/api/editor/github/callback`;
 const router: IRouter = Router();
 
@@ -90,8 +94,11 @@ router.post("/editor/github/connect", async (req, res) => {
   await authLimit(req, "github-connect", session.user.id, 10, 600);
   const state = signedNonce();
   const authorizeUrl = githubAuthorizeUrl(state, callbackUrl());
+  const requested = req.body?.returnTo;
   const returnTo =
-    req.body?.returnTo === "welcome" ? "welcome" : ("code" as const);
+    typeof requested === "string" && requested in RETURNS
+      ? (requested as keyof typeof RETURNS)
+      : "code";
   res.cookie(STATE_COOKIE, state, { ...cookieOptions, maxAge: 600000 });
   res.cookie(RETURN_COOKIE, returnTo, { ...cookieOptions, maxAge: 600000 });
   res.json({ authorizeUrl });

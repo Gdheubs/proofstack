@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CommunityPersonKind } from './communityPersonKind';
+import type { CommunityPersonVisibility } from './communityPersonVisibility';
 import type { ProfileLinks } from './profileLinks';
 
 export interface CommunityPerson {
@@ -19,6 +20,7 @@ export interface CommunityPerson {
   skills: string[];
   headline: string;
   links: ProfileLinks;
+  visibility: CommunityPersonVisibility;
   followers: number;
   following: number;
   followingByMe: boolean;

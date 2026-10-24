@@ -33,7 +33,7 @@ export function ActionForm({
         </p>
       )}
       {/security factor|verification/i.test(action.error) && (
-        <Link href="/account" className="text-sm underline">
+        <Link href="/settings/security" className="text-sm underline">
           Set up account verification
         </Link>
       )}

@@ -7,6 +7,8 @@
  */
 import type { CommunityInputAction } from './communityInputAction';
 import type { CommunityInputKind } from './communityInputKind';
+import type { CommunityInputPreferences } from './communityInputPreferences';
+import type { CommunityInputProfileVisibility } from './communityInputProfileVisibility';
 import type { CommunityInputRole } from './communityInputRole';
 import type { CommunityInputTargetType } from './communityInputTargetType';
 import type { CommunityInputVisibility } from './communityInputVisibility';
@@ -50,5 +52,7 @@ export interface CommunityInput {
   role?: CommunityInputRole;
   enabled?: boolean;
   accept?: boolean;
+  preferences?: CommunityInputPreferences;
+  profileVisibility?: CommunityInputProfileVisibility;
   tags?: string[];
 }

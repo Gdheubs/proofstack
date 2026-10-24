@@ -98,6 +98,8 @@ export async function getCommunity(
     if (!p) throw missing();
     data.profile = await reader.person(p);
     if (!data.profile || (!data.profile.handle && p !== uid)) throw missing();
+    // Members-only profiles are not shown to visitors who are signed out.
+    if (!uid && data.profile.visibility === "members") throw missing();
     if (q.filter === "followers" || q.filter === "following-list") {
       const reverse = q.filter === "followers";
       const ids = await pool.query(
@@ -206,8 +208,8 @@ export async function getCommunity(
     const type = q.type || "all";
     if (type === "all" || type === "developers") {
       const ids = await pool.query(
-        "SELECT p.user_id FROM profiles p JOIN users u ON u.id=p.user_id AND u.status='active' WHERE p.handle IS NOT NULL AND (p.handle ILIKE $1 OR p.display_name ILIKE $1 OR p.bio ILIKE $1 OR p.skills::text ILIKE $1) ORDER BY p.display_name LIMIT 21 OFFSET $2",
-        [term, offset],
+        "SELECT p.user_id FROM profiles p JOIN users u ON u.id=p.user_id AND u.status='active' WHERE p.handle IS NOT NULL AND ($3::uuid IS NOT NULL OR p.visibility='public') AND (p.handle ILIKE $1 OR p.display_name ILIKE $1 OR p.bio ILIKE $1 OR p.skills::text ILIKE $1) ORDER BY p.display_name LIMIT 21 OFFSET $2",
+        [term, offset, uid],
       );
       await reader.preloadPeople(ids.rows.map((r) => r.user_id));
       const people = await Promise.all(

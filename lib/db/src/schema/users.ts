@@ -4,6 +4,7 @@ import {
   index,
   boolean,
   date,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -36,6 +37,8 @@ export const usersTable = pgTable(
     status: userStatusEnum("status").notNull().default("active"),
     // Self-declared at sign-up; the Terms require account holders to be 18+.
     birthDate: date("birth_date"),
+    // Per-category in-app/email switches; missing keys mean "on".
+    notificationPrefs: jsonb("notification_prefs").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

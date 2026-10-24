@@ -1,6 +1,10 @@
 import { pool } from "@workspace/db";
 import type { Pool } from "pg";
 import { ApiError } from "../lib/errors";
+import {
+  normalizePreferences,
+  notificationCategory,
+} from "./notification-preferences";
 import { requireFresh, type AuthSession } from "./auth-sessions";
 import { hasPermission } from "./authorization";
 export type CommunityDb = Pick<Pool, "query">;
@@ -219,6 +223,14 @@ export async function notify(
   href: string,
 ) {
   if (uid === actor) return;
+  // Respect the recipient's per-category switch; security notices bypass it.
+  const category = notificationCategory(title);
+  if (category) {
+    const prefs = (
+      await db.query("SELECT notification_prefs FROM users WHERE id=$1", [uid])
+    ).rows[0]?.notification_prefs;
+    if (!normalizePreferences(prefs)[category].inApp) return;
+  }
   await db.query(
     `INSERT INTO notifications(user_id,title,body,href)
      SELECT n.user_id,n.title,n.body,n.href FROM

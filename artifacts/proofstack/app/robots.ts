@@ -7,7 +7,16 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Private workspaces and the API are not useful in search results.
-      disallow: ["/api/", "/account", "/auth", "/editor", "/notifications"],
+      disallow: [
+        "/api/",
+        "/account",
+        "/settings",
+        "/welcome",
+        "/auth",
+        "/editor",
+        "/code",
+        "/notifications",
+      ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

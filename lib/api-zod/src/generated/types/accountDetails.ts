@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AccountDetailsNotificationPreferences } from './accountDetailsNotificationPreferences';
 import type { AccountMembership } from './accountMembership';
 import type { AccountUser } from './accountUser';
 import type { AuthFactor } from './authFactor';
@@ -19,4 +20,6 @@ export interface AccountDetails {
   factors: AuthFactor[];
   recoveryCodesRemaining: number;
   passwordRecovery: boolean;
+  /** Per-category in-app and email switches. */
+  notificationPreferences: AccountDetailsNotificationPreferences;
 }

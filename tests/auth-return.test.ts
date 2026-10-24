@@ -31,6 +31,11 @@ vi.mock("../artifacts/proofstack/hooks/use-auth", () => ({
 
 describe("safe post-sign-in destinations", () => {
   it.each([
+    "/home",
+    "/code",
+    "/welcome",
+    "/settings",
+    "/settings/privacy",
     "/account",
     "/assessments",
     "/assessments/javascript",
@@ -49,6 +54,9 @@ describe("safe post-sign-in destinations", () => {
     "/auth",
     "/api/auth/logout",
     "/unknown",
+    "/settings/",
+    "/settings/Privacy",
+    "/homepage",
     "/assessments//evil",
     "/assessments/a/b",
     "/assessments/a?token=secret",
@@ -62,7 +70,7 @@ describe("safe post-sign-in destinations", () => {
     "/assessments/%5c",
     "/assessments/%0a",
   ])("rejects unsafe, unrecognized or encoded paths (%s)", (path) => {
-    expect(safeAuthReturn(path)).toBe("/account");
+    expect(safeAuthReturn(path)).toBe("/home");
   });
 });
 
@@ -109,8 +117,8 @@ describe("tab-local return destination", () => {
     expect(storage.removeItem).toHaveBeenCalledOnce();
     callback.complete({ authenticated: true, mfaRequired: false }, replace);
     expect(replace).toHaveBeenCalledOnce();
-    expect(createAuthReturn("", storage).destination).toBe("/account");
-    expect(createAuthReturn("", tabStorage()).destination).toBe("/account");
+    expect(createAuthReturn("", storage).destination).toBe("/home");
+    expect(createAuthReturn("", tabStorage()).destination).toBe("/home");
   });
   it.each([
     "?next=%2F%2Fevil.test",
@@ -123,7 +131,7 @@ describe("tab-local return destination", () => {
     (search) => {
       const storage = tabStorage();
       createAuthReturn("?next=%2Fassessments", storage);
-      expect(createAuthReturn(search, storage).destination).toBe("/account");
+      expect(createAuthReturn(search, storage).destination).toBe("/home");
     },
   );
   it("revalidates tampered stored values and never persists unrelated query secrets", () => {
@@ -134,7 +142,7 @@ describe("tab-local return destination", () => {
     ).toBe(true);
     const key = storage.setItem.mock.calls[0]![0];
     storage.setItem(key, "//evil.test");
-    expect(createAuthReturn("", storage).destination).toBe("/account");
+    expect(createAuthReturn("", storage).destination).toBe("/home");
   });
   it("continues safely when browser storage is unavailable", () => {
     const storage = {
@@ -148,7 +156,7 @@ describe("tab-local return destination", () => {
         throw new Error("disabled");
       },
     };
-    expect(createAuthReturn("", storage).destination).toBe("/account");
+    expect(createAuthReturn("", storage).destination).toBe("/home");
     const selected = createAuthReturn("?next=%2Fassessments", storage);
     const replace = vi.fn();
     selected.complete({ authenticated: true, mfaRequired: false }, replace);

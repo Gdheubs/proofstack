@@ -34,4 +34,5 @@ export const AuthActionInputAction = {
   'user-status': 'user-status',
   'accept-terms': 'accept-terms',
   'delete-account': 'delete-account',
+  'update-email': 'update-email',
 } as const;

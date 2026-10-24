@@ -203,7 +203,7 @@ export async function getAssessmentResults(uid: string | null, raw: unknown) {
     FROM (SELECT DISTINCT ON(a.assessment_id) a.id,a.result,a.completed_at,count(*) OVER(PARTITION BY a.assessment_id)::int AS attempts FROM assessment_attempts a
       WHERE a.user_id=p.user_id AND a.completed_at IS NOT NULL ORDER BY a.assessment_id,a.completed_at DESC,a.id DESC) latest), '[]'::jsonb) AS results
     FROM profiles p JOIN users u ON u.id=p.user_id AND u.status='active'
-    WHERE (($1='me' AND p.user_id=$2::uuid) OR ($1<>'me' AND p.handle=$1)) AND (p.handle IS NOT NULL OR p.user_id=$2::uuid)`,
+    WHERE (($1='me' AND p.user_id=$2::uuid) OR ($1<>'me' AND p.handle=$1)) AND (p.handle IS NOT NULL OR p.user_id=$2::uuid) AND (p.visibility='public' OR $2::uuid IS NOT NULL)`,
     [handle, uid],
   );
   if (!rows[0]) throw missing();

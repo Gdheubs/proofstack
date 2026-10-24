@@ -189,6 +189,7 @@ components:
           skills,
           headline,
           links,
+          visibility,
           followers,
           following,
           followingByMe,
@@ -205,6 +206,7 @@ components:
         skills: { type: array, items: { type: string } }
         headline: { type: string }
         links: { $ref: "#/components/schemas/ProfileLinks" }
+        visibility: { type: string, enum: [public, members] }
         followers: { type: integer }
         following: { type: integer }
         followingByMe: { type: boolean }
@@ -644,6 +646,8 @@ components:
                 team-member,
                 notification-read,
                 onboarding-complete,
+                notification-preferences-save,
+                privacy-save,
                 asset-complete,
                 asset-delete,
               ],
@@ -703,6 +707,15 @@ components:
           }
         enabled: { type: boolean }
         accept: { type: boolean }
+        preferences:
+          type: object
+          additionalProperties:
+            type: object
+            required: [inApp, email]
+            properties:
+              inApp: { type: boolean }
+              email: { type: boolean }
+        profileVisibility: { type: string, enum: [public, members] }
         tags: { type: array, items: { type: string } }
     CommunityResult:
       type: object

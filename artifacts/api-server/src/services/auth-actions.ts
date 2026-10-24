@@ -304,6 +304,27 @@ export async function runAction(
         signedOut: true,
       };
     }
+    case "update-email": {
+      const session = requireSupabase(requireAccount(optional));
+      requireFresh(session, session.mfaRequired);
+      await authLimit(req, "update-email", session.user.id, 3, 3600);
+      // The provider confirms with both addresses before the change applies.
+      const result = await session.client.auth.updateUser(
+        { email: input.email },
+        { emailRedirectTo: `${authOrigin()}/api/auth/callback` },
+      );
+      providerFailure(result.error);
+      await audit(
+        req,
+        "auth.email_change_requested",
+        session.user.id,
+        session.user.id,
+      );
+      return {
+        message:
+          "Check both your current and new inbox and confirm the change in each",
+      };
+    }
     case "accept-terms": {
       const session = requirePrimary(optional);
       await authLimit(req, "accept-terms", session.user.id, 10, 600);

@@ -39,12 +39,12 @@ function useSetup() {
     {
       label: "Claim your handle and add a photo",
       done: !!viewer?.handle && !!viewer?.avatarPath,
-      href: "/profile/settings",
+      href: "/settings/profile",
     },
     {
       label: "List your skills",
       done: (viewer?.skills.length ?? 0) > 0,
-      href: "/profile/settings",
+      href: "/settings/profile",
     },
     {
       label: "Connect GitHub",

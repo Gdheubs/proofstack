@@ -7,6 +7,7 @@
  */
 
 export * from './accountDetails';
+export * from './accountDetailsNotificationPreferences';
 export * from './accountMembership';
 export * from './accountMembershipMembersItem';
 export * from './accountUser';
@@ -64,6 +65,8 @@ export * from './communityEntrySourceLabel';
 export * from './communityInput';
 export * from './communityInputAction';
 export * from './communityInputKind';
+export * from './communityInputPreferences';
+export * from './communityInputProfileVisibility';
 export * from './communityInputRole';
 export * from './communityInputTargetType';
 export * from './communityInputVisibility';
@@ -78,6 +81,7 @@ export * from './communityOwnInvitation';
 export * from './communityOwnInvitationRole';
 export * from './communityPerson';
 export * from './communityPersonKind';
+export * from './communityPersonVisibility';
 export * from './communityPost';
 export * from './communityProject';
 export * from './communityProjectVisibility';

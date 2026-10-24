@@ -64,7 +64,7 @@ export const NAV: NavigationSection[] = [
 export const PROFILE_MENU: NavigationLink[] = [
   { href: "/profile/me", label: "Your profile", description: "" },
   { href: "/bookmarks", label: "Bookmarks", description: "" },
-  { href: "/account", label: "Settings", description: "" },
+  { href: "/settings", label: "Settings", description: "" },
 ];
 
 /** The five destinations that stay one thumb away on phones. */

@@ -133,7 +133,7 @@ export function IntelligenceWorkspace() {
                 </select>
               </label>
               <Link
-                href="/profile/settings"
+                href="/settings/profile"
                 className="block text-sm underline"
               >
                 Update my skills

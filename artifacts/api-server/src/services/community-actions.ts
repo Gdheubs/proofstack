@@ -49,6 +49,18 @@ export async function runCommunityAction(
         ],
       );
       result = { message: "Public profile saved", handle: input.handle };
+    } else if (input.action === "notification-preferences-save") {
+      await db.query(
+        "UPDATE users SET notification_prefs=$2::jsonb,updated_at=now() WHERE id=$1",
+        [s.user.id, JSON.stringify(input.preferences)],
+      );
+      result = { message: "Notification preferences saved" };
+    } else if (input.action === "privacy-save") {
+      await db.query(
+        "UPDATE profiles SET visibility=$2,updated_at=now() WHERE user_id=$1",
+        [s.user.id, input.profileVisibility],
+      );
+      result = { message: "Privacy settings saved" };
     } else if (input.action === "onboarding-complete") {
       await db.query(
         "UPDATE profiles SET onboarded_at=coalesce(onboarded_at,now()) WHERE user_id=$1",

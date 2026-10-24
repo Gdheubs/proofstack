@@ -1,6 +1,5 @@
-import type { Metadata } from "next";
-import { ProfileSettings } from "@/features/community/profile-settings";
-export const metadata: Metadata = { title: "Profile settings" };
-export default function Page() {
-  return <ProfileSettings />;
+import { redirect } from "next/navigation";
+
+export default function ProfileSettingsPage() {
+  redirect("/settings/profile");
 }

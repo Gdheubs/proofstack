@@ -1,11 +1,12 @@
 /** Deliberately narrow: no query/hash data, URL normalization or extra decoding. */
 export function safeAuthReturn(value: unknown): string {
   return typeof value === "string" &&
-    /^(?:\/account|\/assessments(?:\/[A-Za-z0-9_-]{1,128})?)$/.exec(
+    // Workspace pages a sign-in link may return to; the feed otherwise.
+    /^(?:\/home|\/code|\/welcome|\/account|\/settings(?:\/[a-z-]{1,32})?|\/assessments(?:\/[A-Za-z0-9_-]{1,128})?)$/.exec(
       value,
     )?.[0] === value
     ? value
-    : "/account";
+    : "/home";
 }
 
 type ReturnStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;

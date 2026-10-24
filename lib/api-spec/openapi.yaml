@@ -278,6 +278,7 @@ components:
               user-status,
               accept-terms,
               delete-account,
+              update-email,
             ]
         email: { type: string }
         phone: { type: string }
@@ -378,6 +379,7 @@ components:
           factors,
           recoveryCodesRemaining,
           passwordRecovery,
+          notificationPreferences,
         ]
       properties:
         user: { $ref: "#/components/schemas/AccountUser" }
@@ -397,6 +399,15 @@ components:
           { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
         recoveryCodesRemaining: { type: integer }
         passwordRecovery: { type: boolean }
+        notificationPreferences:
+          type: object
+          description: Per-category in-app and email switches.
+          additionalProperties:
+            type: object
+            required: [inApp, email]
+            properties:
+              inApp: { type: boolean }
+              email: { type: boolean }
     ErrorResponse:
       type: object
       additionalProperties: false

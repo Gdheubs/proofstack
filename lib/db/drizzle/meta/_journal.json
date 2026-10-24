@@ -134,6 +134,13 @@
       "when": 1792795374487,
       "tag": "0018_profile_headline_links_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792842046532,
+      "tag": "0019_notification_preferences",
+      "breakpoints": true
     }
   ]
 }

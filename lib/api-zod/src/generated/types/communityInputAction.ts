@@ -35,6 +35,8 @@ export const CommunityInputAction = {
   'team-member': 'team-member',
   'notification-read': 'notification-read',
   'onboarding-complete': 'onboarding-complete',
+  'notification-preferences-save': 'notification-preferences-save',
+  'privacy-save': 'privacy-save',
   'asset-complete': 'asset-complete',
   'asset-delete': 'asset-delete',
 } as const;

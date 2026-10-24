@@ -98,8 +98,10 @@ export const editorApi = {
     },
   ) => post<CommitResult>("/branch", csrf, body),
   // returnTo: where GitHub sends the member back (the editor or the wizard).
-  connectGithub: (csrf: string, returnTo: "code" | "welcome" = "code") =>
-    post<{ authorizeUrl: string }>("/github/connect", csrf, { returnTo }),
+  connectGithub: (
+    csrf: string,
+    returnTo: "code" | "welcome" | "settings" = "code",
+  ) => post<{ authorizeUrl: string }>("/github/connect", csrf, { returnTo }),
   disconnectGithub: (csrf: string) =>
     post<{ message: string }>("/github/disconnect", csrf),
 };
