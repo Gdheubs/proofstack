@@ -42,13 +42,7 @@ import {
 } from "@/features/auth/shared";
 import { MfaEnroll, MfaVerify } from "@/features/auth/mfa";
 
-type Tab = "password" | "email" | "phone" | "social";
-const TABS: [Tab, string][] = [
-  ["password", "Password"],
-  ["email", "Email code"],
-  ["phone", "Phone code"],
-  ["social", "Google / GitHub"],
-];
+type Method = "password" | "email-code" | "phone-code";
 
 function Shell({
   children,
@@ -61,16 +55,18 @@ function Shell({
     <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:grid-cols-[1fr_30rem] md:py-20">
       <div className="rise">
         <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
-          Identity
+          ProofStack
         </p>
         <h1 className="mt-3 text-4xl font-semibold leading-[1.05] sm:text-5xl">
-          Prove who you are,
+          Build something.
           <br />
-          <span className="italic text-primary">then be found.</span>
+          <span className="italic text-primary dark:text-accent">
+            Let it open doors.
+          </span>
         </h1>
         <p className="mt-5 max-w-md text-muted-foreground">
-          One account for developers, recruiters and companies. Your profile
-          type says who you are; it never decides what you can administer.
+          One free account for developers and recruiters. Show real projects,
+          check your skills and get found for what you can do.
         </p>
         <ul className="mt-8 space-y-3 text-sm text-muted-foreground">
           <li className="border-l-2 border-accent pl-3">
@@ -159,9 +155,11 @@ function OtpVerify({ handle, onBack }: { handle: string; onBack: () => void }) {
 function PasswordTab({
   caps,
   initialMode = "login",
+  onUseCode,
 }: {
   caps: AuthCapabilities;
   initialMode?: "login" | "signup";
+  onUseCode?: () => void;
 }) {
   const s = useSend();
   const [mode, setMode] = useState<"login" | "signup" | "reset">(initialMode);
@@ -171,6 +169,11 @@ function PasswordTab({
   const [kind, setKind] = useState<Kind>("developer");
   const [birthDate, setBirthDate] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const switchMode = (next: typeof mode) => {
+    setMode(next);
+    s.setErr(null);
+    s.setMsg(null);
+  };
   if (!caps.password)
     return (
       <Notice tone="warn">Password sign-in is not available right now.</Notice>
@@ -208,26 +211,18 @@ function PasswordTab({
         s.send(() => s.raw({ action: "password-login", email, password }));
       }}
     >
-      <div className="flex gap-1 text-sm">
-        {(["login", "signup", "reset"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => {
-              setMode(m);
-              s.setErr(null);
-              s.setMsg(null);
-            }}
-            className={`rounded-md px-3 py-1.5 ${mode === m ? "bg-secondary font-medium" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            {m === "login"
-              ? "Sign in"
-              : m === "signup"
-                ? "Create account"
-                : "Forgot password"}
-          </button>
-        ))}
-      </div>
+      <h2 className="text-2xl font-semibold">
+        {mode === "signup"
+          ? "Create your account"
+          : mode === "reset"
+            ? "Reset your password"
+            : "Welcome back"}
+      </h2>
+      {mode === "reset" && (
+        <p className="text-sm text-muted-foreground">
+          Enter your email and we will send a reset link.
+        </p>
+      )}
       {mode === "signup" && (
         <Field
           label="Display name"
@@ -259,6 +254,17 @@ function PasswordTab({
           }
         />
       )}
+      {mode === "login" && (
+        <div className="-mt-2 flex justify-end">
+          <button
+            type="button"
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            onClick={() => switchMode("reset")}
+          >
+            Forgot password?
+          </button>
+        </div>
+      )}
       {mode === "signup" && <KindPicker value={kind} onChange={setKind} />}
       {mode === "signup" && (
         <AgreementFields
@@ -278,11 +284,36 @@ function PasswordTab({
         {s.busy
           ? "Working..."
           : mode === "login"
-            ? "Sign in"
+            ? "Log in"
             : mode === "signup"
               ? "Create account"
-              : "Send reset instructions"}
+              : "Send reset link"}
       </Button>
+      <div className="space-y-1 border-t pt-4 text-center text-sm text-muted-foreground">
+        {mode === "login" && onUseCode && (
+          <p>
+            <button
+              type="button"
+              className="underline underline-offset-2 hover:text-foreground"
+              onClick={onUseCode}
+            >
+              Email me a one-time code instead
+            </button>
+          </p>
+        )}
+        <p>
+          {mode === "signup"
+            ? "Already have an account? "
+            : "New to ProofStack? "}
+          <button
+            type="button"
+            className="font-medium text-foreground underline underline-offset-2"
+            onClick={() => switchMode(mode === "signup" ? "login" : "signup")}
+          >
+            {mode === "signup" ? "Log in" : "Create account"}
+          </button>
+        </p>
+      </div>
     </form>
   );
 }
@@ -490,7 +521,7 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   const router = useRouter();
   const params = useSearchParams();
   const { act } = useAct();
-  const [tab, setTab] = useState<Tab>("password");
+  const [method, setMethod] = useState<Method>("password");
   const ctx = q.data;
   const ready =
     !q.isLoading && !q.isError && !!ctx?.authenticated && !ctx.mfaRequired;
@@ -562,19 +593,14 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   }
 
   const caps = ctx.capabilities;
-  // Offer only the sign-in methods that work right now.
-  const available = TABS.filter(([k]) =>
-    k === "password"
-      ? caps.password
-      : k === "email"
-        ? caps.emailOtp
-        : k === "phone"
-          ? caps.phoneOtp
-          : caps.socialProviders.length > 0,
-  );
-  const current = available.some(([k]) => k === tab)
-    ? tab
-    : (available[0]?.[0] ?? "password");
+  const signup = params.get("mode") === "signup";
+  const current: Method =
+    method === "password" && !caps.password
+      ? caps.emailOtp
+        ? "email-code"
+        : "phone-code"
+      : method;
+  const social = caps.socialProviders.length > 0;
   return (
     <Shell>
       {params.get("error") === "callback_failed" && (
@@ -587,41 +613,72 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
           </Notice>
         </div>
       )}
-      <div role="tablist" className="mb-5 flex flex-wrap gap-1 border-b">
-        {available.map(([k, l]) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={current === k}
-            onClick={() => setTab(k)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${current === k ? "border-accent font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
+      {social && (
+        <div className="mb-5 space-y-4">
+          <SocialTab caps={caps} returnTo={returnTo} />
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+      )}
       {current === "password" && (
         <PasswordTab
           caps={caps}
           // "Get started" links open straight to account creation.
-          initialMode={params.get("mode") === "signup" ? "signup" : "login"}
+          initialMode={signup ? "signup" : "login"}
+          onUseCode={caps.emailOtp ? () => setMethod("email-code") : undefined}
         />
       )}
-      {current === "email" && <OtpTab via="email" caps={caps} />}
-      {current === "phone" && <OtpTab via="phone" caps={caps} />}
-      {current === "social" && <SocialTab caps={caps} returnTo={returnTo} />}
+      {current === "email-code" && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold">Log in with a code</h2>
+          <OtpTab via="email" caps={caps} />
+        </div>
+      )}
+      {current === "phone-code" && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold">Log in with a phone code</h2>
+          <OtpTab via="phone" caps={caps} />
+        </div>
+      )}
       {current !== "password" && (
-        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          New accounts confirm their date of birth (18 or over) and accept the{" "}
-          <Link href="/terms" className="underline underline-offset-2">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="underline underline-offset-2">
-            Privacy Policy
-          </Link>{" "}
-          right after signing in.
-        </p>
+        <div className="mt-4 space-y-2 border-t pt-4 text-center text-sm text-muted-foreground">
+          {caps.password && (
+            <p>
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:text-foreground"
+                onClick={() => setMethod("password")}
+              >
+                Use your password instead
+              </button>
+            </p>
+          )}
+          {current === "email-code" && caps.phoneOtp && (
+            <p>
+              <button
+                type="button"
+                className="underline underline-offset-2 hover:text-foreground"
+                onClick={() => setMethod("phone-code")}
+              >
+                Use a phone code
+              </button>
+            </p>
+          )}
+          <p className="text-xs leading-relaxed">
+            New accounts confirm their date of birth (18 or over) and accept the{" "}
+            <Link href="/terms" className="underline underline-offset-2">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>{" "}
+            right after signing in.
+          </p>
+        </div>
       )}
     </Shell>
   );
