@@ -76,6 +76,9 @@ async function buildAll() {
       // Kept external, as Sentry recommends for bundlers, so it and its
       // OpenTelemetry dependencies load from node_modules.
       "@sentry/node",
+      // zod 4 is loaded from node_modules: bundling it reorders its internal
+      // modules and "Class is not a constructor" throws at startup.
+      "zod",
       "@tree-sitter/*",
       "aws-sdk",
       "classic-level",

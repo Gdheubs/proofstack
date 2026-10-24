@@ -115,6 +115,9 @@ jobs:
           test "$(psql "$identity" -Atqc \
             "SELECT count(*) FROM pg_namespace WHERE nspname = 'public'")" = 1
       - run: pnpm --filter @workspace/api-server run build
+      # The host runs node dist/index.mjs; make sure the bundle actually starts.
+      - name: Start the built API and check its health endpoint
+        run: node scripts/ci-check-api-bundle.mjs artifacts/api-server
       # Runs the Next.js production build and packages it as a Cloudflare Worker.
       - run: pnpm --filter @workspace/proofstack run cf:build
         env:
