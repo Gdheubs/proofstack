@@ -56,7 +56,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store",
     ...init,
   });
-  const payload = await response.json().catch(() => null);
+  const payload = (await response.json().catch(() => null)) as {
+    error?: { message?: string; code?: string };
+  } | null;
   if (!response.ok)
     throw new EditorError(
       payload?.error?.message ?? `Request failed (${response.status})`,
