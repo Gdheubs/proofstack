@@ -20,4 +20,7 @@ Parent: `5cfdd29`. Delivers the settings map from `docs/ui-redesign.md`.
 
 ## Validation
 
-See the end of this file.
+- Unit: 799 passed. Embedded PostgreSQL: 225 passed, 2 skipped, including `tests/settings.integration.test.ts` (per-category switches saved and honoured by `notify()`, security notices unaffected; a members-only profile hidden from signed-out visitors in the profile page, search, talent directory and skill-check results while members still see it; email-change input validation).
+- Typecheck, lint and the format check pass. The built API starts and answers `/api/healthz` (CI bundle check). Pages rendered in Cloudflare's runtime: `/settings`, `/settings/profile`, `/settings/notifications`, `/settings/privacy`, and the redirects `/account` and `/profile/settings`. Worker: 1,962 of 3,072 KiB.
+- Hosted CI and Security passed on `8e07cb8`; the live site serves the settings pages.
+- Migration `0019` applied to Neon staging (20 migrations). **Production migration and the Render deploy are pending the owner**; until then notification preferences, email change and profile visibility fail on the live API.
