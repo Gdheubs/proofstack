@@ -15,3 +15,5 @@ Parent: `8be3108`. Delivers the GitHub fork, branch and pull-request actions app
 
 - Unit: 801 passed (`tests/editor-client.test.ts` covers the repository-name parser and the explorer tree). Embedded PostgreSQL: 226 passed, 2 skipped; `tests/editor.integration.test.ts` gains open/fork/pull-request coverage against the fake GitHub API (request bodies, upstream head naming, refusals, invalid input).
 - Typecheck, lint and Prettier pass. The built API starts and answers `/api/healthz`.
+- Pages rendered in Cloudflare's runtime: `/`, `/auth`, `/code`, `/home`, `/settings`, `/privacy`. Hosted CI and Security passed on `291caea` (the first push, `3a07278`, failed the root typecheck on the new client test; fixed by typing the error payload). The live site serves the new `/code`.
+- **Pending the owner:** Render deploy of `291caea` for the new editor endpoints, and the GitHub OAuth App (`GITHUB_OAUTH_CLIENT_ID/SECRET`) before any GitHub feature can be used live.
