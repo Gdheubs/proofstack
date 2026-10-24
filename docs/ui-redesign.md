@@ -44,8 +44,8 @@ Profile · Account · Security · Notifications · Career · Connections · Orga
 ## Phases
 
 1. App shell, landing page, onboarding. _(done: see `checkpoints/2026-10-24-redesign-phase-1.md`)_
-2. Settings.
-3. Code hub: GitHub clone, fork, branch, pull request.
+2. Settings. _(done: see `checkpoints/2026-10-24-redesign-phase-2.md`)_
+3. Code hub: GitHub clone, fork, branch, pull request. _(done: see `checkpoints/2026-10-24-redesign-phase-3.md`)_
 4. Page layouts: feed, projects, opportunities, talent, skills.
 5. Phone bottom bar polish, keyboard accessibility, alt text, empty states.
 

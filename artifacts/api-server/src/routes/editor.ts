@@ -20,9 +20,13 @@ import { storageEnabled } from "../services/repository-git";
 import {
   commitChanges,
   createBranch,
+  createPullRequest,
+  forkRepository,
   listBranches,
+  listPullRequests,
   listRepositories,
   listTree,
+  openRepository,
   readFile,
 } from "../services/editor";
 
@@ -59,6 +63,14 @@ router.get("/editor/repositories", async (req, res) => {
   const session = await account(req, res);
   res.json(await listRepositories(session.user.id, req.query));
 });
+router.get("/editor/repository", async (req, res) => {
+  const session = await account(req, res);
+  res.json(await openRepository(session.user.id, req.query));
+});
+router.get("/editor/pull-requests", async (req, res) => {
+  const session = await account(req, res);
+  res.json(await listPullRequests(session.user.id, req.query));
+});
 router.get("/editor/branches", async (req, res) => {
   const session = await account(req, res);
   res.json(await listBranches(session.user.id, req.query));
@@ -84,6 +96,22 @@ router.post("/editor/branch", async (req, res) => {
   const session = requireAccount(await readSession(req, res));
   await authLimit(req, "editor-branch", session.user.id, 30, 600);
   res.json(await createBranch(req, session, req.body));
+});
+router.post("/editor/fork", async (req, res) => {
+  requireCsrf(req);
+  const session = requireAccount(await readSession(req, res));
+  await authLimit(req, "editor-fork", session.user.id, 5, 600);
+  const result = await forkRepository(session.user.id, req.body);
+  await audit(req, "editor.fork", session.user.id);
+  res.json(result);
+});
+router.post("/editor/pull-request", async (req, res) => {
+  requireCsrf(req);
+  const session = requireAccount(await readSession(req, res));
+  await authLimit(req, "editor-pull-request", session.user.id, 20, 600);
+  const result = await createPullRequest(session.user.id, req.body);
+  await audit(req, "editor.pull_request", session.user.id);
+  res.json(result);
 });
 
 // Connecting GitHub: the browser is sent to GitHub with a one-time state that

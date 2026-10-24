@@ -88,6 +88,29 @@ const branchInput = z
     expectedHead: headSchema,
   })
   .strict();
+// GitHub-only requests: opening any repository, forking, pull requests.
+const githubLocation = z
+  .object({ source: z.literal("github"), repo: githubRepo })
+  .strict();
+const githubLogin = z.string().regex(/^[A-Za-z0-9-]{1,39}$/);
+export const pullRequestInput = z
+  .object({
+    source: z.literal("github"),
+    // The repository that receives the pull request (the upstream of a fork).
+    repo: githubRepo,
+    base: branchSchema,
+    head: branchSchema,
+    // Set when the head branch lives in the member's fork.
+    headOwner: githubLogin.optional(),
+    title: z
+      .string()
+      .trim()
+      .min(3)
+      .max(200)
+      .refine((v) => !/[\r\n]/.test(v), "Use a single-line title"),
+    body: z.string().trim().max(5000).optional(),
+  })
+  .strict();
 // Hosted repositories accept a narrower set of path characters.
 const hostedPath = (path: string) => {
   if (!pathSchema.safeParse(path).success) throw invalid();
@@ -416,4 +439,144 @@ export async function createBranch(req: Request, s: AuthSession, raw: unknown) {
     expectedHead: d.expectedHead,
   });
   return { message: "Branch created", branch: d.branch, head: d.expectedHead };
+}
+
+type GithubRepoDetail = GithubRepo & {
+  html_url: string;
+  fork: boolean;
+  parent?: { full_name: string; default_branch: string };
+};
+const repositoryInfo = (r: GithubRepoDetail) => ({
+  id: r.full_name,
+  name: r.full_name,
+  private: r.private,
+  defaultBranch: r.default_branch,
+  canWrite: !!r.permissions?.push,
+  url: r.html_url,
+  parent: r.parent
+    ? { id: r.parent.full_name, defaultBranch: r.parent.default_branch }
+    : null,
+});
+
+// Opens any repository the member can see on GitHub, including ones they
+// cannot write to (those can be forked).
+export async function openRepository(uid: string, raw: unknown) {
+  const q = parse(githubLocation, raw);
+  return withGithub(uid, async (token) => ({
+    repository: repositoryInfo(
+      await githubRequest<GithubRepoDetail>(token, `/repos/${q.repo}`),
+    ),
+  }));
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Forks a repository into the member's account. GitHub creates the fork in
+// the background, so wait briefly for its default branch to exist.
+export async function forkRepository(uid: string, raw: unknown) {
+  const q = parse(githubLocation, raw);
+  return withGithub(uid, async (token) => {
+    const fork = await githubRequest<GithubRepoDetail>(
+      token,
+      `/repos/${q.repo}/forks`,
+      { method: "POST", body: {} },
+    );
+    let ready = false;
+    for (let attempt = 0; attempt < 5 && !ready; attempt++) {
+      if (attempt) await sleep(1000);
+      try {
+        await githubHead(token, fork.full_name, fork.default_branch);
+        ready = true;
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status === 401) throw error;
+      }
+    }
+    return {
+      message: ready
+        ? `Forked to ${fork.full_name}`
+        : `GitHub is still creating ${fork.full_name}. Reload it in a moment`,
+      repository: repositoryInfo({
+        ...fork,
+        permissions: { push: true },
+        fork: true,
+        parent: fork.parent ?? {
+          full_name: q.repo,
+          default_branch: fork.default_branch,
+        },
+      }),
+      ready,
+    };
+  });
+}
+
+type GithubPull = {
+  number: number;
+  title: string;
+  html_url: string;
+  draft?: boolean;
+  user: { login: string } | null;
+  head: { label: string; ref: string };
+  base: { ref: string };
+  updated_at: string;
+};
+const pullInfo = (p: GithubPull) => ({
+  number: p.number,
+  title: p.title,
+  url: p.html_url,
+  draft: !!p.draft,
+  author: p.user?.login ?? null,
+  head: p.head.label,
+  base: p.base.ref,
+  updatedAt: p.updated_at,
+});
+
+export async function listPullRequests(uid: string, raw: unknown) {
+  const q = parse(githubLocation, raw);
+  return withGithub(uid, async (token) => ({
+    pullRequests: (
+      await githubRequest<GithubPull[]>(
+        token,
+        `/repos/${q.repo}/pulls?state=open&per_page=30&sort=updated&direction=desc`,
+      )
+    ).map(pullInfo),
+  }));
+}
+
+export async function createPullRequest(uid: string, raw: unknown) {
+  const d = parse(pullRequestInput, raw);
+  const head = d.headOwner ? `${d.headOwner}:${d.head}` : d.head;
+  if (!d.headOwner && d.head === d.base)
+    throw new ApiError(
+      400,
+      "SAME_BRANCH",
+      "Pick a base branch that differs from the branch you are merging",
+    );
+  return withGithub(uid, async (token) => {
+    try {
+      const pull = await githubRequest<GithubPull>(
+        token,
+        `/repos/${d.repo}/pulls`,
+        {
+          method: "POST",
+          body: {
+            title: d.title,
+            head,
+            base: d.base,
+            ...(d.body ? { body: d.body } : {}),
+          },
+        },
+      );
+      return {
+        message: `Pull request #${pull.number} opened`,
+        pullRequest: pullInfo(pull),
+      };
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "GITHUB_CONFLICT")
+        throw new ApiError(
+          409,
+          "PULL_REQUEST_REFUSED",
+          "GitHub did not open the pull request: the branches may be identical, or one may already be open",
+        );
+      throw error;
+    }
+  });
 }

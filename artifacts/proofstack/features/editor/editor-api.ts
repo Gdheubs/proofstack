@@ -11,6 +11,19 @@ export type EditorRepository = {
   private: boolean;
   defaultBranch: string;
   canWrite: boolean;
+  // Known once a repository has been opened on its own (GitHub only).
+  url?: string;
+  parent?: { id: string; defaultBranch: string } | null;
+};
+export type PullRequest = {
+  number: number;
+  title: string;
+  url: string;
+  draft: boolean;
+  author: string | null;
+  head: string;
+  base: string;
+  updatedAt: string;
 };
 export type EditorBranch = { name: string; head: string };
 export type EditorTree = {
@@ -97,6 +110,36 @@ export const editorApi = {
       expectedHead: string;
     },
   ) => post<CommitResult>("/branch", csrf, body),
+  // GitHub only: open any repository, fork it, and pull requests.
+  repository: (repo: string) =>
+    request<{ repository: EditorRepository }>(
+      "/repository" + query({ source: "github", repo }),
+    ),
+  fork: (csrf: string, repo: string) =>
+    post<{ message: string; repository: EditorRepository; ready: boolean }>(
+      "/fork",
+      csrf,
+      { source: "github", repo },
+    ),
+  pullRequests: (repo: string) =>
+    request<{ pullRequests: PullRequest[] }>(
+      "/pull-requests" + query({ source: "github", repo }),
+    ),
+  createPullRequest: (
+    csrf: string,
+    body: {
+      repo: string;
+      base: string;
+      head: string;
+      headOwner?: string;
+      title: string;
+      body?: string;
+    },
+  ) =>
+    post<{ message: string; pullRequest: PullRequest }>("/pull-request", csrf, {
+      source: "github",
+      ...body,
+    }),
   // returnTo: where GitHub sends the member back (the editor or the wizard).
   connectGithub: (
     csrf: string,
@@ -171,4 +214,15 @@ export function branchProblem(name: string) {
   )
     return "Use letters, numbers, dots, dashes and slashes, like feature/login.";
   return null;
+}
+
+// Accepts "owner/name" or a GitHub URL and returns "owner/name".
+export function parseRepository(input: string): string | null {
+  const match = input
+    .trim()
+    .match(
+      /^(?:https?:\/\/(?:www\.)?github\.com\/)?([A-Za-z0-9-]{1,39})\/([A-Za-z0-9._-]{1,100}?)(?:\.git)?(?:[/#?].*)?$/,
+    );
+  if (!match || match[2]!.startsWith(".")) return null;
+  return `${match[1]}/${match[2]}`;
 }

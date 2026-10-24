@@ -135,7 +135,7 @@ The editor at `/editor` edits GitHub repositories through a GitHub OAuth App own
    - Authorization callback URL: `<AUTH_APP_ORIGIN>/api/editor/github/callback`.
 2. Set `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` on Render. Without both, the editor shows GitHub as not available.
 
-Users grant the `repo` scope so they can commit to their private repositories. Their token is sealed with `SESSION_SECRET` in `github_connections` and never reaches the browser. It is deleted when they disconnect, delete their account, or GitHub reports it revoked. Rotating `SESSION_SECRET` makes users reconnect.
+Users grant the `repo` scope so they can commit to their private repositories, fork repositories and open pull requests. Their token is sealed with `SESSION_SECRET` in `github_connections` and never reaches the browser. It is deleted when they disconnect, delete their account, or GitHub reports it revoked. Rotating `SESSION_SECRET` makes users reconnect.
 
 ## Verification sequence
 

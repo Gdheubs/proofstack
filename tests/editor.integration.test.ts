@@ -40,8 +40,11 @@ import { seal, signedNonce } from "../artifacts/api-server/src/lib/auth-crypto";
 import { runRepositoryAction } from "../artifacts/api-server/src/services/repositories";
 import {
   commitChanges,
+  createPullRequest,
+  forkRepository,
   listRepositories,
   listTree,
+  openRepository,
   readFile,
 } from "../artifacts/api-server/src/services/editor";
 import { exportAccount } from "../artifacts/api-server/src/services/account-data";
@@ -413,6 +416,127 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("Code editor", () => {
       await expect(
         listTree(owner, { source: "github", repo: "../etc", branch: "main" }),
       ).rejects.toBeTruthy();
+    });
+
+    it("opens any repository, forks it, and proposes pull requests upstream", async () => {
+      await connect();
+      const pull = (number: number, title: string, label: string) => ({
+        number,
+        title,
+        html_url: `https://github.com/upstream/lib/pull/${number}`,
+        user: { login: label.split(":")[0] },
+        head: { label, ref: label.split(":")[1] },
+        base: { ref: "main" },
+        updated_at: "2026-10-24T00:00:00Z",
+      });
+      // Specific routes first: the fake matches by prefix.
+      respond({
+        "GET /repos/upstream/lib/pulls": [pull(7, "Existing", "someone:fix")],
+        "POST /repos/upstream/lib/pulls": pull(8, "Add docs", "octo:docs"),
+        "POST /repos/upstream/lib/forks": {
+          full_name: "octo/lib",
+          private: false,
+          default_branch: "main",
+          html_url: "https://github.com/octo/lib",
+          fork: true,
+          parent: { full_name: "upstream/lib", default_branch: "main" },
+        },
+        "GET /repos/octo/lib/branches/main": {
+          commit: { sha: head(5), commit: { tree: { sha: head(6) } } },
+        },
+        "POST /repos/octo/lib/pulls": new Response("{}", { status: 422 }),
+        "GET /repos/upstream/lib": {
+          full_name: "upstream/lib",
+          private: false,
+          default_branch: "main",
+          permissions: { push: false },
+          html_url: "https://github.com/upstream/lib",
+          fork: false,
+        },
+      });
+      const opened = await openRepository(owner, {
+        source: "github",
+        repo: "upstream/lib",
+      });
+      expect(opened.repository).toEqual({
+        id: "upstream/lib",
+        name: "upstream/lib",
+        private: false,
+        defaultBranch: "main",
+        canWrite: false,
+        url: "https://github.com/upstream/lib",
+        parent: null,
+      });
+      const forked = await forkRepository(owner, {
+        source: "github",
+        repo: "upstream/lib",
+      });
+      expect(forked.ready).toBe(true);
+      expect(forked.repository).toMatchObject({
+        id: "octo/lib",
+        canWrite: true,
+        parent: { id: "upstream/lib", defaultBranch: "main" },
+      });
+      expect(calls.find((c) => c.url.endsWith("/forks"))!.method).toBe("POST");
+
+      identity.uid = owner;
+      const listed = await request(app)
+        .get("/api/editor/pull-requests")
+        .query({ source: "github", repo: "upstream/lib" });
+      expect(listed.status).toBe(200);
+      expect(listed.body.pullRequests).toEqual([
+        expect.objectContaining({
+          number: 7,
+          head: "someone:fix",
+          base: "main",
+          author: "someone",
+          url: "https://github.com/upstream/lib/pull/7",
+        }),
+      ]);
+
+      const created = await createPullRequest(owner, {
+        source: "github",
+        repo: "upstream/lib",
+        base: "main",
+        head: "docs",
+        headOwner: "octo",
+        title: "Add docs",
+        body: "Why this helps",
+      });
+      expect(created.pullRequest.number).toBe(8);
+      expect(
+        calls.find((c) => c.method === "POST" && c.url.endsWith("/lib/pulls"))!
+          .body,
+      ).toEqual({
+        title: "Add docs",
+        head: "octo:docs",
+        base: "main",
+        body: "Why this helps",
+      });
+      await expect(
+        createPullRequest(owner, {
+          source: "github",
+          repo: "octo/lib",
+          base: "main",
+          head: "main",
+          title: "Nothing to merge",
+        }),
+      ).rejects.toMatchObject({ code: "SAME_BRANCH" });
+      await expect(
+        createPullRequest(owner, {
+          source: "github",
+          repo: "octo/lib",
+          base: "main",
+          head: "docs",
+          title: "Refused by GitHub",
+        }),
+      ).rejects.toMatchObject({ code: "PULL_REQUEST_REFUSED" });
+      await expect(
+        openRepository(owner, { source: "github", repo: "../x" }),
+      ).rejects.toMatchObject({ status: 400 });
+      await expect(
+        forkRepository(owner, { source: "hosted", repo: "octo/lib" }),
+      ).rejects.toMatchObject({ status: 400 });
     });
 
     it("connects only when the returned state matches, and answers with a page instead of a redirect", async () => {

@@ -4,6 +4,8 @@ import {
   Files,
   GitBranch,
   GitCommitHorizontal,
+  GitFork,
+  GitPullRequest,
   Loader2,
   RefreshCw,
   X,
@@ -16,6 +18,7 @@ import {
   EditorError,
   branchProblem,
   editorApi,
+  parseRepository,
   type EditorBranch,
   type EditorFile,
   type EditorRepository,
@@ -25,8 +28,9 @@ import {
 } from "./editor-api";
 import { EditorPane, languageName } from "./editor-pane";
 import { FileTree, type ChangeKind } from "./file-tree";
+import { PullPanel } from "./pull-panel";
 
-type Panel = "explorer" | "changes";
+type Panel = "explorer" | "changes" | "pulls";
 const SOURCE_LABEL: Record<Source, string> = {
   github: "GitHub",
   hosted: "ProofStack",
@@ -66,6 +70,12 @@ export function Workbench() {
   const [commitMessage, setCommitMessage] = useState("");
   const [useNewBranch, setUseNewBranch] = useState(false);
   const [newBranch, setNewBranch] = useState("");
+  // Opening any GitHub repository by name, and a suggested pull-request title
+  // after a commit to a branch.
+  const [openForm, setOpenForm] = useState(false);
+  const [openName, setOpenName] = useState("");
+  const [prTitle, setPrTitle] = useState("");
+  const [offerPr, setOfferPr] = useState(false);
   const loaded = useRef(new Set<string>());
 
   const repository = repos.find((r) => r.id === repo);
@@ -256,6 +266,10 @@ export function Workbench() {
       const nextTree = await editorApi.tree(source, repo, result.branch);
       resetWork();
       setTree(nextTree);
+      const toBranch =
+        source === "github" && result.branch !== repository?.defaultBranch;
+      if (toBranch) setPrTitle(commitMessage.trim());
+      setOfferPr(toBranch);
       setCommitMessage("");
       setUseNewBranch(false);
       setNewBranch("");
@@ -264,6 +278,44 @@ export function Workbench() {
       );
     });
   };
+  const addRepository = (r: EditorRepository) =>
+    setRepos((list) =>
+      list.some((x) => x.id === r.id)
+        ? list.map((x) => (x.id === r.id ? r : x))
+        : [r, ...list],
+    );
+  const openRepository = () => {
+    const name = parseRepository(openName);
+    if (!name)
+      return setError({
+        text: "Enter a repository as owner/name or paste its GitHub address.",
+      });
+    guard(
+      () =>
+        void run("Opening repository", async () => {
+          const { repository: r } = await editorApi.repository(name);
+          addRepository(r);
+          setRepo(r.id);
+          setOpenForm(false);
+          setOpenName("");
+          setNotice(
+            r.canWrite
+              ? `Opened ${r.name}.`
+              : `Opened ${r.name} (read only). Fork it to edit.`,
+          );
+        }),
+    );
+  };
+  const fork = () =>
+    guard(
+      () =>
+        void run("Forking", async () => {
+          const result = await editorApi.fork(csrf, repo);
+          addRepository(result.repository);
+          setRepo(result.repository.id);
+          setNotice(result.message);
+        }),
+    );
   const createBranch = () => {
     const name = newBranch.trim();
     const problem = branchProblem(name);
@@ -335,30 +387,32 @@ export function Workbench() {
       {/* Title bar: where you are editing. */}
       <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
         <span className="font-semibold">Code editor</span>
-        <div
-          role="tablist"
-          aria-label="Source"
-          className="flex rounded border p-0.5"
-        >
-          {(["github", "hosted"] as const).map((s) => (
-            <button
-              key={s}
-              role="tab"
-              aria-selected={source === s}
-              onClick={() =>
-                guard(() => {
-                  setSource(s);
-                  setRepos([]);
-                  setRepo("");
-                  setTree(null);
-                })
-              }
-              className={`rounded px-2 py-0.5 text-xs ${source === s ? "bg-muted font-medium" : "text-muted-foreground"}`}
-            >
-              {SOURCE_LABEL[s]}
-            </button>
-          ))}
-        </div>
+        {sources?.hosted.available && (
+          <div
+            role="tablist"
+            aria-label="Source"
+            className="flex rounded border p-0.5"
+          >
+            {(["github", "hosted"] as const).map((s) => (
+              <button
+                key={s}
+                role="tab"
+                aria-selected={source === s}
+                onClick={() =>
+                  guard(() => {
+                    setSource(s);
+                    setRepos([]);
+                    setRepo("");
+                    setTree(null);
+                  })
+                }
+                className={`rounded px-2 py-0.5 text-xs ${source === s ? "bg-muted font-medium" : "text-muted-foreground"}`}
+              >
+                {SOURCE_LABEL[s]}
+              </button>
+            ))}
+          </div>
+        )}
         {!!repos.length && (
           <select
             aria-label="Repository"
@@ -377,6 +431,50 @@ export function Workbench() {
             ))}
           </select>
         )}
+        {source === "github" &&
+          sources?.github.connected &&
+          (openForm ? (
+            <form
+              className="flex items-center gap-1"
+              onSubmit={(e) => {
+                e.preventDefault();
+                openRepository();
+              }}
+            >
+              <input
+                aria-label="Repository to open"
+                value={openName}
+                onChange={(e) => setOpenName(e.target.value)}
+                placeholder="owner/name or GitHub address"
+                className="h-8 w-60 rounded border bg-background px-2 font-mono text-xs"
+                autoFocus
+              />
+              <Button
+                size="sm"
+                type="submit"
+                disabled={!!busy || !openName.trim()}
+              >
+                Open
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                type="button"
+                onClick={() => setOpenForm(false)}
+              >
+                Cancel
+              </Button>
+            </form>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={() => setOpenForm(true)}
+            >
+              Open repository
+            </Button>
+          ))}
         {!!branches.length && (
           <select
             aria-label="Branch"
@@ -490,17 +588,45 @@ export function Workbench() {
               </button>
             </span>
           ) : (
-            <span className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               {notice}
+              {offerPr && (
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => {
+                    setOfferPr(false);
+                    setPanel("pulls");
+                  }}
+                >
+                  Open a pull request
+                </button>
+              )}
               <button
                 type="button"
                 aria-label="Dismiss"
-                onClick={() => setNotice(null)}
+                onClick={() => {
+                  setNotice(null);
+                  setOfferPr(false);
+                }}
               >
                 <X aria-hidden="true" className="h-3.5 w-3.5" />
               </button>
             </span>
           )}
+        </div>
+      )}
+      {source === "github" && repository && !repository.canWrite && (
+        <div
+          className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-3 py-2 text-xs"
+          role="status"
+        >
+          You can read {repository.name} but not change it. Fork it to your
+          GitHub account to edit and open a pull request.
+          <Button size="sm" variant="outline" disabled={!!busy} onClick={fork}>
+            <GitFork aria-hidden="true" className="h-3.5 w-3.5" />
+            Fork to {sources?.github.login}
+          </Button>
         </div>
       )}
       {blocker ? (
@@ -518,25 +644,29 @@ export function Workbench() {
               [
                 ["explorer", Files, "Explorer"],
                 ["changes", GitCommitHorizontal, "Source control"],
+                ["pulls", GitPullRequest, "Pull requests"],
               ] as const
-            ).map(([key, Icon, label]) => (
-              <button
-                key={key}
-                type="button"
-                aria-label={label}
-                aria-pressed={panel === key}
-                title={label}
-                onClick={() => setPanel(key)}
-                className={`relative rounded p-2 ${panel === key ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Icon aria-hidden="true" className="h-5 w-5" />
-                {key === "changes" && changes.size > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 rounded-full bg-accent px-1 font-mono text-[10px] text-accent-foreground">
-                    {changes.size}
-                  </span>
-                )}
-              </button>
-            ))}
+            )
+              // Hosted repositories review changes on their own pages.
+              .filter(([key]) => key !== "pulls" || source === "github")
+              .map(([key, Icon, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-label={label}
+                  aria-pressed={panel === key}
+                  title={label}
+                  onClick={() => setPanel(key)}
+                  className={`relative rounded p-2 ${panel === key ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <Icon aria-hidden="true" className="h-5 w-5" />
+                  {key === "changes" && changes.size > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 rounded-full bg-accent px-1 font-mono text-[10px] text-accent-foreground">
+                      {changes.size}
+                    </span>
+                  )}
+                </button>
+              ))}
           </nav>
           {/* Side panel */}
           <aside className="w-60 shrink-0 overflow-hidden border-r max-md:w-48">
@@ -562,6 +692,18 @@ export function Workbench() {
                   });
                   close(path);
                 }}
+              />
+            ) : panel === "pulls" && repository ? (
+              <PullPanel
+                key={repository.id}
+                csrf={csrf}
+                repository={repository}
+                branch={branch}
+                branches={branches}
+                initialTitle={prTitle}
+                busy={!!busy}
+                run={run}
+                onNotice={setNotice}
               />
             ) : (
               <div className="flex h-full flex-col gap-3 overflow-auto p-3 text-[13px]">
