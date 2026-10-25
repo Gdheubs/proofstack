@@ -20,3 +20,5 @@ Parent: `d071b1c`. Delivers the Opportunities hub, Talent filters, the Skills se
 
 - Unit: 800 passed. Embedded PostgreSQL: 226 passed, 2 skipped; `tests/careers.integration.test.ts` covers the availability and skill filters (including a rejected value), `tests/intelligence.integration.test.ts` the `kind` filter.
 - Typecheck, lint and the format check pass. The built API starts and answers `/api/healthz`. Generated API clients regenerated and committed.
+- Pages rendered in Cloudflare's runtime: `/opportunities`, `/opportunities/suggested`, `/opportunities/applications`, `/opportunities/hiring`, `/talent`, `/assessments`, `/assessments/results`, `/assessments/plans`, `/home`, and the redirects `/career`, `/career/applications`, `/intelligence`, `/community`. Hosted CI and Security passed on `e78a364`.
+- **Pending the owner:** Render deploy of `e78a364` so the live API accepts the talent `availability`/`skill` filters and the history `kind` filter (until then those filters return a validation error and the Suggested, Plans and security pages show an error instead of their lists).
