@@ -14,3 +14,5 @@ Parent: `b59fb25`. Closes the redesign plan in `docs/ui-redesign.md`.
 
 - Unit: 812 passed (`tests/a11y.test.ts` covers the tablist key handling). Embedded PostgreSQL: `tests/settings.integration.test.ts` now checks the opt-in default and the partial save.
 - Typecheck, lint and the format check pass. The built API starts and answers `/api/healthz`.
+- Embedded PostgreSQL: 226 passed, 2 skipped. Pages rendered in Cloudflare's runtime: `/`, `/opportunities`, `/opportunities/suggested`, `/code`, `/settings/notifications`, `/repositories`, `/home`. Hosted CI and Security passed on `488ec2e` (the first push, `d9a767a`, failed lint on a Prettier line break in `lib/a11y.ts`; fixed). The live site serves the build.
+- **Pending the owner:** Render deploy of `488ec2e` so the live API accepts the new notification category and partial preference saves (until then the job-alert button reports a validation error).
