@@ -38,6 +38,7 @@ import {
   NOTIFICATION_CATEGORIES,
   type ChannelPreference,
   type NotificationCategory,
+  channelDefault,
 } from "@/lib/notifications";
 import { SettingsSection, type Loaded } from "./use-settings";
 
@@ -204,8 +205,8 @@ function NotificationsForm({ account }: Loaded) {
         NOTIFICATION_CATEGORIES.map((c) => [
           c.key,
           {
-            inApp: stored[c.key]?.inApp !== false,
-            email: stored[c.key]?.email !== false,
+            inApp: channelDefault(stored[c.key]?.inApp, c.key),
+            email: channelDefault(stored[c.key]?.email, c.key),
           },
         ]),
       ) as Prefs,
@@ -231,38 +232,40 @@ function NotificationsForm({ account }: Loaded) {
           await qc.invalidateQueries({ queryKey: getGetAccountQueryKey() });
       }}
     >
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <th className="p-4 font-medium">Event</th>
-            <th className="p-4 text-center font-medium">In app</th>
-            <th className="p-4 text-center font-medium">Email</th>
-          </tr>
-        </thead>
-        <tbody>
-          {NOTIFICATION_CATEGORIES.map((c) => (
-            <tr key={c.key} className="border-b last:border-0">
-              <td className="p-4">
-                <div className="font-medium">{c.label}</div>
-                <div className="text-xs text-muted-foreground">
-                  {c.description}
-                </div>
-              </td>
-              {(["inApp", "email"] as const).map((channel) => (
-                <td key={channel} className="p-4 text-center">
-                  <input
-                    type="checkbox"
-                    aria-label={`${c.label}: ${channel === "inApp" ? "in app" : "email"}`}
-                    className="h-4 w-4 accent-primary"
-                    checked={prefs[c.key][channel]}
-                    onChange={() => toggle(c.key, channel)}
-                  />
-                </td>
-              ))}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <th className="p-4 font-medium">Event</th>
+              <th className="p-4 text-center font-medium">In app</th>
+              <th className="p-4 text-center font-medium">Email</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {NOTIFICATION_CATEGORIES.map((c) => (
+              <tr key={c.key} className="border-b last:border-0">
+                <td className="p-4">
+                  <div className="font-medium">{c.label}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {c.description}
+                  </div>
+                </td>
+                {(["inApp", "email"] as const).map((channel) => (
+                  <td key={channel} className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      aria-label={`${c.label}: ${channel === "inApp" ? "in app" : "email"}`}
+                      className="h-4 w-4 accent-primary"
+                      checked={prefs[c.key][channel]}
+                      onChange={() => toggle(c.key, channel)}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="space-y-3 p-4">
         <p className="text-xs text-muted-foreground">
           Security notices (new device sign-ins, account recovery) are always

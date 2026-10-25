@@ -11,6 +11,7 @@ import {
   useIntelligenceData,
 } from "@/features/intelligence/shared";
 import { IntelligenceResults } from "@/features/intelligence/results";
+import { JobAlertCta } from "./job-alert-cta";
 import { OpportunitiesShell } from "./shell";
 
 // Opportunity matches: the latest run's results, a form for a new run, and
@@ -71,6 +72,7 @@ export function SuggestedView() {
               <Empty
                 title="No matches yet"
                 body="Run a search: it compares the skills on your profile with open opportunities. Nothing leaves ProofStack, and results stay private to you."
+                action={<JobAlertCta />}
               />
             )
           )}

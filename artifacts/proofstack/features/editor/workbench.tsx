@@ -26,6 +26,7 @@ import {
   type EditorTree,
   type Source,
 } from "./editor-api";
+import { onTabKeyDown, tabProps } from "@/lib/a11y";
 import { EditorPane, languageName } from "./editor-pane";
 import { FileTree, type ChangeKind } from "./file-tree";
 import { PullPanel } from "./pull-panel";
@@ -383,7 +384,7 @@ export function Workbench() {
   const blocker = sourceBody();
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] min-h-[32rem] flex-col border-b bg-background text-sm">
+    <div className="flex h-[calc(100dvh-8rem)] min-h-[32rem] flex-col border-b bg-background text-sm lg:h-[calc(100dvh-4rem)]">
       {/* Title bar: where you are editing. */}
       <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
         <span className="font-semibold">Code editor</span>
@@ -826,17 +827,21 @@ export function Workbench() {
               aria-label="Open files"
               className="flex overflow-x-auto border-b bg-muted/30"
             >
-              {tabs.map((path) => (
+              {tabs.map((path, i) => (
                 <div
                   key={path}
                   className={`flex shrink-0 items-center gap-1 border-r px-3 py-1.5 text-xs ${active === path ? "bg-background font-medium" : "text-muted-foreground"}`}
                 >
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={active === path}
+                    {...tabProps(active === path)}
                     title={path}
                     onClick={() => setActive(path)}
+                    onKeyDown={(e) =>
+                      onTabKeyDown(e, i, tabs.length, (n) =>
+                        setActive(tabs[n]!),
+                      )
+                    }
                   >
                     {path.split("/").at(-1)}
                     {changes.has(path) && (

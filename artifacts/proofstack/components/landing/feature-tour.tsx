@@ -1,4 +1,5 @@
 "use client";
+import { onTabKeyDown, tabProps } from "@/lib/a11y";
 import { useState } from "react";
 import {
   CollabMock,
@@ -66,12 +67,17 @@ export function FeatureTour() {
           aria-label="Features"
           className="mb-6 flex flex-wrap gap-2"
         >
-          {FEATURES.map((f) => (
+          {FEATURES.map((f, i) => (
             <button
               key={f.key}
-              role="tab"
-              aria-selected={active === f.key}
+              type="button"
+              {...tabProps(active === f.key)}
               onClick={() => setActive(f.key)}
+              onKeyDown={(e) =>
+                onTabKeyDown(e, i, FEATURES.length, (n) =>
+                  setActive(FEATURES[n]!.key),
+                )
+              }
               className={`rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${active === f.key ? "border-primary bg-primary text-primary-foreground dark:border-accent dark:bg-accent dark:text-accent-foreground" : "hover:bg-muted"}`}
             >
               {f.label}

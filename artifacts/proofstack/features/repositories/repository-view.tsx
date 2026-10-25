@@ -1,4 +1,5 @@
 "use client";
+import { onTabKeyDown, tabProps } from "@/lib/a11y";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -76,21 +77,21 @@ export function RepositoryView({
         aria-label="Repository view"
       >
         <Button
-          role="tab"
-          aria-selected={view === "source"}
+          {...tabProps(view === "source")}
           variant={view === "source" ? "default" : "outline"}
           size="sm"
           onClick={() => setView("source")}
+          onKeyDown={(e) => onTabKeyDown(e, 0, 2, () => setView("preview"))}
         >
           <Code2 className="mr-2 h-4 w-4" />
           Source
         </Button>
         <Button
-          role="tab"
-          aria-selected={view === "preview"}
+          {...tabProps(view === "preview")}
           variant={view === "preview" ? "default" : "outline"}
           size="sm"
           onClick={() => setView("preview")}
+          onKeyDown={(e) => onTabKeyDown(e, 1, 2, () => setView("source"))}
         >
           <Eye className="mr-2 h-4 w-4" />
           Preview

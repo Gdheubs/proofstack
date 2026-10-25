@@ -49,6 +49,6 @@ Profile · Account · Security · Notifications · Career · Connections · Orga
 2. Settings. _(done: see `checkpoints/2026-10-24-redesign-phase-2.md`)_
 3. Code hub: GitHub clone, fork, branch, pull request. _(done: see `checkpoints/2026-10-24-redesign-phase-3.md`)_
 4. Page layouts: feed, projects, opportunities, talent, skills. _(done: see `checkpoints/2026-10-25-redesign-phase-4.md`)_
-5. Phone bottom bar polish, keyboard accessibility, alt text, empty states.
+5. Phone bottom bar polish, keyboard accessibility, alt text, empty states. _(done: see `checkpoints/2026-10-25-redesign-phase-5.md`)_
 
 Each phase is checked the same way: typecheck, lint, unit and database tests, pages rendered in Cloudflare's runtime, push, hosted CI, live check.

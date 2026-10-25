@@ -5,7 +5,10 @@ export const NOTIFICATION_CATEGORIES = [
   "follows",
   "invitations",
   "applications",
+  "opportunities",
 ] as const;
+// Opt-in categories: off until the member turns them on.
+export const DEFAULT_OFF: ReadonlySet<string> = new Set(["opportunities"]);
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 export type ChannelPreference = { inApp: boolean; email: boolean };
 export type NotificationPreferences = Record<
@@ -33,6 +36,11 @@ export const NOTIFICATION_LABELS: Record<
     label: "Applications and hiring",
     description: "Updates and messages on jobs you applied to or posted",
   },
+  opportunities: {
+    label: "New opportunities for your skills",
+    description:
+      "Open roles that share your listed skills. Email only; starts once email delivery exists",
+  },
 };
 
 const TITLES: Record<string, NotificationCategory> = {
@@ -52,7 +60,10 @@ export function notificationCategory(title: string) {
   return TITLES[title] ?? null;
 }
 
-// Fills in defaults (everything on) for a stored, possibly partial, object.
+// Fills in defaults (on, except opt-in categories) for a stored, possibly
+// partial, object.
+const channel = (value: unknown, category: string) =>
+  typeof value === "boolean" ? value : !DEFAULT_OFF.has(category);
 export function normalizePreferences(raw: unknown): NotificationPreferences {
   const stored = (raw && typeof raw === "object" ? raw : {}) as Record<
     string,
@@ -62,8 +73,8 @@ export function normalizePreferences(raw: unknown): NotificationPreferences {
     NOTIFICATION_CATEGORIES.map((category) => [
       category,
       {
-        inApp: stored[category]?.inApp !== false,
-        email: stored[category]?.email !== false,
+        inApp: channel(stored[category]?.inApp, category),
+        email: channel(stored[category]?.email, category),
       },
     ]),
   ) as NotificationPreferences;

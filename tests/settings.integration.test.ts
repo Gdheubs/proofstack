@@ -73,6 +73,24 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         email: true,
       });
       expect(account.notificationPreferences.follows.email).toBe(false);
+      // Opt-in categories default off; a partial save keeps the others.
+      expect(account.notificationPreferences.opportunities).toEqual({
+        inApp: false,
+        email: false,
+      });
+      await runCommunityAction(req, sessionOf(me), {
+        action: "notification-preferences-save",
+        preferences: { opportunities: { inApp: false, email: true } },
+      });
+      const after = await getAccount({
+        ...sessionOf(me),
+        providerUser: { factors: [] },
+      } as unknown as AuthSession);
+      expect(after.notificationPreferences.opportunities.email).toBe(true);
+      expect(after.notificationPreferences.activity).toEqual({
+        inApp: false,
+        email: true,
+      });
       await transaction(async (tx) => {
         await tx.query(
           "INSERT INTO community_follows(follower_id,following_id) VALUES($1,$2)",

@@ -101,7 +101,10 @@ const schemas = {
         Object.fromEntries(
           NOTIFICATION_CATEGORIES.map((c) => [
             c,
-            z.object({ inApp: z.boolean(), email: z.boolean() }).strict(),
+            z
+              .object({ inApp: z.boolean(), email: z.boolean() })
+              .strict()
+              .optional(),
           ]),
         ),
       )

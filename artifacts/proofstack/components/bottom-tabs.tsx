@@ -5,6 +5,7 @@ import { Briefcase, Code2, FolderKanban, Home, User } from "lucide-react";
 import { useSession } from "@/hooks/use-auth";
 import {
   MOBILE_TABS,
+  getNavigationSection,
   isNavigationLinkActive,
   pathMatches,
 } from "@/lib/navigation";
@@ -23,10 +24,13 @@ export function BottomTabs() {
   const path = usePathname();
   const session = useSession();
   if (!session.data?.authenticated) return null;
+  // A tab is current for its whole section: an application thread lights up
+  // Jobs, a repository lights up Code.
+  const section = getNavigationSection(path)?.href;
   const active = (href: string) =>
     href === "/profile/me"
       ? isNavigationLinkActive(path, href)
-      : pathMatches(path, href);
+      : pathMatches(path, href) || section === href;
   return (
     <>
       <div aria-hidden="true" className="h-16 lg:hidden" />

@@ -20,6 +20,7 @@ import {
 } from "@/features/community/ui";
 import { useCsrf } from "@/hooks/use-community";
 import { useViewer } from "@/hooks/use-viewer";
+import { JobAlertCta } from "@/features/opportunities/job-alert-cta";
 import { OpportunitiesShell } from "@/features/opportunities/shell";
 import { card, field, Evidence, Pager } from "./shared";
 
@@ -233,7 +234,8 @@ export function OpportunityBrowse() {
             {!r.data.jobs.length && (
               <Empty
                 title="No matching opportunities yet"
-                body="Try a different search or filter, or check Suggested for you once your skills are on your profile."
+                body="Try a different search or filter, or let us email you when open roles match your skills."
+                action={<JobAlertCta />}
               />
             )}
             <Pager offset={offset} more={r.data.hasMore} change={setOffset} />

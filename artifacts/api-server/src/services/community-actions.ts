@@ -10,6 +10,7 @@ import { projectAction } from "./community-project-actions";
 import { organizationAction } from "./community-org-actions";
 import { assetAction, assertOwnedAssets } from "./community-assets";
 import { ApiError } from "../lib/errors";
+import { normalizePreferences } from "./notification-preferences";
 export async function runCommunityAction(
   req: Request,
   s: AuthSession,
@@ -50,9 +51,22 @@ export async function runCommunityAction(
       );
       result = { message: "Public profile saved", handle: input.handle };
     } else if (input.action === "notification-preferences-save") {
+      // Categories left out keep their stored value.
+      const current = (
+        await db.query<{ notification_prefs: unknown }>(
+          "SELECT notification_prefs FROM users WHERE id=$1",
+          [s.user.id],
+        )
+      ).rows[0]?.notification_prefs;
+      const merged = {
+        ...normalizePreferences(current),
+        ...Object.fromEntries(
+          Object.entries(input.preferences).filter(([, v]) => v !== undefined),
+        ),
+      };
       await db.query(
         "UPDATE users SET notification_prefs=$2::jsonb,updated_at=now() WHERE id=$1",
-        [s.user.id, JSON.stringify(input.preferences)],
+        [s.user.id, JSON.stringify(merged)],
       );
       result = { message: "Notification preferences saved" };
     } else if (input.action === "privacy-save") {
