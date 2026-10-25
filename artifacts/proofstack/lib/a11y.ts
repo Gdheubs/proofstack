@@ -52,8 +52,8 @@ export function onTabKeyDown(
       querySelectorAll(selector: string): ArrayLike<{ focus(): void }>;
     } | null;
   };
-  target
+  const tabs = target
     .closest('[role="tablist"]')
-    ?.querySelectorAll('[role="tab"]')
-    [next]?.focus();
+    ?.querySelectorAll('[role="tab"]');
+  tabs?.[next]?.focus();
 }
