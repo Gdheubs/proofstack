@@ -1,8 +1,12 @@
+# The API runs in Singapore, next to the Neon database (aws-ap-southeast-1).
+# Every setting, secrets included, lives in the env group proofstack-api-env;
+# change values there, not on the service. Secrets are never stored here.
 services:
   - type: web
-    name: proofstack-api
+    name: proofstack-api-sg
     runtime: node
     plan: free
+    region: singapore
     autoDeploy: false
     # Render's preinstalled pnpm is read-only and unpinned (corepack enable now
     # fails with EROFS), so the build runs the exact pnpm from packageManager.
@@ -11,45 +15,13 @@ services:
     startCommand: cd artifacts/api-server && node --enable-source-maps ./dist/index.mjs
     healthCheckPath: /api/healthz
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: BIND_HOST
-        value: 0.0.0.0
-      - key: DATABASE_URL
-        sync: false
-      - key: DATABASE_POOL_MAX
-        value: "5"
-      - key: AUTH_APP_ORIGIN
-        sync: false
-      - key: CORS_ALLOWED_ORIGINS
-        sync: false
-      - key: TRUST_PROXY_CIDRS
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_PUBLISHABLE_KEY
-        sync: false
-      - key: SUPABASE_SECRET_KEY
-        sync: false
-      - key: SESSION_SECRET
-        sync: false
-      - key: PROXY_SHARED_SECRET
-        sync: false
-      - key: PRIVATE_OBJECT_DIR
-        sync: false
-      - key: R2_ENDPOINT
-        sync: false
-      - key: R2_ACCESS_KEY_ID
-        sync: false
-      - key: R2_SECRET_ACCESS_KEY
-        sync: false
-      - key: SENTRY_DSN
-        sync: false
-      - key: SENTRY_BROWSER_DSN
-        sync: false
-      - key: SENTRY_ENVIRONMENT
-        value: production
-      - key: GITHUB_OAUTH_CLIENT_ID
-        sync: false
-      - key: GITHUB_OAUTH_CLIENT_SECRET
-        sync: false
+      - fromGroup: proofstack-api-env
+
+# Expected keys in proofstack-api-env (values set in the Render dashboard):
+# NODE_ENV=production, BIND_HOST=0.0.0.0, DATABASE_URL, DATABASE_POOL_MAX=5,
+# AUTH_APP_ORIGIN, CORS_ALLOWED_ORIGINS, TRUST_PROXY_CIDRS, SUPABASE_URL,
+# SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, SESSION_SECRET,
+# PROXY_SHARED_SECRET, PRIVATE_OBJECT_DIR, R2_ENDPOINT, R2_ACCESS_KEY_ID,
+# R2_SECRET_ACCESS_KEY, SENTRY_DSN, SENTRY_BROWSER_DSN,
+# SENTRY_ENVIRONMENT=production, GITHUB_OAUTH_CLIENT_ID,
+# GITHUB_OAUTH_CLIENT_SECRET.

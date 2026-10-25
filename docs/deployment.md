@@ -6,14 +6,14 @@ launch.
 
 ## Services
 
-| Component | Provider       | Configuration                                                                              |
-| --------- | -------------- | ------------------------------------------------------------------------------------------ |
-| Web       | Cloudflare     | Workers via OpenNext, Root Directory `artifacts/proofstack` (see below).                   |
-| API       | Render         | Create from `render.yaml`; it deliberately requires secret values to be entered in Render. |
-| Database  | Neon           | Serverless PostgreSQL; direct endpoint; migrations via `migrate:release` (see below).      |
-| Auth      | Supabase       | Create one fresh project used only for Auth; do not reuse existing identity data.          |
-| Images    | Cloudflare R2  | Private bucket; see below.                                                                 |
-| CI        | GitHub Actions | Require the repository CI and security workflows for the exact release commit.             |
+| Component | Provider       | Configuration                                                                                                                                                                                       |
+| --------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web       | Cloudflare     | Workers via OpenNext, Root Directory `artifacts/proofstack` (see below).                                                                                                                            |
+| API       | Render         | Service `proofstack-api-sg` in Singapore (next to Neon), described by `render.yaml`. All settings and secrets live in the env group `proofstack-api-env`; secret values are entered only in Render. |
+| Database  | Neon           | Serverless PostgreSQL; direct endpoint; migrations via `migrate:release` (see below).                                                                                                               |
+| Auth      | Supabase       | Create one fresh project used only for Auth; do not reuse existing identity data.                                                                                                                   |
+| Images    | Cloudflare R2  | Private bucket; see below.                                                                                                                                                                          |
+| CI        | GitHub Actions | Require the repository CI and security workflows for the exact release commit.                                                                                                                      |
 
 ## Required configuration
 
