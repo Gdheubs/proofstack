@@ -144,6 +144,23 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
           (await getCareers({ view: "talent", q: "TEST building" }, null))
             .candidates[0].projects,
         ).toHaveLength(1);
+        // Directory filters: availability and one skill (case-insensitive).
+        await pool.query(
+          'UPDATE profiles SET skills=\'["TypeScript","SQL"]\'::jsonb WHERE user_id=$1',
+          [candidate],
+        );
+        const talent = (filters: Record<string, string>) =>
+          getCareers(
+            { view: "talent", q: "TEST building", ...filters },
+            null,
+          ).then((d) => d.candidates.map((c) => c.id));
+        expect(await talent({ availability: "open" })).toEqual([candidate]);
+        expect(await talent({ availability: "exploring" })).toEqual([]);
+        expect(await talent({ skill: "typescript" })).toEqual([candidate]);
+        expect(await talent({ skill: "rust" })).toEqual([]);
+        await expect(
+          getCareers({ view: "talent", availability: "closed" }, null),
+        ).rejects.toMatchObject({ status: 400 });
         await pool.query(
           `UPDATE community_projects SET visibility='private' WHERE id=$1`,
           [project],

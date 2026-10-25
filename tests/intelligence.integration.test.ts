@@ -112,6 +112,18 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       expect(result.status).toBe("succeeded");
       expect(result.result!.matches[0].id).toBe(opportunity);
       expect((await getIntelligence({}, uid)).jobs[0].result).toBeNull();
+      // The history filters by kind, so each kind lists where it belongs.
+      expect(
+        (await getIntelligence({ kind: "opportunities" }, uid)).jobs.map(
+          (j) => j.id,
+        ),
+      ).toEqual([first.id]);
+      expect(
+        (await getIntelligence({ kind: "career-plan" }, uid)).jobs,
+      ).toEqual([]);
+      await expect(
+        getIntelligence({ kind: "other" }, uid),
+      ).rejects.toMatchObject({ status: 400 });
       await pool.query("UPDATE career_jobs SET status='closed' WHERE id=$1", [
         opportunity,
       ]);

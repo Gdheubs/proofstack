@@ -46,6 +46,7 @@ export type IntelligenceInput = z.infer<typeof intelligenceInput>;
 export const intelligenceQuery = z
   .object({
     id: uuid.optional(),
+    kind: z.enum(["opportunities", "career-plan", "security-scan"]).optional(),
     offset: z.coerce.number().int().min(0).max(10000).default(0),
   })
   .strict();

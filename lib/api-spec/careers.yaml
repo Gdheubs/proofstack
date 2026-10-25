@@ -94,6 +94,27 @@
           },
           {
             "in": "query",
+            "name": "availability",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "exploring"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "skill",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "in": "query",
             "name": "offset",
             "required": false,
             "schema": {

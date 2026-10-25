@@ -6,7 +6,12 @@ import { card } from "@/features/careers/shared";
 import { StepUpDialog } from "@/features/auth/mfa";
 import { Button } from "@/components/ui/button";
 import { useIntelligenceRun } from "@/hooks/use-intelligence";
-import { IntelligenceGate, useIntelligenceData, kindName } from "./shared";
+import {
+  IntelligenceGate,
+  kindHome,
+  kindName,
+  useIntelligenceData,
+} from "./shared";
 import { IntelligenceResults } from "./results";
 export function IntelligenceJobView({ id }: { id: string }) {
   const { query: q, session } = useIntelligenceData(id),
@@ -29,8 +34,12 @@ export function IntelligenceJobView({ id }: { id: string }) {
         onSettle={a.settle}
       />
       <PageHead eyebrow="Private analysis" title={kindName(job.kind)}>
-        <Link className="underline" href="/intelligence">
-          All analyses
+        <Link className="underline" href={kindHome(job)}>
+          {job.kind === "career-plan"
+            ? "All practice plans"
+            : job.kind === "security-scan"
+              ? "Repository security"
+              : "Suggested for you"}
         </Link>
         {job.repositoryId && (
           <Link

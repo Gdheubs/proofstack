@@ -36,7 +36,7 @@ export function BookmarksView() {
           body="Use Save on a post or project and it lands here."
           action={
             <Button asChild variant="outline">
-              <Link href="/community">Browse the build log</Link>
+              <Link href="/home">Browse the build log</Link>
             </Button>
           }
         />

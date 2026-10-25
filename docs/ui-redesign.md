@@ -32,6 +32,7 @@ Profile · Account · Security · Notifications · Career · Connections · Orga
 - Intelligence workspace as a menu item: learning plans move under Skills, repository security review under Code, skill matches become Opportunities suggestions.
 - Bookmarks out of the main menu (profile menu and feed filter).
 - Hosted "Initialize a repository" hidden until repository hosting exists.
+- Approved October 24 for phase 4: the `/community` duplicate of the feed, the `/career` page, the `/intelligence` workspace page (results keep their URLs) and the "Usage today" card; all old addresses redirect.
 
 ## Approved additions
 
@@ -40,13 +41,14 @@ Profile · Account · Security · Notifications · Career · Connections · Orga
 - GitHub fork, branch and pull-request actions through the GitHub connection.
 - Notification preferences (in-app and email per event) and profile visibility (public or members only).
 - Job-alert call to action in empty states (active once email delivery exists).
+- Approved October 24 for phase 4: opportunity type filter, talent availability and skill filters, a Hiring section for organization managers, an inline share box on the feed.
 
 ## Phases
 
 1. App shell, landing page, onboarding. _(done: see `checkpoints/2026-10-24-redesign-phase-1.md`)_
 2. Settings. _(done: see `checkpoints/2026-10-24-redesign-phase-2.md`)_
 3. Code hub: GitHub clone, fork, branch, pull request. _(done: see `checkpoints/2026-10-24-redesign-phase-3.md`)_
-4. Page layouts: feed, projects, opportunities, talent, skills.
+4. Page layouts: feed, projects, opportunities, talent, skills. _(done: see `checkpoints/2026-10-25-redesign-phase-4.md`)_
 5. Phone bottom bar polish, keyboard accessibility, alt text, empty states.
 
 Each phase is checked the same way: typecheck, lint, unit and database tests, pages rendered in Cloudflare's runtime, push, hosted CI, live check.

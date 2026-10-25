@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   useGetIntelligence,
   getGetIntelligenceQueryKey,
+  type GetIntelligenceKind,
 } from "@workspace/api-client-react";
 import { useSession } from "@/hooks/use-auth";
 export const kindName = (kind: string) =>
@@ -11,10 +12,15 @@ export const kindName = (kind: string) =>
     "career-plan": "AI learning plan",
     "security-scan": "Repository security review",
   })[kind] ?? kind;
-export function useIntelligenceData(id?: string, offset = 0) {
+// One analysis (id), or the history of one kind, newest first.
+export function useIntelligenceData(
+  id?: string,
+  offset = 0,
+  kind?: GetIntelligenceKind,
+) {
   const session = useSession(),
     uid = session.data?.user?.id;
-  const params = { ...(id ? { id } : {}), offset };
+  const params = { ...(id ? { id } : {}), ...(kind ? { kind } : {}), offset };
   const query = useGetIntelligence(params, {
     query: {
       queryKey: [...getGetIntelligenceQueryKey(params), uid],
@@ -33,11 +39,17 @@ export function IntelligenceGate({ loading = false }: { loading?: boolean }) {
     <p>Loading your workspace…</p>
   ) : (
     <p className="rounded-xl border p-6">
-      Sign in and complete account verification to access your private
-      intelligence workspace.{" "}
+      Sign in and complete account verification to see your private results.{" "}
       <Link className="underline" href="/auth">
         Sign in
       </Link>
     </p>
   );
 }
+// Where each kind of analysis is listed after the intelligence workspace split.
+export const kindHome = (job: { kind: string; repositoryId: string | null }) =>
+  job.kind === "career-plan"
+    ? "/assessments/plans"
+    : job.kind === "security-scan" && job.repositoryId
+      ? `/repositories/${job.repositoryId}/security`
+      : "/opportunities/suggested";

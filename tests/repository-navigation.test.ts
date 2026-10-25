@@ -191,12 +191,17 @@ describe("repository-scoped navigation (N7)", () => {
           sourceData(canManage),
         ],
         [
-          [...getGetIntelligenceQueryKey({ offset: 0 }), "viewer"],
+          [
+            ...getGetIntelligenceQueryKey({ kind: "security-scan", offset: 0 }),
+            "viewer",
+          ],
           { enabled: false, jobs: [], usage: {} },
         ],
       ]);
       expectRepositoryMenu(html, "security", canManage);
-      expect(html).toContain('href="/intelligence"');
+      // The intelligence workspace is gone: scans are listed on this page.
+      expect(html).not.toContain('href="/intelligence"');
+      if (canManage) expect(html).toContain("Previous scans");
     },
   );
   it.each([false, true])(

@@ -38,7 +38,8 @@ export const GetOperationsResponse = zod.object({
 
 export const GetIntelligenceQueryParams = zod.object({
   "id": zod.coerce.string().optional(),
-  "offset": zod.coerce.number().int().optional()
+  "offset": zod.coerce.number().int().optional(),
+  "kind": zod.enum(['opportunities', 'career-plan', 'security-scan']).optional()
 })
 
 export const GetIntelligenceResponse = zod.object({
@@ -404,6 +405,8 @@ export const RunRepositoryActionResponse = zod.object({
 
 export const getCareersQueryQMax = 120;
 
+export const getCareersQuerySkillMax = 60;
+
 export const getCareersQueryOffsetDefault = 0;
 export const getCareersQueryOffsetMin = 0;
 export const getCareersQueryOffsetMax = 10000;
@@ -418,6 +421,8 @@ export const GetCareersQueryParams = zod.object({
   "q": zod.coerce.string().max(getCareersQueryQMax).optional(),
   "kind": zod.enum(['job', 'internship', 'contract', 'collaboration']).optional(),
   "workplace": zod.enum(['remote', 'hybrid', 'onsite']).optional(),
+  "availability": zod.enum(['open', 'exploring']).optional(),
+  "skill": zod.coerce.string().max(getCareersQuerySkillMax).optional(),
   "offset": zod.coerce.number().int().min(getCareersQueryOffsetMin).max(getCareersQueryOffsetMax).default(getCareersQueryOffsetDefault)
 })
 

@@ -170,7 +170,7 @@ export function Opportunity({ id }: { id: string }) {
               </button>
               <Link
                 className="block underline"
-                href={`/career/applications?job=${encodeURIComponent(j.id)}`}
+                href={`/opportunities/applications?job=${encodeURIComponent(j.id)}`}
               >
                 Review {j.applicationCount} applications →
               </Link>
@@ -187,7 +187,7 @@ export function Opportunity({ id }: { id: string }) {
           ) : j.applied ? (
             <div className={card}>
               You have applied.{" "}
-              <Link className="underline" href="/career/applications">
+              <Link className="underline" href="/opportunities/applications">
                 Track your application
               </Link>
             </div>

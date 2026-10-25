@@ -32,6 +32,8 @@ const query = z
     q: short(120).optional(),
     kind: z.enum(["job", "internship", "contract", "collaboration"]).optional(),
     workplace: z.enum(["remote", "hybrid", "onsite"]).optional(),
+    availability: z.enum(["open", "exploring"]).optional(),
+    skill: short(60).optional(),
     offset: z.coerce.number().int().min(0).max(10000).default(0),
   })
   .strict();
@@ -111,8 +113,8 @@ export async function getCareers(
     const rows = page(
       (
         await pool.query(
-          `SELECT p.user_id AS id,p.handle,p.display_name AS "displayName",coalesce(p.avatar_url,'') AS "avatarPath",p.bio,p.skills,c.headline,c.roles,c.availability,c.featured_projects FROM career_profiles c JOIN profiles p ON p.user_id=c.user_id JOIN users u ON u.id=p.user_id AND u.status='active' WHERE c.discoverable AND c.availability<>'closed' AND p.handle IS NOT NULL AND ($3::uuid IS NOT NULL OR p.visibility='public') AND ($1='' OR p.display_name ILIKE '%'||$1||'%' OR c.headline ILIKE '%'||$1||'%' OR p.skills::text ILIKE '%'||$1||'%' OR c.roles::text ILIKE '%'||$1||'%') ORDER BY c.updated_at DESC,c.user_id LIMIT 21 OFFSET $2`,
-          [d.q ?? "", d.offset, uid],
+          `SELECT p.user_id AS id,p.handle,p.display_name AS "displayName",coalesce(p.avatar_url,'') AS "avatarPath",p.bio,p.skills,c.headline,c.roles,c.availability,c.featured_projects FROM career_profiles c JOIN profiles p ON p.user_id=c.user_id JOIN users u ON u.id=p.user_id AND u.status='active' WHERE c.discoverable AND c.availability<>'closed' AND p.handle IS NOT NULL AND ($3::uuid IS NOT NULL OR p.visibility='public') AND ($1='' OR p.display_name ILIKE '%'||$1||'%' OR c.headline ILIKE '%'||$1||'%' OR p.skills::text ILIKE '%'||$1||'%' OR c.roles::text ILIKE '%'||$1||'%') AND ($4::text IS NULL OR c.availability=$4) AND ($5='' OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(p.skills) s WHERE s ILIKE '%'||$5||'%')) ORDER BY c.updated_at DESC,c.user_id LIMIT 21 OFFSET $2`,
+          [d.q ?? "", d.offset, uid, d.availability ?? null, d.skill ?? ""],
         )
       ).rows,
     );

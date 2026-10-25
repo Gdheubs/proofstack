@@ -33,7 +33,7 @@ export function SiteFooter() {
           <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Resources
           </span>
-          <Link className="hover:underline" href="/career">
+          <Link className="hover:underline" href="/opportunities">
             Career workspace
           </Link>
           {!internalPagesHidden() && (

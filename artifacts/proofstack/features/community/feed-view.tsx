@@ -5,7 +5,8 @@ import { PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCommunityList, useCsrf } from "@/hooks/use-community";
-import { Empty, PageHead, PagedList } from "./ui";
+import { useViewer } from "@/hooks/use-viewer";
+import { Empty, PageHead, PagedList, PersonAvatar } from "./ui";
 import { PostCard } from "./post-card";
 import { PostDialog } from "./post-dialog";
 
@@ -14,6 +15,7 @@ export function FeedView({ embedded = false }: { embedded?: boolean }) {
   const [filter, setFilter] = useState<"discover" | "following">("discover");
   const [compose, setCompose] = useState(false);
   const { canAct } = useCsrf();
+  const { viewer } = useViewer();
   const list = useCommunityList(
     { view: "feed", filter },
     filter === "discover" || canAct,
@@ -21,16 +23,30 @@ export function FeedView({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className={embedded ? "" : "mx-auto max-w-2xl"}>
       <PageHead eyebrow="Feed" title="What builders are shipping">
-        {canAct ? (
-          <Button onClick={() => setCompose(true)}>
-            <PenLine className="h-4 w-4" /> Share an update
-          </Button>
-        ) : (
+        {!canAct && (
           <Button asChild variant="outline">
             <Link href="/auth">Sign in to post</Link>
           </Button>
         )}
       </PageHead>
+      {canAct && (
+        <div className="mb-5 flex items-center gap-3 rounded-xl border bg-card p-3">
+          <PersonAvatar
+            person={{
+              displayName: viewer?.displayName ?? "?",
+              avatarPath: viewer?.avatarPath ?? "",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setCompose(true)}
+            className="flex min-h-10 flex-1 items-center gap-2 rounded-full border bg-background px-4 text-left text-sm text-muted-foreground hover:bg-muted"
+          >
+            <PenLine aria-hidden="true" className="h-4 w-4" />
+            Share what you are building…
+          </button>
+        </div>
+      )}
       <Tabs
         value={filter}
         onValueChange={(v) => setFilter(v as typeof filter)}

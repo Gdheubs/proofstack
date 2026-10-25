@@ -21,8 +21,6 @@ import {
   Pager,
   Evidence,
 } from "./shared";
-import { JobEditor } from "./job";
-import { JobCard } from "./boards";
 export function CareerPreferences({
   profile: p,
   projects,
@@ -77,9 +75,15 @@ export function CareerPreferences({
     </form>
   );
 }
-export function Applications({ jobId }: { jobId?: string }) {
+export function Applications({
+  jobId,
+  initialScope,
+}: {
+  jobId?: string;
+  initialScope?: "mine" | "received";
+}) {
   const [scope, setScope] = useState<"mine" | "received">(
-    jobId ? "received" : "mine",
+    initialScope ?? (jobId ? "received" : "mine"),
   );
   const [offset, setOffset] = useState(0);
   const r = useGetCareers({
@@ -92,7 +96,11 @@ export function Applications({ jobId }: { jobId?: string }) {
     <section className="space-y-4">
       <div className="flex flex-wrap justify-between gap-3">
         <h2 className="text-2xl font-semibold">
-          {jobId ? "Listing applications" : "Application workspace"}
+          {jobId
+            ? "Listing applications"
+            : scope === "received"
+              ? "Hiring inbox"
+              : "My applications"}
         </h2>
         <select
           aria-label="Application view"
@@ -148,78 +156,6 @@ export function Applications({ jobId }: { jobId?: string }) {
     </section>
   );
 }
-export function CareerWorkspace() {
-  const r = useGetCareers({ view: "dashboard" });
-  const [create, setCreate] = useState(false);
-  if (r.isPending) return <p>Loading career workspace…</p>;
-  if (r.error) return <QueryError error={r.error} />;
-  const d = r.data;
-  if (!d) return null;
-  return (
-    <>
-      <PageHead eyebrow="Your next chapter" title="Career workspace">
-        <Link className="underline" href="/career/applications">
-          Applications & hiring inbox
-        </Link>
-        <Link className="underline" href="/intelligence">
-          Intelligence workspace
-        </Link>
-        <Link className="underline" href="/talent">
-          Talent directory →
-        </Link>
-      </PageHead>
-      <div className="grid gap-8 lg:grid-cols-[1fr_1.3fr]">
-        <div className="space-y-6">
-          <section className={card}>
-            <h2 className="text-xl font-semibold">Career preferences</h2>
-            <p className="text-sm text-muted-foreground">
-              Availability, roles and whether recruiters can find you now live
-              in Settings.
-            </p>
-            <Link className="underline" href="/settings/career">
-              Edit career preferences →
-            </Link>
-          </section>
-          <section className={card}>
-            <h2 className="text-xl font-semibold">Build your hiring team</h2>
-            <p className="text-sm text-muted-foreground">
-              Only organization owners and authorized admins can post
-              opportunities and review applicants.
-            </p>
-            {d.organizations.length ? (
-              <button className="underline" onClick={() => setCreate(!create)}>
-                {create ? "Close editor" : "Create opportunity"}
-              </button>
-            ) : (
-              <Link className="underline" href="/organizations">
-                Create or join an organization →
-              </Link>
-            )}
-          </section>
-          {create && (
-            <JobEditor
-              organizations={d.organizations}
-              done={() => setCreate(false)}
-            />
-          )}
-        </div>
-        <div className="space-y-8">
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold">Your latest listings</h2>
-            {d.jobs.map((j) => (
-              <JobCard key={j.id} job={j} />
-            ))}
-            {d.hasMore && (
-              <Link href="/opportunities" className="underline">
-                Browse more listings
-              </Link>
-            )}
-          </section>
-        </div>
-      </div>
-    </>
-  );
-}
 const transitions: Record<string, string[]> = {
   submitted: ["reviewing", "shortlisted", "interview", "rejected"],
   reviewing: ["shortlisted", "interview", "rejected"],
@@ -247,7 +183,7 @@ export function ApplicationThread({ id }: { id: string }) {
   return (
     <>
       <PageHead eyebrow="Private application" title={app.jobTitle}>
-        <Link className="underline" href="/career/applications">
+        <Link className="underline" href="/opportunities/applications">
           Applications & hiring inbox
         </Link>
       </PageHead>

@@ -46,7 +46,7 @@ describe("workspace navigation", () => {
 
   it("provides a real standalone application workspace", () => {
     expect(
-      existsSync(`${root}/app/(community)/career/applications/page.tsx`),
+      existsSync(`${root}/app/(community)/opportunities/applications/page.tsx`),
     ).toBe(true);
   });
 
@@ -64,6 +64,8 @@ describe("workspace navigation", () => {
     ["/organizations/example", "Collab"],
     ["/opportunities/example", "Opportunities"],
     ["/career/applications", "Opportunities"],
+    ["/opportunities/hiring", "Opportunities"],
+    ["/assessments/plans", "Skills"],
     ["/applications/example", "Opportunities"],
     ["/intelligence/plan/example", "Opportunities"],
     ["/talent", "Talent"],
@@ -125,6 +127,9 @@ const ownership: Record<string, string | undefined> = {
   "/organizations/[slug]": "Collab",
   "/opportunities": "Opportunities",
   "/opportunities/[id]": "Opportunities",
+  "/opportunities/suggested": "Opportunities",
+  "/opportunities/applications": "Opportunities",
+  "/opportunities/hiring": "Opportunities",
   "/career": "Opportunities",
   "/career/applications": "Opportunities",
   "/applications/[id]": "Opportunities",
@@ -136,6 +141,8 @@ const ownership: Record<string, string | undefined> = {
   "/profile/settings": "Talent",
   "/assessments": "Skills",
   "/assessments/[id]": "Skills",
+  "/assessments/results": "Skills",
+  "/assessments/plans": "Skills",
   "/search": undefined,
   "/notifications": undefined,
   "/account": undefined,

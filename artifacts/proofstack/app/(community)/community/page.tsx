@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import { FeedView } from "@/features/community/feed-view";
-export const metadata: Metadata = { title: "Community" };
+import { redirect } from "next/navigation";
+
+// The feed lives on the home page.
 export default function Page() {
-  return <FeedView />;
+  redirect("/home");
 }

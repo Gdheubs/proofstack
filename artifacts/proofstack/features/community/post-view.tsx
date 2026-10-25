@@ -135,7 +135,7 @@ export function PostView({ id }: { id: string }) {
   return (
     <div className="mx-auto max-w-2xl">
       <Button asChild variant="ghost" size="sm" className="mb-4">
-        <Link href="/community">Back to build log</Link>
+        <Link href="/home">Back to build log</Link>
       </Button>
       {q.isPending ? (
         <Skeleton className="h-64" />
@@ -149,7 +149,7 @@ export function PostView({ id }: { id: string }) {
         <Empty title="Post not found" body="It may have been deleted." />
       ) : (
         <div className="space-y-6">
-          <PostCard post={post} onDeleted={() => router.push("/community")} />
+          <PostCard post={post} onDeleted={() => router.push("/home")} />
           <section
             aria-labelledby="comments"
             className="rounded-lg border bg-card p-4 sm:p-5"

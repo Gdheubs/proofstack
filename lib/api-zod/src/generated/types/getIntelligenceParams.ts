@@ -5,8 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GetIntelligenceKind } from './getIntelligenceKind';
 
 export type GetIntelligenceParams = {
 id?: string;
 offset?: number;
+kind?: GetIntelligenceKind;
 };

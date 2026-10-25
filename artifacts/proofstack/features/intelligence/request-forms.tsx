@@ -11,7 +11,7 @@ import { PageHead, QueryError } from "@/features/community/ui";
 import { card, field } from "@/features/careers/shared";
 import { ActionForm } from "@/features/repositories/action-form";
 import { useIntelligenceRun } from "@/hooks/use-intelligence";
-import { IntelligenceGate, useIntelligenceData } from "./shared";
+import { IntelligenceGate, kindName, useIntelligenceData } from "./shared";
 import { RepositoryNavigation } from "../repositories/repository-navigation";
 export function LearningPlanRequest({ jobId }: { jobId: string }) {
   const q = useGetCareers({ view: "job", id: jobId }),
@@ -93,7 +93,11 @@ export function SecurityScanRequest({
     a = useIntelligenceRun(),
     router = useRouter(),
     requestKey = useRef("");
-  const { query: config, session } = useIntelligenceData();
+  const { query: config, session } = useIntelligenceData(
+    undefined,
+    0,
+    "security-scan",
+  );
   const params = { id: repositoryId, branch };
   const q = useGetRepositories(params, {
     query: {
@@ -118,8 +122,8 @@ export function SecurityScanRequest({
         eyebrow="Bounded static analysis"
         title="Repository security review"
       >
-        <Link className="underline" href="/intelligence">
-          Your analysis history
+        <Link className="underline" href="/code">
+          Code editor
         </Link>
       </PageHead>
       <RepositoryNavigation
@@ -206,6 +210,44 @@ export function SecurityScanRequest({
             </p>
           </ActionForm>
         </form>
+      )}
+      {r.canManage && (
+        <section
+          className={card + " mt-6 max-w-2xl"}
+          aria-label="Previous scans"
+        >
+          <h2 className="font-semibold">Previous scans</h2>
+          {(() => {
+            const scans = (config.data?.jobs ?? []).filter(
+              (j) => j.repositoryId === repositoryId,
+            );
+            return scans.length ? (
+              <ul className="space-y-2 text-sm">
+                {scans.map((j) => (
+                  <li
+                    key={j.id}
+                    className="flex flex-wrap justify-between gap-2"
+                  >
+                    <Link
+                      href={`/intelligence/${j.id}`}
+                      className="underline underline-offset-2"
+                    >
+                      {kindName(j.kind)} ·{" "}
+                      {new Date(j.createdAt).toLocaleString()}
+                    </Link>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {j.branch} · {j.commit.slice(0, 12)} · {j.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No scans of this repository yet.
+              </p>
+            );
+          })()}
+        </section>
       )}
     </>
   );

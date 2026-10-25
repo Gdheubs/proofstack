@@ -265,8 +265,8 @@ export async function getIntelligence(
   await ownSkills(uid);
   const rows = (
     await pool.query<JobRow>(
-      `SELECT j.* FROM intelligence_jobs j WHERE j.user_id=$1 AND ${readable} AND ($2::uuid IS NULL OR j.id=$2) ORDER BY j.created_at DESC,j.id DESC LIMIT 21 OFFSET $3`,
-      [uid, d.id ?? null, d.id ? 0 : d.offset],
+      `SELECT j.* FROM intelligence_jobs j WHERE j.user_id=$1 AND ${readable} AND ($2::uuid IS NULL OR j.id=$2) AND ($4::text IS NULL OR j.kind=$4) ORDER BY j.created_at DESC,j.id DESC LIMIT 21 OFFSET $3`,
+      [uid, d.id ?? null, d.id ? 0 : d.offset, d.kind ?? null],
     )
   ).rows;
   if (d.id && !rows.length) throw missing();

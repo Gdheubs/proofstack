@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GetCareersAvailability } from './getCareersAvailability';
 import type { GetCareersKind } from './getCareersKind';
 import type { GetCareersScope } from './getCareersScope';
 import type { GetCareersView } from './getCareersView';
@@ -21,6 +22,11 @@ scope?: GetCareersScope;
 q?: string;
 kind?: GetCareersKind;
 workplace?: GetCareersWorkplace;
+availability?: GetCareersAvailability;
+/**
+ * @maxLength 60
+ */
+skill?: string;
 /**
  * @minimum 0
  * @maximum 10000

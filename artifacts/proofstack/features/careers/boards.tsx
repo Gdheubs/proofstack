@@ -1,48 +1,90 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { useGetCareers, type CareerJob } from "@workspace/api-client-react";
-import { PageHead, QueryError, Empty } from "@/features/community/ui";
+import {
+  useGetCareers,
+  type CareerCandidate,
+  type CareerJob,
+  type GetCareersAvailability,
+  type GetCareersKind,
+  type GetCareersWorkplace,
+} from "@workspace/api-client-react";
+import { Building2, MapPin, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  PageHead,
+  PersonAvatar,
+  QueryError,
+  Tags,
+} from "@/features/community/ui";
+import { useCsrf } from "@/hooks/use-community";
+import { useViewer } from "@/hooks/use-viewer";
+import { OpportunitiesShell } from "@/features/opportunities/shell";
 import { card, field, Evidence, Pager } from "./shared";
+
+const KIND_LABEL: Record<string, string> = {
+  job: "Job",
+  internship: "Internship",
+  contract: "Contract",
+  collaboration: "Collaboration",
+};
+const WORKPLACE_LABEL: Record<string, string> = {
+  remote: "Remote",
+  hybrid: "Hybrid",
+  onsite: "On-site",
+};
+const AVAILABILITY_LABEL: Record<string, string> = {
+  open: "Open to offers",
+  exploring: "Exploring",
+  closed: "Not available",
+};
+const chip = "rounded-full border bg-muted/60 px-2.5 py-0.5 font-mono text-xs";
+
 export function JobCard({ job: j }: { job: CareerJob }) {
   return (
-    <article className={card}>
-      <div className="flex justify-between gap-3">
-        <Link
-          href={`/opportunities/${j.id}`}
-          className="text-xl font-semibold hover:underline"
-        >
-          {j.title}
-        </Link>
-        <span className="text-xs uppercase text-muted-foreground">
-          {j.status}
+    <article className={card + " flex flex-col"}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={chip}>{KIND_LABEL[j.kind] ?? j.kind}</span>
+        <span className={chip}>
+          {WORKPLACE_LABEL[j.workplace] ?? j.workplace}
         </span>
+        {j.status !== "open" && (
+          <span className="ml-auto text-xs uppercase text-muted-foreground">
+            {j.status}
+          </span>
+        )}
       </div>
       <Link
-        href={`/organizations/${j.organizationSlug}`}
-        className="text-sm underline"
+        href={`/opportunities/${j.id}`}
+        className="text-xl font-semibold leading-snug hover:underline"
       >
-        {j.organizationName}
+        {j.title}
       </Link>
-      <p className="text-sm text-muted-foreground">
-        {j.kind} · {j.workplace}
-        {j.location && ` · ${j.location}`}
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        <Link
+          href={`/organizations/${j.organizationSlug}`}
+          className="inline-flex items-center gap-1 hover:underline"
+        >
+          <Building2 aria-hidden="true" className="h-3.5 w-3.5" />
+          {j.organizationName}
+        </Link>
+        {j.location && (
+          <span className="inline-flex items-center gap-1">
+            <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
+            {j.location}
+          </span>
+        )}
       </p>
-      <p className="line-clamp-3 text-sm">{j.description}</p>
-      <p className="font-medium text-sm">
+      <p className="line-clamp-3 flex-1 text-sm">{j.description}</p>
+      <p className="text-sm font-medium">
         {j.compensation || "Compensation not specified"}
       </p>
-      <div className="flex flex-wrap gap-2">
-        {j.skills.map((s) => (
-          <span className="rounded-full bg-muted px-2 py-1 text-xs" key={s}>
-            {s}
-          </span>
-        ))}
-      </div>
+      <Tags items={j.skills} />
       {j.applied && (
         <p className="text-sm">
           Application submitted ·{" "}
-          <Link href="/career/applications" className="underline">
+          <Link href="/opportunities/applications" className="underline">
             Track progress
           </Link>
         </p>
@@ -50,67 +92,131 @@ export function JobCard({ job: j }: { job: CareerJob }) {
     </article>
   );
 }
-export function Discovery({ talent = false }: { talent?: boolean }) {
+
+export function CandidateCard({
+  candidate: c,
+}: {
+  candidate: CareerCandidate;
+}) {
+  return (
+    <article className={card}>
+      <div className="flex items-start gap-3">
+        <PersonAvatar person={c} size={48} />
+        <div className="min-w-0 flex-1">
+          <Link
+            className="block truncate text-lg font-semibold hover:underline"
+            href={`/profile/${c.handle}`}
+          >
+            {c.displayName}
+          </Link>
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            @{c.handle}
+          </p>
+        </div>
+        <span className={chip}>
+          {AVAILABILITY_LABEL[c.availability] ?? c.availability}
+        </span>
+      </div>
+      {c.headline && <p className="text-sm">{c.headline}</p>}
+      {c.roles.length > 0 && (
+        <p className="text-sm text-muted-foreground">{c.roles.join(" · ")}</p>
+      )}
+      <Tags items={c.skills} skill />
+      <Evidence projects={c.projects} />
+    </article>
+  );
+}
+
+function SearchField({
+  value,
+  onChange,
+  label,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  placeholder: string;
+}) {
+  return (
+    <label className="relative block min-w-0 flex-1">
+      <span className="sr-only">{label}</span>
+      <Search
+        aria-hidden="true"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+      />
+      <input
+        placeholder={placeholder}
+        className={field + " pl-9"}
+        maxLength={120}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+// Browse: every public, open opportunity, with search and two filters.
+export function OpportunityBrowse() {
   const [q, setQ] = useState("");
   const [offset, setOffset] = useState(0);
-  const [workplace, setWorkplace] = useState<
-    "" | "remote" | "hybrid" | "onsite"
-  >("");
+  const [kind, setKind] = useState<GetCareersKind | "">("");
+  const [workplace, setWorkplace] = useState<GetCareersWorkplace | "">("");
   const r = useGetCareers({
-    view: talent ? "talent" : "jobs",
+    view: "jobs",
     q,
     offset,
+    ...(kind ? { kind } : {}),
     ...(workplace ? { workplace } : {}),
   });
+  const reset = () => setOffset(0);
   return (
-    <>
-      <PageHead
-        eyebrow="Build together. Grow together."
-        title={talent ? "Discover builders" : "Find your next opportunity"}
-      >
-        <Link href="/career" className="underline">
-          Career workspace →
-        </Link>
-      </PageHead>
-      <p className="mb-6 max-w-2xl text-muted-foreground">
-        {talent
-          ? "Meet people through their work. Profiles are opt-in; project links are evidence, not independent skill verification."
-          : "Explore jobs, internships, contracts, and collaborations. Apply with projects that show how you build."}
-      </p>
-      <div className="mb-6 flex gap-3">
-        <input
-          aria-label={
-            talent ? "Search people, roles, skills" : "Search opportunities"
-          }
-          placeholder={
-            talent
-              ? "Search people, roles, skills…"
-              : "Search roles, skills, projects…"
-          }
-          className={field}
-          maxLength={120}
+    <OpportunitiesShell
+      title="Find your next opportunity"
+      intro="Jobs, internships, contracts and collaborations. Apply with projects that show how you build."
+    >
+      <div className="flex flex-wrap gap-3">
+        <SearchField
+          label="Search opportunities"
+          placeholder="Search roles, skills, companies…"
           value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setOffset(0);
+          onChange={(v) => {
+            setQ(v);
+            reset();
           }}
         />
-        {!talent && (
-          <select
-            aria-label="Workplace"
-            className={field + " max-w-40"}
-            value={workplace}
-            onChange={(e) => {
-              setWorkplace(e.target.value as typeof workplace);
-              setOffset(0);
-            }}
-          >
-            <option value="">All workplaces</option>
-            {["remote", "hybrid", "onsite"].map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </select>
-        )}
+        <select
+          aria-label="Type"
+          className={field + " w-auto"}
+          value={kind}
+          onChange={(e) => {
+            setKind(e.target.value as typeof kind);
+            reset();
+          }}
+        >
+          <option value="">All types</option>
+          {Object.entries(KIND_LABEL).map(([k, label]) => (
+            <option key={k} value={k}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Workplace"
+          className={field + " w-auto"}
+          value={workplace}
+          onChange={(e) => {
+            setWorkplace(e.target.value as typeof workplace);
+            reset();
+          }}
+        >
+          <option value="">All workplaces</option>
+          {Object.entries(WORKPLACE_LABEL).map(([k, label]) => (
+            <option key={k} value={k}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
       {r.isPending ? (
         <p role="status">Loading…</p>
@@ -120,38 +226,108 @@ export function Discovery({ talent = false }: { talent?: boolean }) {
         r.data && (
           <>
             <div className="grid gap-4 md:grid-cols-2">
-              {talent
-                ? r.data.candidates.map((c) => (
-                    <article className={card} key={c.id}>
-                      <div className="flex justify-between">
-                        <Link
-                          className="text-xl font-semibold underline"
-                          href={`/profile/${c.handle}`}
-                        >
-                          {c.displayName}
-                        </Link>
-                        <span className="text-sm text-muted-foreground">
-                          {c.availability}
-                        </span>
-                      </div>
-                      <p>{c.headline}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {c.roles.join(" · ")}
-                      </p>
-                      <p className="text-sm">{c.skills.join(" · ")}</p>
-                      <Evidence projects={c.projects} />
-                    </article>
-                  ))
-                : r.data.jobs.map((j) => <JobCard key={j.id} job={j} />)}
+              {r.data.jobs.map((j) => (
+                <JobCard key={j.id} job={j} />
+              ))}
             </div>
-            {!(talent ? r.data.candidates : r.data.jobs).length && (
+            {!r.data.jobs.length && (
               <Empty
-                title={
-                  talent
-                    ? "No matching builders yet"
-                    : "No matching opportunities yet"
-                }
-                body="Try a different search or return after the community grows."
+                title="No matching opportunities yet"
+                body="Try a different search or filter, or check Suggested for you once your skills are on your profile."
+              />
+            )}
+            <Pager offset={offset} more={r.data.hasMore} change={setOffset} />
+          </>
+        )
+      )}
+    </OpportunitiesShell>
+  );
+}
+
+// Talent: members who chose to be found, with availability and skill filters.
+export function TalentDirectory() {
+  const [q, setQ] = useState("");
+  const [skill, setSkill] = useState("");
+  const [availability, setAvailability] = useState<GetCareersAvailability | "">(
+    "",
+  );
+  const [offset, setOffset] = useState(0);
+  const { canAct } = useCsrf();
+  const { viewer } = useViewer();
+  const r = useGetCareers({
+    view: "talent",
+    q,
+    offset,
+    ...(skill.trim() ? { skill: skill.trim() } : {}),
+    ...(availability ? { availability } : {}),
+  });
+  const reset = () => setOffset(0);
+  return (
+    <>
+      <PageHead eyebrow="Talent" title="Discover builders">
+        {canAct && viewer?.kind === "recruiter" && (
+          <Button asChild>
+            <Link href="/opportunities/hiring">Post an opportunity</Link>
+          </Button>
+        )}
+      </PageHead>
+      <p className="mb-6 max-w-2xl text-muted-foreground">
+        Meet people through their work. Profiles here are opt-in; project links
+        are evidence, not independent verification.
+      </p>
+      <div className="mb-6 flex flex-wrap gap-3">
+        <SearchField
+          label="Search people, roles, headlines"
+          placeholder="Search people, roles, headlines…"
+          value={q}
+          onChange={(v) => {
+            setQ(v);
+            reset();
+          }}
+        />
+        <label className="block">
+          <span className="sr-only">Skill</span>
+          <input
+            placeholder="Skill, e.g. TypeScript"
+            className={field + " w-44"}
+            maxLength={60}
+            value={skill}
+            onChange={(e) => {
+              setSkill(e.target.value);
+              reset();
+            }}
+          />
+        </label>
+        <select
+          aria-label="Availability"
+          className={field + " w-auto"}
+          value={availability}
+          onChange={(e) => {
+            setAvailability(e.target.value as typeof availability);
+            reset();
+          }}
+        >
+          <option value="">Any availability</option>
+          <option value="open">Open to offers</option>
+          <option value="exploring">Exploring</option>
+        </select>
+      </div>
+      {r.isPending ? (
+        <p role="status">Loading…</p>
+      ) : r.error ? (
+        <QueryError error={r.error} onRetry={() => r.refetch()} />
+      ) : (
+        r.data && (
+          <>
+            <div className="grid gap-4 md:grid-cols-2">
+              {r.data.candidates.map((c) => (
+                <CandidateCard key={c.id} candidate={c} />
+              ))}
+            </div>
+            {!r.data.candidates.length && (
+              <Empty
+                title="No matching builders yet"
+                body="Try another skill or search, or return after the community grows."
               />
             )}
             <Pager offset={offset} more={r.data.hasMore} change={setOffset} />

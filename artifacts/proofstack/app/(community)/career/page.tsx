@@ -1,5 +1,6 @@
-import { CareerWorkspace } from "@/features/careers/workspace";
 import { redirect } from "next/navigation";
+
+// The career workspace moved into the Opportunities hub.
 export default async function Page({
   searchParams,
 }: {
@@ -11,6 +12,6 @@ export default async function Page({
     typeof job === "string" &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(job)
   )
-    redirect(`/career/applications?job=${encodeURIComponent(job)}`);
-  return <CareerWorkspace />;
+    redirect(`/opportunities/applications?job=${encodeURIComponent(job)}`);
+  redirect("/opportunities/hiring");
 }

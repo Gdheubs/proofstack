@@ -1491,7 +1491,17 @@ export type GetOperationsDefault = { [key: string]: unknown };
 export type GetIntelligenceParams = {
 id?: string;
 offset?: number;
+kind?: GetIntelligenceKind;
 };
+
+export type GetIntelligenceKind = typeof GetIntelligenceKind[keyof typeof GetIntelligenceKind];
+
+
+export const GetIntelligenceKind = {
+  opportunities: 'opportunities',
+  'career-plan': 'career-plan',
+  'security-scan': 'security-scan',
+} as const;
 
 export type GetIntelligenceDefault = { [key: string]: unknown };
 
@@ -1537,6 +1547,11 @@ scope?: GetCareersScope;
 q?: string;
 kind?: GetCareersKind;
 workplace?: GetCareersWorkplace;
+availability?: GetCareersAvailability;
+/**
+ * @maxLength 60
+ */
+skill?: string;
 /**
  * @minimum 0
  * @maximum 10000
@@ -1582,6 +1597,14 @@ export const GetCareersWorkplace = {
   remote: 'remote',
   hybrid: 'hybrid',
   onsite: 'onsite',
+} as const;
+
+export type GetCareersAvailability = typeof GetCareersAvailability[keyof typeof GetCareersAvailability];
+
+
+export const GetCareersAvailability = {
+  open: 'open',
+  exploring: 'exploring',
 } as const;
 
 export type GetCareersDefaultError = {

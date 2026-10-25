@@ -91,7 +91,7 @@ describe("repository page query boundary", () => {
 describe("sibling page query boundaries", () => {
   it.each([
     ["repositories", "project", "projectId"],
-    ["career/applications", "job", "jobId"],
+    ["opportunities/applications", "job", "jobId"],
   ])("ignores repeated query filters on %s", async (route, query, prop) => {
     const { default: render } = await import(
       `${frontend}/app/(community)/${route}/page.tsx`
@@ -99,12 +99,12 @@ describe("sibling page query boundaries", () => {
     const page = await render({
       searchParams: Promise.resolve({ [query]: [routeId, routeId] }),
     });
-    const child = route === "repositories" ? page : page.props.children[1];
+    const child = route === "repositories" ? page : page.props.children;
     expect(child.props[prop]).toBeUndefined();
   });
   it.each([
     ["repositories", "project", "projectId"],
-    ["career/applications", "job", "jobId"],
+    ["opportunities/applications", "job", "jobId"],
   ])(
     "preserves scalar and absent filters on %s",
     async (route, query, prop) => {
@@ -115,7 +115,7 @@ describe("sibling page query boundaries", () => {
         const page = await render({
           searchParams: Promise.resolve({ [query]: value }),
         });
-        const child = route === "repositories" ? page : page.props.children[1];
+        const child = route === "repositories" ? page : page.props.children;
         expect(child.props[prop]).toBe(value);
       }
     },

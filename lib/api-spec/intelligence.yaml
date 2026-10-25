@@ -22,6 +22,18 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "opportunities",
+                "career-plan",
+                "security-scan"
+              ]
+            }
           }
         ],
         "responses": {
