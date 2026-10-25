@@ -34,7 +34,7 @@ export function SiteFooter() {
             Resources
           </span>
           <Link className="hover:underline" href="/opportunities">
-            Career workspace
+            Opportunities
           </Link>
           {!internalPagesHidden() && (
             <>
