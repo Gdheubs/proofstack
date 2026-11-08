@@ -13,6 +13,7 @@ Parent: `7eb6812`. From the owner's browser QA pass of the live site.
 - **Footer:** Opportunities listed once; Resources shows Skill checks and About.
 - **Pager:** Previous/Next hidden when there is only one page of results.
 - **"Create a recruiter account"** now preselects Recruiter on the sign-up form (`/auth?mode=signup&kind=recruiter`).
+- **Dependency advisories published since the last push** (CI audit failed on `d7c8c3f`): pinned `qs` 6.16.1 (GHSA-6pq8-jhm2-2vcw, Express) and `re2js` 2.8.7 (GHSA-gg6h-894w-4m9c, legacy Firebase client). Recorded a dated audit exception (revisit by 2026-12-08) for GHSA-3g3m-2fjr-6pw4 (`glob`) and GHSA-g3hv-75wg-m249 (`minimatch`): both apply only to build, lint and SDK tooling with fixed patterns, and their fixes are new ESM-only majors the dependents do not support yet.
 - **Still owner's:** legal placeholders (`[Your full legal name]`, address, grievance officer) need the operator's details in `artifacts/proofstack/lib/legal.ts`; the signed-in QA pass (Part B) and phone-size pass wait for sign-in to be restored.
 
 ## Validation
