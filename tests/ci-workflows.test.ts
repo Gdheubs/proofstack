@@ -21,15 +21,19 @@ describe("CI workflow supply-chain policy", () => {
       /\.ya?ml$/.test(name),
     );
     expect(files.length).toBeGreaterThan(0);
+    // A workflow may use no actions at all (the keep-alive only runs curl);
+    // across all workflows the check must still see real actions.
+    let seen = 0;
     for (const file of files) {
       const actions = [...workflow(file).matchAll(/\buses:\s*([^\s#]+)/g)];
-      expect(actions.length).toBeGreaterThan(0);
+      seen += actions.length;
       for (const [, action] of actions) {
         expect(action, `${file}: ${action}`).toMatch(
           /^[\w.-]+\/[\w./-]+@[a-f0-9]{40}$/,
         );
       }
     }
+    expect(seen).toBeGreaterThan(0);
   });
 
   it("sets Node 24 before installing pnpm 11 and keeps frozen installs", () => {

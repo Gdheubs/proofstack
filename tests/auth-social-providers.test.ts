@@ -121,6 +121,36 @@ describe("social provider capabilities", () => {
     expect(result.pendingSetup).toContain("Social sign-in providers");
   });
 
+  it("reports an unreachable provider as a 503 outage, not a server error, and keeps earlier settings", async () => {
+    vi.resetModules();
+    // A paused project's address stops resolving: fetch itself rejects.
+    const fetch = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetch);
+    const fresh =
+      await import("../artifacts/api-server/src/services/auth-provider");
+    await expect(fresh.capabilities()).rejects.toMatchObject({
+      status: 503,
+      code: "AUTH_PROVIDER_UNAVAILABLE",
+    });
+    fetch.mockResolvedValueOnce(new Response("{}", { status: 503 }));
+    await expect(fresh.capabilities()).rejects.toMatchObject({ status: 503 });
+
+    // Once settings were read, a later outage keeps using them.
+    fetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ external: { email: true } }), {
+        status: 200,
+      }),
+    );
+    expect((await fresh.capabilities()).password).toBe(true);
+    vi.useFakeTimers({ now: Date.now() + 60_000 });
+    try {
+      fetch.mockRejectedValueOnce(new TypeError("fetch failed"));
+      expect((await fresh.capabilities()).password).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("keeps Firebase mode limited to its own Google/GitHub flags", async () => {
     stub({
       AUTH_PROVIDER: "firebase",

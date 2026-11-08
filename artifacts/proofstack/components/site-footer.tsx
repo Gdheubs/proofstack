@@ -33,8 +33,11 @@ export function SiteFooter() {
           <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Resources
           </span>
-          <Link className="hover:underline" href="/opportunities">
-            Opportunities
+          <Link className="hover:underline" href="/assessments">
+            Skill checks
+          </Link>
+          <Link className="hover:underline" href="/about">
+            About
           </Link>
           {!internalPagesHidden() && (
             <>

@@ -19,6 +19,7 @@ import {
   Tags,
 } from "@/features/community/ui";
 import { useCsrf } from "@/hooks/use-community";
+import { useDebounced } from "@/hooks/use-debounced";
 import { useViewer } from "@/hooks/use-viewer";
 import { JobAlertCta } from "@/features/opportunities/job-alert-cta";
 import { OpportunitiesShell } from "@/features/opportunities/shell";
@@ -163,9 +164,10 @@ export function OpportunityBrowse() {
   const [offset, setOffset] = useState(0);
   const [kind, setKind] = useState<GetCareersKind | "">("");
   const [workplace, setWorkplace] = useState<GetCareersWorkplace | "">("");
+  const query = useDebounced(q);
   const r = useGetCareers({
     view: "jobs",
-    q,
+    q: query,
     offset,
     ...(kind ? { kind } : {}),
     ...(workplace ? { workplace } : {}),
@@ -256,11 +258,13 @@ export function TalentDirectory() {
   const [offset, setOffset] = useState(0);
   const { canAct } = useCsrf();
   const { viewer } = useViewer();
+  const query = useDebounced(q);
+  const skillQuery = useDebounced(skill.trim());
   const r = useGetCareers({
     view: "talent",
-    q,
+    q: query,
     offset,
-    ...(skill.trim() ? { skill: skill.trim() } : {}),
+    ...(skillQuery ? { skill: skillQuery } : {}),
     ...(availability ? { availability } : {}),
   });
   const reset = () => setOffset(0);

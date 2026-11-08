@@ -131,7 +131,7 @@ export default function Landing() {
               inbox.
             </p>
             <Button asChild variant="outline" className="mt-6">
-              <Link href="/auth?mode=signup">
+              <Link href="/auth?mode=signup&kind=recruiter">
                 Create a recruiter account
                 <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
               </Link>

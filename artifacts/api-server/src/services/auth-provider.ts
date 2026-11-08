@@ -148,20 +148,24 @@ export async function capabilities() {
   }
   if (!settingsCache || settingsCache.until < Date.now()) {
     const { url, publicKey } = providerConfig();
+    // A paused or unreachable provider makes fetch itself throw; that is an
+    // outage to report, not a server error. Settings seen earlier stay usable.
     const response = await fetch(`${url}/auth/v1/settings`, {
       headers: { apikey: publicKey },
       signal: AbortSignal.timeout(10000),
-    });
-    if (!response.ok)
-      throw new ApiError(
-        503,
-        "AUTH_PROVIDER_UNAVAILABLE",
-        "Authentication settings could not be verified",
-      );
-    settingsCache = {
-      value: (await response.json()) as Record<string, unknown>,
-      until: Date.now() + 30000,
-    };
+    }).catch(() => null);
+    if (!response?.ok) {
+      if (!settingsCache)
+        throw new ApiError(
+          503,
+          "AUTH_PROVIDER_UNAVAILABLE",
+          "Sign-in is temporarily unavailable. Try again in a few minutes",
+        );
+    } else
+      settingsCache = {
+        value: (await response.json()) as Record<string, unknown>,
+        until: Date.now() + 30000,
+      };
   }
   const external = settingsCache.value.external as Record<string, boolean>;
   // Only providers the Supabase project reports as enabled are offered.

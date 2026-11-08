@@ -156,17 +156,19 @@ function PasswordTab({
   caps,
   initialMode = "login",
   onUseCode,
+  initialKind = "developer",
 }: {
   caps: AuthCapabilities;
   initialMode?: "login" | "signup";
   onUseCode?: () => void;
+  initialKind?: Kind;
 }) {
   const s = useSend();
   const [mode, setMode] = useState<"login" | "signup" | "reset">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<Kind>("developer");
+  const [kind, setKind] = useState<Kind>(initialKind);
   const [birthDate, setBirthDate] = useState("");
   const [accepted, setAccepted] = useState(false);
   const switchMode = (next: typeof mode) => {
@@ -628,6 +630,9 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
           caps={caps}
           // "Get started" links open straight to account creation.
           initialMode={signup ? "signup" : "login"}
+          initialKind={
+            params.get("kind") === "recruiter" ? "recruiter" : "developer"
+          }
           onUseCode={caps.emailOtp ? () => setMethod("email-code") : undefined}
         />
       )}

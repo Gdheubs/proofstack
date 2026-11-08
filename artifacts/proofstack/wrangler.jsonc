@@ -11,6 +11,9 @@
   // global_fetch_strictly_public: the Worker may only fetch public addresses,
   // so the /api rewrite cannot be pointed at internal networks.
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Off: keep_names adds __name() calls to functions that next-themes turns
+  // into an inline script, which then fails in the browser.
+  "keep_names": false,
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "observability": { "enabled": true },
   "vars": {

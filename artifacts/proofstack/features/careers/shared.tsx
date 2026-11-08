@@ -260,6 +260,7 @@ export function Pager({
   more: boolean;
   change: (n: number) => void;
 }) {
+  if (!offset && !more) return null;
   return (
     <div className="mt-6 flex gap-3">
       <Button
