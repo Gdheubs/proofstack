@@ -7,7 +7,9 @@ import {
   GitFork,
   GitPullRequest,
   Loader2,
+  Play,
   RefreshCw,
+  Square,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +32,18 @@ import { onTabKeyDown, tabProps } from "@/lib/a11y";
 import { EditorPane, languageName } from "./editor-pane";
 import { FileTree, type ChangeKind } from "./file-tree";
 import { PullPanel } from "./pull-panel";
+import {
+  hasRelativeImport,
+  pageFiles,
+  pythonFiles,
+  rawAssetBase,
+  runKind,
+} from "./run-api";
+import { RunPanel, type PreviewPayload, type RunTab } from "./run-panel";
+import { useRunner } from "./use-runner";
+
+// Python files sent to one run: at most this much text in total.
+const MAX_RUN_BYTES = 2 * 1024 * 1024;
 
 type Panel = "explorer" | "changes" | "pulls";
 const SOURCE_LABEL: Record<Source, string> = {
@@ -77,6 +91,13 @@ export function Workbench() {
   const [openName, setOpenName] = useState("");
   const [prTitle, setPrTitle] = useState("");
   const [offerPr, setOfferPr] = useState(false);
+  // Running code: the bottom panel, the program's input and the page preview.
+  const runner = useRunner();
+  const [runOpen, setRunOpen] = useState(false);
+  const [runTab, setRunTab] = useState<RunTab>("output");
+  const [runInput, setRunInput] = useState("");
+  const [preview, setPreview] = useState<PreviewPayload | null>(null);
+  const [previewVersion, setPreviewVersion] = useState(0);
   const loaded = useRef(new Set<string>());
 
   const repository = repos.find((r) => r.id === repo);
@@ -238,6 +259,125 @@ export function Workbench() {
     setPanel("changes");
     setNotice("Changes are kept here until you commit them.");
   }, []);
+
+  // The current text of a file: the member's edit, the loaded original, or a
+  // fresh read. Null for deleted, binary or missing files.
+  const readText = async (path: string): Promise<string | null> => {
+    if (edits.has(path)) return edits.get(path) ?? null;
+    const known = originals.get(path);
+    if (known) return known.editable ? known.content : null;
+    if (!tree?.files.some((f) => f.path === path)) return null;
+    const file = await editorApi.file(source, repo, branch, path);
+    loaded.current.add(path);
+    setOriginals((m) => new Map(m).set(path, file));
+    return file.editable ? file.content : null;
+  };
+  const readMany = async (paths: string[]) => {
+    const found: { path: string; content: string }[] = [];
+    for (let i = 0; i < paths.length; i += 6) {
+      const batch = await Promise.all(
+        paths.slice(i, i + 6).map(async (path) => ({
+          path,
+          content: await readText(path),
+        })),
+      );
+      for (const file of batch)
+        if (file.content !== null)
+          found.push({ path: file.path, content: file.content });
+    }
+    return found;
+  };
+  const activeKind = active ? runKind(active) : null;
+  const buildPreview = async (entry: string) => {
+    const html = (await readText(entry)) ?? "";
+    const assets = await readMany(
+      pageFiles(entry, html, new Set(filePaths)).filter((p) => p !== entry),
+    );
+    return {
+      entry,
+      files: Object.fromEntries([
+        [entry, html],
+        ...assets.map((f) => [f.path, f.content]),
+      ]),
+      assetBase: rawAssetBase(source, repo, branch),
+    };
+  };
+  const runActive = async () => {
+    if (!active || !activeKind) return;
+    setRunOpen(true);
+    const entry = active;
+    try {
+      if (activeKind === "html") {
+        setPreview(await buildPreview(entry));
+        setPreviewVersion((v) => v + 1);
+        setRunTab("preview");
+        return;
+      }
+      setRunTab("output");
+      const code = (await readText(entry)) ?? "";
+      if (activeKind === "python") {
+        const files = await readMany(pythonFiles(filePaths, entry));
+        let total = 0;
+        const sent = files.filter(
+          (f) => (total += f.content.length) <= MAX_RUN_BYTES,
+        );
+        await runner.run({
+          kind: "python",
+          code,
+          entry,
+          input: runInput,
+          files: sent,
+        });
+        return;
+      }
+      if (hasRelativeImport(code))
+        return runner.fail(
+          "This file imports other files of the repository. JavaScript and TypeScript run as a single file for now; move the code into this file to run it.",
+        );
+      let program = code;
+      if (activeKind === "typescript") {
+        const { transform } = await import("sucrase");
+        try {
+          // Types are removed, not checked; line numbers stay the same.
+          program = transform(code, {
+            transforms: ["typescript"],
+            disableESTransforms: true,
+          }).code;
+        } catch (e) {
+          return runner.fail(`TypeScript could not be read: ${message(e)}`);
+        }
+      }
+      await runner.run({
+        kind: "javascript",
+        code: program,
+        entry,
+        input: runInput,
+        files: [],
+      });
+    } catch (e) {
+      runner.fail(message(e));
+    }
+  };
+  const runRef = useRef(runActive);
+  runRef.current = runActive;
+  const onRun = useCallback(() => void runRef.current(), []);
+  // The preview follows edits to the page while it is open.
+  const previewEntry = preview?.entry;
+  useEffect(() => {
+    if (!runOpen || runTab !== "preview" || !previewEntry) return;
+    const timer = setTimeout(() => {
+      void buildPreview(previewEntry)
+        .then((next) => {
+          setPreview(next);
+          setPreviewVersion((v) => v + 1);
+        })
+        .catch(() => {});
+    }, 700);
+    return () => clearTimeout(timer);
+    // Rebuild only when edits change, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edits]);
+  const runBusy = runner.status === "loading" || runner.status === "running";
 
   const isDefault = branch === repository?.defaultBranch;
   // Hosted repositories protect their default branch: commits go to a new one.
@@ -508,6 +648,28 @@ export function Workbench() {
             <RefreshCw aria-hidden="true" className="h-4 w-4" />
           </button>
         )}
+        {activeKind &&
+          (runBusy ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={runner.stop}
+            >
+              <Square aria-hidden="true" className="h-3.5 w-3.5" />
+              Stop
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="h-8"
+              onClick={onRun}
+              title="Run the open file (Ctrl/⌘ + Enter)"
+            >
+              <Play aria-hidden="true" className="h-3.5 w-3.5" />
+              {activeKind === "html" ? "Preview" : "Run"}
+            </Button>
+          ))}
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           {busy && (
             <span className="flex items-center gap-1" role="status">
@@ -889,9 +1051,33 @@ export function Workbench() {
                   }
                   onCursor={onCursor}
                   onSave={onSave}
+                  onRun={onRun}
                 />
               )}
             </div>
+            {runOpen && (
+              <RunPanel
+                tab={runTab}
+                onTab={setRunTab}
+                status={runner.status}
+                note={runner.note}
+                output={runner.output}
+                ms={runner.ms}
+                input={runInput}
+                onInput={setRunInput}
+                preview={preview}
+                previewVersion={previewVersion}
+                onRun={onRun}
+                onStop={runner.stop}
+                onClear={runner.clear}
+                onClose={() => {
+                  runner.stop();
+                  setRunOpen(false);
+                }}
+                canRun={!!activeKind}
+              />
+            )}
+            {runner.frameElement}
           </main>
         </div>
       )}

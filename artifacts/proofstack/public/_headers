@@ -1,3 +1,19 @@
 # Hashed build files never change under the same name: cache them for a year.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Code runner and page preview (features/editor/run-*). "sandbox" without
+# allow-same-origin gives these pages an opaque origin: code that runs here
+# can never read ProofStack cookies or call the API as the member. The runner
+# may only reach the pinned Python engine; previews may load public web files.
+/runner/run/*
+  Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' blob: https://cdn.jsdelivr.net 'unsafe-eval' 'wasm-unsafe-eval'; worker-src blob:; connect-src https://cdn.jsdelivr.net; frame-ancestors 'self'; base-uri 'none'; form-action 'none'
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+
+/runner/preview/*
+  Content-Security-Policy: sandbox allow-scripts allow-modals; default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; style-src 'unsafe-inline' blob: https:; img-src blob: data: https:; font-src blob: data: https:; media-src blob: data: https:; connect-src https:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

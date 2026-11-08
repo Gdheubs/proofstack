@@ -1,7 +1,7 @@
 "use client";
 
 import CodeMirror, { EditorView, keymap } from "@uiw/react-codemirror";
-import type { Extension } from "@codemirror/state";
+import { Prec, type Extension } from "@codemirror/state";
 import { languages } from "@codemirror/language-data";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
@@ -23,6 +23,7 @@ export function EditorPane({
   onChange,
   onCursor,
   onSave,
+  onRun,
 }: {
   path: string;
   value: string;
@@ -30,6 +31,7 @@ export function EditorPane({
   onChange: (value: string) => void;
   onCursor: (line: number, column: number) => void;
   onSave: () => void;
+  onRun?: () => void;
 }) {
   const { resolvedTheme } = useTheme();
   const [language, setLanguage] = useState<Extension[]>([]);
@@ -54,6 +56,20 @@ export function EditorPane({
     () => [
       ...language,
       EditorView.lineWrapping,
+      // Above the default keymap, which uses Mod-Enter for a blank line.
+      Prec.highest(
+        keymap.of([
+          {
+            key: "Mod-Enter",
+            preventDefault: true,
+            run: () => {
+              if (!onRun) return false;
+              onRun();
+              return true;
+            },
+          },
+        ]),
+      ),
       keymap.of([
         {
           key: "Mod-s",
@@ -71,7 +87,7 @@ export function EditorPane({
         onCursor(line.number, head - line.from + 1);
       }),
     ],
-    [language, onCursor, onSave],
+    [language, onCursor, onSave, onRun],
   );
   return (
     <CodeMirror
