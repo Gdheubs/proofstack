@@ -16,7 +16,13 @@ import {
 import { repositoryAccess } from "./repositories";
 import { pullInput } from "./pull-input";
 import { repoError } from "./repository-input";
-import { repoPath, git, quota, GitCommandError } from "./repository-git";
+import {
+  repoPath,
+  git,
+  quota,
+  GitCommandError,
+  persistRepository,
+} from "./repository-git";
 import { pullHeads, eligibleReviews, checkStatus } from "./pull-policy";
 import { patchCheck, mergeCommit } from "./pull-git";
 export async function runPullAction(
@@ -303,6 +309,7 @@ export async function runPullAction(
           `/pulls/${id}`,
         );
     }
+    await persistRepository(repoId, db);
     await audit(req, "pull." + d.action, uid, id, {}, db);
     return {
       id,

@@ -12,6 +12,11 @@ import {
   MAX_REPOSITORY_FILE_BYTES,
   MAX_REPOSITORY_PUSH_FILE_BYTES,
 } from "./repository-input";
+import {
+  repositoryStoreEnabled,
+  restoreRepository,
+  saveRepository,
+} from "./repository-store";
 export class GitCommandError extends ApiError {
   constructor(
     readonly exitCode: number,
@@ -47,7 +52,12 @@ export async function repoPath(id: string, create = false) {
   const canonical = await realpath(root);
   const path = join(canonical, id + ".git");
   if (create) await mkdir(path, { mode: 0o700 });
-  const st = await lstat(path).catch(() => null);
+  let st = await lstat(path).catch(() => null);
+  // After a restart on an ephemeral disk, bring the repository back from R2.
+  if (!st && !create && repositoryStoreEnabled()) {
+    await restoreRepository(git, initialize, id, path);
+    st = await lstat(path).catch(() => null);
+  }
   if (!st?.isDirectory() || st.isSymbolicLink())
     throw repoError(
       "Repository storage is unavailable. Contact the operator.",
@@ -149,6 +159,36 @@ export async function git(
   } finally {
     running--;
   }
+}
+// Saves a repository's objects to R2 when REPOSITORY_STORE=r2 (no-op
+// otherwise). Call inside the transaction that records the change, with its
+// client: the heads it is about to commit become refs, so the bundle
+// carries every object they need.
+export async function persistRepository(
+  id: string,
+  db: {
+    query: (
+      sql: string,
+      values: unknown[],
+    ) => Promise<{ rows: { name: string; head: string }[] }>;
+  },
+) {
+  if (!repositoryStoreEnabled()) return;
+  const path = await repoPath(id);
+  const branches = (
+    await db.query(
+      "SELECT name,head FROM repository_branches WHERE repository_id=$1 ORDER BY name",
+      [id],
+    )
+  ).rows;
+  const tags = (
+    await db.query(
+      'SELECT tag AS name,"commit" AS head FROM repository_releases WHERE repository_id=$1',
+      [id],
+    )
+  ).rows;
+  await syncRefs(path, branches, tags);
+  await saveRepository(git, id, path);
 }
 export async function storageBytes(path: string): Promise<number> {
   let total = 0;

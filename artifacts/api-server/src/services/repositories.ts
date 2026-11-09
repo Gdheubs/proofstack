@@ -28,6 +28,7 @@ import {
 } from "./repository-input";
 import {
   storageEnabled,
+  persistRepository,
   repoPath,
   git,
   initialize,
@@ -99,7 +100,10 @@ export async function lockedRepository<T>(
       )
     ).rows;
     await syncRefs(path, branches, tags);
-    return fn(repo, path, db, branches);
+    const result = await fn(repo, path, db, branches);
+    // Pushes write objects here; saved before the transaction commits.
+    await persistRepository(id, db);
+    return result;
   });
 }
 export async function getRepositories(
@@ -441,6 +445,7 @@ export async function runRepositoryAction(
         }
       }
     }
+    await persistRepository(resultId, db);
     await audit(req, "repository." + d.action, uid, resultId, {}, db);
     return {
       message:

@@ -27,3 +27,5 @@ services:
 # GITHUB_OAUTH_CLIENT_SECRET.
 # Opportunity suggestions on the free plan (no background workers):
 # INTELLIGENCE_ENABLED=true and EMBEDDED_WORKERS=intelligence (docs/intelligence.md).
+# Hosted repositories on the free plan (no durable disk; kept in R2):
+# REPOSITORY_ROOT=/tmp/proofstack-repositories and REPOSITORY_STORE=r2.

@@ -30,9 +30,7 @@ Set these in Render's secret/configuration UI:
 
 - `PRIVATE_OBJECT_DIR`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: image storage (see below). Preflight checks the namespace and credentials.
 
-Leave `REPOSITORY_ROOT`, `INTELLIGENCE_ENABLED`, and optional AI keys empty for
-the initial free-tier beta. Those features need the acceptance work in the
-production plan.
+**Hosted repositories on the free plan:** set `REPOSITORY_ROOT=/tmp/proofstack-repositories` and `REPOSITORY_STORE=r2` (R2 must be configured). The disk is wiped on restart, so every repository is also kept in R2 as one Git bundle under `<PRIVATE_OBJECT_DIR>/repositories/<id>.bundle`, written inside the transaction that records each change (a failed save rolls the change back) and read back the first time the repository is opened after a restart (`services/repository-store.ts`). With a durable disk, leave `REPOSITORY_STORE` unset. **Opportunity suggestions:** see `docs/intelligence.md` (`EMBEDDED_WORKERS=intelligence`). Leave AI keys empty unless AI plans are wanted.
 
 ### Cloudflare R2 image storage
 
@@ -128,7 +126,7 @@ check on a sign-in-related endpoint, or upgrade before launch.
 
 ### Code editor (GitHub)
 
-The editor at `/editor` edits GitHub repositories through a GitHub OAuth App owned by the operator. Hosted ProofStack repositories appear there only when `REPOSITORY_ROOT` points at a durable disk (a paid Render plan with a disk).
+The editor at `/editor` edits GitHub repositories through a GitHub OAuth App owned by the operator. Hosted ProofStack repositories appear there when `REPOSITORY_ROOT` is set: on a durable disk, or on the free plan with `REPOSITORY_STORE=r2`.
 
 1. Go to GitHub → Settings → Developer settings → OAuth Apps → New OAuth App.
    - Homepage URL: the website origin.
