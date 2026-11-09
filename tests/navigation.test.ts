@@ -149,6 +149,7 @@ const ownership: Record<string, string | undefined> = {
   "/account/admin": undefined,
   "/account/operations": undefined,
   "/auth": undefined,
+  "/auth/new-password": undefined,
   "/welcome": undefined,
   "/foundation": undefined,
   "/design-system": undefined,

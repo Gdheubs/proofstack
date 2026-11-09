@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { createAuthReturn, type AuthReturn } from "../../lib/auth-return";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -121,7 +121,24 @@ function Status({ err, msg }: { err: string | null; msg: string | null }) {
   );
 }
 
-function OtpVerify({ handle, onBack }: { handle: string; onBack: () => void }) {
+const VERIFY_TEXT = {
+  login:
+    "Enter the code we sent. If your email contains a sign-in link instead of a code, open it in this browser; it will bring you back here signed in.",
+  signup:
+    "We sent a confirmation email. Enter its code here, or open its link in this browser. Check your spam folder if it has not arrived within a few minutes.",
+  reset:
+    "We sent a reset email. Enter its code here, or open its link in this browser, then choose a new password. Check your spam folder if it has not arrived within a few minutes.",
+} as const;
+
+function OtpVerify({
+  handle,
+  onBack,
+  purpose = "login",
+}: {
+  handle: string;
+  onBack: () => void;
+  purpose?: keyof typeof VERIFY_TEXT;
+}) {
   const s = useSend();
   const [code, setCode] = useState("");
   return (
@@ -134,10 +151,12 @@ function OtpVerify({ handle, onBack }: { handle: string; onBack: () => void }) {
         s.send(() => s.raw({ action: "verify-otp", handle, code }));
       }}
     >
-      <Notice>
-        Enter the code we sent. If your email contains a sign-in link instead of
-        a code, open it in this browser; it will bring you back here signed in.
-      </Notice>
+      {purpose !== "login" && (
+        <h2 className="text-2xl font-semibold">
+          {purpose === "signup" ? "Confirm your email" : "Check your email"}
+        </h2>
+      )}
+      <Notice>{VERIFY_TEXT[purpose]}</Notice>
       <CodeField value={code} onChange={setCode} />
       <Status err={s.err} msg={s.msg} />
       <div className="flex gap-2">
@@ -159,12 +178,17 @@ function PasswordTab({
   initialKind = "developer",
 }: {
   caps: AuthCapabilities;
-  initialMode?: "login" | "signup";
+  initialMode?: "login" | "signup" | "reset";
   onUseCode?: () => void;
   initialKind?: Kind;
 }) {
   const s = useSend();
   const [mode, setMode] = useState<"login" | "signup" | "reset">(initialMode);
+  // After sign-up or a reset request: the email's code is entered here.
+  const [verify, setVerify] = useState<{
+    handle: string;
+    purpose: "signup" | "reset";
+  } | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -180,6 +204,17 @@ function PasswordTab({
     return (
       <Notice tone="warn">Password sign-in is not available right now.</Notice>
     );
+  if (verify)
+    return (
+      <OtpVerify
+        handle={verify.handle}
+        purpose={verify.purpose}
+        onBack={() => {
+          setVerify(null);
+          s.setMsg(null);
+        }}
+      />
+    );
   return (
     <form
       className="space-y-4"
@@ -188,7 +223,8 @@ function PasswordTab({
         if (mode === "reset") {
           return s.send(async () => {
             const r = await s.raw({ action: "password-reset", email });
-            s.setMsg(r.message);
+            if (r.handle) setVerify({ handle: r.handle, purpose: "reset" });
+            else s.setMsg(r.message);
           });
         }
         if (mode === "signup") {
@@ -207,7 +243,8 @@ function PasswordTab({
               birthDate,
               acceptTerms: true,
             });
-            s.setMsg(r.message);
+            if (r.handle) setVerify({ handle: r.handle, purpose: "signup" });
+            else s.setMsg(r.message);
           });
         }
         s.send(() => s.raw({ action: "password-login", email, password }));
@@ -528,7 +565,10 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   const ready =
     !q.isLoading && !q.isError && !!ctx?.authenticated && !ctx.mfaRequired;
   useEffect(() => {
-    if (ready) returnTo.complete(ctx, (path) => router.replace(path));
+    if (!ready) return;
+    // Signed in through a password reset: choose the new password first.
+    if (ctx.passwordRecovery) router.replace("/auth/new-password");
+    else returnTo.complete(ctx, (path) => router.replace(path));
   }, [ready, ctx, router, returnTo]);
 
   if (q.isLoading)
@@ -595,7 +635,7 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   }
 
   const caps = ctx.capabilities;
-  const signup = params.get("mode") === "signup";
+  const mode = params.get("mode");
   const current: Method =
     method === "password" && !caps.password
       ? caps.emailOtp
@@ -629,7 +669,9 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
         <PasswordTab
           caps={caps}
           // "Get started" links open straight to account creation.
-          initialMode={signup ? "signup" : "login"}
+          initialMode={
+            mode === "signup" ? "signup" : mode === "reset" ? "reset" : "login"
+          }
           initialKind={
             params.get("kind") === "recruiter" ? "recruiter" : "developer"
           }
@@ -741,4 +783,114 @@ export function AuthView() {
   if (!query.isPending && !query.isError && query.data?.provider === "supabase")
     return content;
   return <Shell firebase>{content}</Shell>;
+}
+
+// After a reset link or code: the member is signed in for ten minutes only to
+// choose a new password. Changing it signs out every device.
+export function NewPasswordView() {
+  const q = useSession();
+  const s = useSend();
+  const [password, setPassword] = useState("");
+  const [again, setAgain] = useState("");
+  const [done, setDone] = useState(false);
+  const ctx = q.data;
+  let body: ReactNode;
+  if (done)
+    body = (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold">Password changed</h2>
+        <Notice tone="ok">
+          Your new password is set and you were signed out on every device. Log
+          in with the new password.
+        </Notice>
+        <Button asChild>
+          <Link href="/auth">Log in</Link>
+        </Button>
+      </div>
+    );
+  else if (q.isLoading)
+    body = (
+      <>
+        <Skeleton className="mb-3 h-8 w-2/3" />
+        <Skeleton className="h-10" />
+      </>
+    );
+  else if (q.isError || !ctx)
+    body = (
+      <ErrorBlock
+        message={errInfo(q.error).message}
+        onRetry={() => q.refetch()}
+      />
+    );
+  else if (!ctx.authenticated || !ctx.passwordRecovery)
+    body = (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold">Reset your password</h2>
+        <Notice tone="warn">
+          This reset has expired or was opened in a different browser. Request a
+          new reset email and use its code or link within ten minutes.
+        </Notice>
+        <Button asChild>
+          <Link href="/auth?mode=reset">Request a new reset email</Link>
+        </Button>
+      </div>
+    );
+  else if (ctx.mfaRequired)
+    body = (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold">Second step first</h2>
+        <Notice>
+          Your account uses two-step verification. Confirm it, then come back
+          here to choose your new password.
+        </Notice>
+        <Button asChild>
+          <Link href="/auth">Continue</Link>
+        </Button>
+      </div>
+    );
+  else
+    body = (
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const problem = passwordProblem(password);
+          if (problem) return s.setErr(problem);
+          if (password !== again)
+            return s.setErr("The passwords do not match.");
+          s.send(async () => {
+            await s.raw({ action: "update-password", password });
+            setDone(true);
+          });
+        }}
+      >
+        <h2 className="text-2xl font-semibold">Choose a new password</h2>
+        <p className="text-sm text-muted-foreground">
+          Signed in as {ctx.user?.email}. You will be signed out on every device
+          afterwards.
+        </p>
+        <Field
+          label="New password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          hint="At least 12 characters, 72 bytes at most."
+          required
+        />
+        <Field
+          label="Repeat the new password"
+          type="password"
+          value={again}
+          onChange={(e) => setAgain(e.target.value)}
+          autoComplete="new-password"
+          required
+        />
+        <Status err={s.err} msg={s.msg} />
+        <Button type="submit" className="w-full" disabled={s.busy}>
+          {s.busy ? "Saving..." : "Set new password"}
+        </Button>
+      </form>
+    );
+  return <Shell>{body}</Shell>;
 }

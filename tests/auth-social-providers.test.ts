@@ -168,6 +168,58 @@ describe("social provider capabilities", () => {
   });
 });
 
+describe("password reset by code", () => {
+  it("returns a code handle and verifies the code as a recovery", async () => {
+    const resetPasswordForEmail = vi.fn(async () => ({
+      data: {},
+      error: null,
+    }));
+    const verifyOtp = vi.fn(async () => ({
+      data: { session: null, user: null },
+      error: null,
+    }));
+    vi.spyOn(identityProvider, "providerClient").mockReturnValue({
+      auth: { resetPasswordForEmail, verifyOtp },
+    } as unknown as ReturnType<typeof identityProvider.providerClient>);
+    const cookies: Record<string, string> = { "__Host-ps-csrf": "csrf-value" };
+    const req = { ...request(), cookies } as unknown as Parameters<
+      typeof runAction
+    >[0];
+    const res = {
+      cookie: vi.fn((name: string, value: string) => (cookies[name] = value)),
+      clearCookie: vi.fn(),
+      json: vi.fn(),
+    } as unknown as Parameters<typeof runAction>[1];
+    const started = await runAction(
+      req,
+      res,
+      { action: "password-reset", email: "reset@example.test" },
+      null,
+    );
+    expect(resetPasswordForEmail).toHaveBeenCalledWith("reset@example.test", {
+      redirectTo: "https://proofstack.example/api/auth/callback",
+    });
+    expect(started).toMatchObject({ requiresVerification: true });
+    const handle = (started as { handle?: string }).handle!;
+    expect(handle).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(cookies["__Host-ps-flow"]).toBe(handle);
+    // The code is checked as a recovery (it used to be refused outright).
+    await expect(
+      runAction(
+        req,
+        res,
+        { action: "verify-otp", handle: handle, code: "123456" },
+        null,
+      ),
+    ).rejects.toMatchObject({ code: "AUTH_FAILED" });
+    expect(verifyOtp).toHaveBeenCalledWith({
+      email: "reset@example.test",
+      token: "123456",
+      type: "recovery",
+    });
+  });
+});
+
 describe("social sign-in start", () => {
   function provider(enabled: readonly string[]) {
     vi.spyOn(identityProvider, "capabilities").mockResolvedValue({

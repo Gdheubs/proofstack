@@ -180,7 +180,7 @@ export async function runAction(
     }
     case "verify-otp": {
       const flow = await readFlow(req, input.handle);
-      if (!flow.identifier || ["oauth", "recovery"].includes(flow.type))
+      if (!flow.identifier || flow.type === "oauth")
         throw new ApiError(
           400,
           "INVALID_VERIFICATION",
@@ -208,7 +208,12 @@ export async function runAction(
           : await client.auth.verifyOtp({
               email: flow.identifier,
               token: input.code,
-              type: flow.type === "signup" ? "signup" : "email",
+              type:
+                flow.type === "signup"
+                  ? "signup"
+                  : flow.type === "recovery"
+                    ? "recovery"
+                    : "email",
             });
       if (result.error) {
         await failedAttempt(req, flow.identifier);
@@ -232,7 +237,13 @@ export async function runAction(
           "This verification does not belong to your signed-in account",
         );
       }
-      await createSession(req, res, result.data.session);
+      // A reset code signs in only to set a new password (short session).
+      await createSession(
+        req,
+        res,
+        result.data.session,
+        flow.type === "recovery",
+      );
       await consumeFlow(input.handle, res);
       await clearFailures(req, flow.identifier);
       return { message: "Verification complete", signedIn: true };
@@ -275,14 +286,16 @@ export async function runAction(
         { redirectTo: `${authOrigin()}/api/auth/callback` },
       );
       providerFailure(result.error);
-      await createFlow(req, res, {
+      const handle = await createFlow(req, res, {
         type: "recovery",
         identifier: input.email,
         storage,
       });
       return {
         message:
-          "If this account can receive email, a reset link has been requested. Open it in this browser",
+          "If this email has an account, we sent a reset email. Enter its code here, or open its link in this browser.",
+        requiresVerification: true,
+        handle,
       };
     }
     case "update-password": {
@@ -494,7 +507,7 @@ export async function runAction(
 // that navigates client-side reaches the browser intact with its cookies.
 function continueTo(
   res: Response,
-  path: "/auth" | "/auth?error=callback_failed",
+  path: "/auth" | "/auth/new-password" | "/auth?error=callback_failed",
 ) {
   res
     .status(200)
@@ -542,8 +555,9 @@ export async function authCallback(req: Request, res: Response) {
     );
     await consumeFlow(handle, res);
     // The auth UI consumes its tab-local allowlisted destination after context is ready.
-    // Never accept a callback query parameter as a navigation target.
-    continueTo(res, "/auth");
+    // Never accept a callback query parameter as a navigation target. A reset
+    // link goes straight to choosing the new password.
+    continueTo(res, flow.type === "recovery" ? "/auth/new-password" : "/auth");
   } catch {
     await audit(req, "auth.callback_failed");
     continueTo(res, "/auth?error=callback_failed");

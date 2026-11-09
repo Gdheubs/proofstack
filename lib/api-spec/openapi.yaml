@@ -242,6 +242,8 @@ components:
               [{ $ref: "#/components/schemas/AccountUser" }, { type: "null" }],
           }
         mfaRequired: { type: boolean }
+        # Signed in through a password reset: the member must set a new password.
+        passwordRecovery: { type: boolean }
         factors:
           { type: array, items: { $ref: "#/components/schemas/AuthFactor" } }
         capabilities: { $ref: "#/components/schemas/AuthCapabilities" }

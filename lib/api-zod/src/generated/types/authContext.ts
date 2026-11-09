@@ -14,6 +14,7 @@ export interface AuthContext {
   authenticated: boolean;
   user: AccountUser | null;
   mfaRequired: boolean;
+  passwordRecovery?: boolean;
   factors: AuthFactor[];
   capabilities: AuthCapabilities;
 }

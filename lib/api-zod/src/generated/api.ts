@@ -1592,6 +1592,7 @@ export const GetAuthContextResponse = zod.object({
   "onboardingRequired": zod.boolean().optional().describe('True until the sign-up wizard is finished or skipped.')
 }),zod.null()]),
   "mfaRequired": zod.boolean(),
+  "passwordRecovery": zod.boolean().optional(),
   "factors": zod.array(zod.object({
   "id": zod.string(),
   "type": zod.enum(['totp', 'phone']),

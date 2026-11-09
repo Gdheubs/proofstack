@@ -87,6 +87,7 @@ authRouter.get("/auth/context", async (req, res) => {
               (f) => f.status === "verified",
             )))),
     factors: session ? factors(session.providerUser) : [],
+    passwordRecovery: !!session?.row.password_recovery,
     // Setup progress is for operators; the public response only says what works.
     capabilities: { ...available, pendingSetup: [] },
   });
