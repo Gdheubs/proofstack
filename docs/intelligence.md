@@ -36,6 +36,9 @@ The worker processes one job at a time per process, polls idle queues every two 
 
 1. Apply all tracked migrations to a disposable staging database and validate the schema diff and backup plan before production.
 2. Set `INTELLIGENCE_ENABLED=true` in both API and worker environments. It defaults off. Keep the worker running as an always-on separate process; enabling the API flag alone does not start it.
+
+   **Hosting without background workers (Render Free):** set `INTELLIGENCE_ENABLED=true` and `EMBEDDED_WORKERS=intelligence` on the API only, and skip step 3. The API then processes jobs itself, on demand: when a member submits a request or checks a job's status, and once at start-up, it drains due jobs and goes quiet (`services/intelligence-embedded.ts`). It never polls on a timer, so a scale-to-zero database can still sleep. Opportunity matching needs no AI provider; AI plans additionally need the provider settings below, and repository scans need durable repository storage. Do not combine with a separate worker unless both are intended; leases keep them safe, but the separate worker's two-second poll keeps the database awake.
+
 3. Build with `pnpm --filter @workspace/api-server run build`, then run:
 
    ```sh

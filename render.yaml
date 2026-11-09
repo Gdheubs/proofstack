@@ -25,3 +25,5 @@ services:
 # R2_SECRET_ACCESS_KEY, SENTRY_DSN, SENTRY_BROWSER_DSN,
 # SENTRY_ENVIRONMENT=production, GITHUB_OAUTH_CLIENT_ID,
 # GITHUB_OAUTH_CLIENT_SECRET.
+# Opportunity suggestions on the free plan (no background workers):
+# INTELLIGENCE_ENABLED=true and EMBEDDED_WORKERS=intelligence (docs/intelligence.md).

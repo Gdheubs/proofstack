@@ -5,6 +5,7 @@ import { logger } from "./lib/logger";
 import { env } from "./lib/env";
 import { pool } from "@workspace/db";
 import { flushMonitoring } from "./lib/monitoring";
+import { kickIntelligence } from "./services/intelligence-embedded";
 
 const server = app.listen(env.PORT, env.BIND_HOST, (err) => {
   if (err) {
@@ -13,6 +14,8 @@ const server = app.listen(env.PORT, env.BIND_HOST, (err) => {
   }
 
   logger.info({ port: env.PORT }, "Server listening");
+  // Picks up jobs queued while the API was asleep (no-op unless embedded).
+  void kickIntelligence();
 });
 
 configureHttpServer(server);

@@ -86,6 +86,37 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       await pool.end();
       vi.unstubAllEnvs();
     });
+    it("runs queued jobs inside the API only when the embedded worker is switched on", async () => {
+      const { kickIntelligence } =
+        await import("../artifacts/api-server/src/services/intelligence-embedded");
+      const uid = await user();
+      const job = await act(uid, {
+        action: "enqueue",
+        kind: "opportunities",
+        requestKey: randomUUID(),
+        workplace: "any",
+      });
+      // Off by default: nothing is processed in the API process.
+      await kickIntelligence();
+      expect((await detail(uid, job.id)).job!.status).toBe("queued");
+      vi.stubEnv("EMBEDDED_WORKERS", "asset-cleanup, intelligence");
+      try {
+        await kickIntelligence();
+        const done = (await detail(uid, job.id)).job!;
+        expect(done.status).toBe("succeeded");
+        expect(done.result!.matches[0].id).toBe(opportunity);
+        const beats = await pool.query(
+          "SELECT count(*)::int AS n FROM service_heartbeats WHERE service='intelligence'",
+        );
+        expect(beats.rows[0].n).toBeGreaterThan(0);
+        // Nothing left: a second kick returns without work.
+        await kickIntelligence();
+      } finally {
+        vi.stubEnv("EMBEDDED_WORKERS", "");
+        await act(uid, { action: "delete", id: job.id }).catch(() => {});
+      }
+    });
+
     it("deduplicates submissions, isolates owners, filters closed jobs and retains quota after deletion", async () => {
       const uid = await user(),
         outsider = await user(),
