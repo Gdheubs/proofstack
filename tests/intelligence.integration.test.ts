@@ -114,6 +114,10 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       } finally {
         vi.stubEnv("EMBEDDED_WORKERS", "");
         await act(uid, { action: "delete", id: job.id }).catch(() => {});
+        // Later test files count live workers; leave none behind.
+        await pool.query(
+          "DELETE FROM service_heartbeats WHERE service='intelligence'",
+        );
       }
     });
 
