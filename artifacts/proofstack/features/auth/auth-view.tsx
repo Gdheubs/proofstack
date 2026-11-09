@@ -41,6 +41,7 @@ import {
   passwordProblem,
 } from "@/features/auth/shared";
 import { MfaEnroll, MfaVerify } from "@/features/auth/mfa";
+import { SOCIAL_BUTTON, SocialMark } from "@/features/auth/social-brand";
 
 type Method = "password" | "email-code" | "phone-code";
 
@@ -477,11 +478,12 @@ export function SocialTab({
         <Button
           key={p}
           variant="outline"
-          className="w-full justify-start"
+          className={`h-11 w-full justify-center gap-3 text-[15px] font-medium ${SOCIAL_BUTTON[p] ?? ""}`}
           disabled={s.busy || framed}
           onClick={() => start(p)}
           data-testid={`button-oauth-${p}`}
         >
+          <SocialMark provider={p} />
           Continue with {SOCIAL_LABELS[p]}
         </Button>
       ))}
