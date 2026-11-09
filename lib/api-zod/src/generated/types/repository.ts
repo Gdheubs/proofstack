@@ -8,6 +8,9 @@
 
 export interface Repository {
   id: string;
+  name: string;
+  /** @nullable */
+  ownerHandle: string | null;
   projectId: string;
   projectTitle: string;
   projectSlug: string;

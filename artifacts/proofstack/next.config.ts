@@ -19,6 +19,13 @@ const config: NextConfig = {
             source: "/api/:path*",
             destination: `${internalApiOrigin}/api/:path*`,
           },
+          // git clone <site>/<owner>/<repo>.git (see proxy.ts GIT_PATH).
+          ...["info/refs", "git-upload-pack", "git-receive-pack"].map(
+            (service) => ({
+              source: `/:owner/:repo([^/]+)\\.git/${service}`,
+              destination: `${internalApiOrigin}/api/gitn/:owner/:repo/${service}`,
+            }),
+          ),
         ]
       : [];
   },

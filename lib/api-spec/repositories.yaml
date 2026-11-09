@@ -17,6 +17,20 @@
             }
           },
           {
+            "name": "owner",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "projectId",
             "in": "query",
             "schema": {
@@ -122,6 +136,8 @@
         "type": "object",
         "required": [
           "id",
+          "name",
+          "ownerHandle",
           "projectId",
           "projectTitle",
           "projectSlug",
@@ -135,6 +151,15 @@
         "properties": {
           "id": {
             "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ownerHandle": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "projectId": {
             "type": "string"

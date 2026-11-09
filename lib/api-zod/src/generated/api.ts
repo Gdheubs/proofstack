@@ -316,6 +316,8 @@ export const getRepositoriesQueryOffsetMax = 10000;
 
 export const GetRepositoriesQueryParams = zod.object({
   "id": zod.coerce.string().optional(),
+  "owner": zod.coerce.string().optional(),
+  "name": zod.coerce.string().optional(),
   "projectId": zod.coerce.string().optional(),
   "branch": zod.coerce.string().optional(),
   "path": zod.coerce.string().optional(),
@@ -327,6 +329,8 @@ export const GetRepositoriesResponse = zod.object({
   "enabled": zod.boolean(),
   "repositories": zod.array(zod.object({
   "id": zod.string(),
+  "name": zod.string(),
+  "ownerHandle": zod.string().nullable(),
   "projectId": zod.string(),
   "projectTitle": zod.string(),
   "projectSlug": zod.string(),

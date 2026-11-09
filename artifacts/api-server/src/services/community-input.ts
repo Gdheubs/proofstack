@@ -3,28 +3,58 @@ import { NOTIFICATION_CATEGORIES } from "./notification-preferences";
 import { ApiError } from "../lib/errors";
 const id = z.string().uuid();
 const text = (max: number) => z.string().trim().max(max);
+// Repositories live at /<handle>/<name>, so a handle may not be the first part
+// of any of the site's own addresses.
+export const RESERVED_HANDLES = [
+  "me",
+  "settings",
+  "new",
+  "edit",
+  "admin",
+  "api",
+  "auth",
+  "account",
+  "search",
+  "community",
+  "about",
+  "applications",
+  "assessments",
+  "bookmarks",
+  "career",
+  "code",
+  "community-guidelines",
+  "contact",
+  "design-system",
+  "editor",
+  "foundation",
+  "home",
+  "intelligence",
+  "notifications",
+  "opportunities",
+  "organizations",
+  "posts",
+  "privacy",
+  "profile",
+  "projects",
+  "pulls",
+  "repositories",
+  "runner",
+  "talent",
+  "terms",
+  "welcome",
+  "work",
+  "sitemap",
+  "robots",
+  "gitn",
+  "git",
+];
 export const handleSchema = text(32)
   .toLowerCase()
   .regex(
     /^[a-z][a-z0-9_-]{2,31}$/,
     "Use 3–32 lowercase letters, numbers, underscores or hyphens",
   )
-  .refine(
-    (v) =>
-      ![
-        "me",
-        "settings",
-        "new",
-        "edit",
-        "admin",
-        "api",
-        "auth",
-        "account",
-        "search",
-        "community",
-      ].includes(v),
-    "This handle is reserved",
-  );
+  .refine((v) => !RESERVED_HANDLES.includes(v), "This handle is reserved");
 export const slugSchema = text(70)
   .toLowerCase()
   .regex(

@@ -645,6 +645,9 @@ export interface PullResult {
 
 export interface Repository {
   id: string;
+  name: string;
+  /** @nullable */
+  ownerHandle: string | null;
   projectId: string;
   projectTitle: string;
   projectSlug: string;
@@ -1522,6 +1525,8 @@ export type RunPullActionDefault = { [key: string]: unknown };
 
 export type GetRepositoriesParams = {
 id?: string;
+owner?: string;
+name?: string;
 projectId?: string;
 branch?: string;
 path?: string;

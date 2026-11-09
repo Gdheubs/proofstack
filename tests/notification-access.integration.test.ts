@@ -94,7 +94,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       );
       const repo = (
         await pool.query(
-          "INSERT INTO repositories(project_id) VALUES($1) RETURNING id",
+          "INSERT INTO repositories(project_id,owner_id,name) SELECT id,owner_id,slug FROM community_projects WHERE id=$1 RETURNING id",
           [project],
         )
       ).rows[0].id;

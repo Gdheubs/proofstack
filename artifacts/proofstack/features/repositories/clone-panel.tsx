@@ -14,7 +14,13 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
   const [copyError, setCopyError] = useState("");
   const [clone, setClone] = useState("");
   const [scope, setScope] = useState<"read" | "write">("read");
-  const id = d.repositories[0].id;
+  const repository = d.repositories[0];
+  const id = repository.id;
+  // The address-based form when the repository has an owner handle.
+  const cloneUrl = () =>
+    repository.ownerHandle
+      ? `${window.location.origin}/${repository.ownerHandle}/${repository.name}.git`
+      : `${window.location.origin}/api/git/${id}`;
   return (
     <section className={card}>
       <h2 className="font-semibold">Clone & fetch</h2>
@@ -24,9 +30,7 @@ function CloneControls({ data: d }: { data: RepositoryData }) {
       </p>
       <Button
         variant="outline"
-        onClick={() =>
-          setClone(`git clone ${window.location.origin}/api/git/${id}`)
-        }
+        onClick={() => setClone(`git clone ${cloneUrl()}`)}
       >
         Show clone command
       </Button>

@@ -80,10 +80,54 @@ export function pathMatches(path: string, prefix: string) {
   return path === prefix || (prefix !== "/" && path.startsWith(prefix + "/"));
 }
 
+// First segments of the site's own pages; any other /<handle>/<repo> address
+// is a ProofStack repository and belongs to Code.
+export const SITE_SEGMENTS = new Set([
+  "about",
+  "account",
+  "api",
+  "applications",
+  "assessments",
+  "auth",
+  "bookmarks",
+  "career",
+  "code",
+  "community",
+  "community-guidelines",
+  "contact",
+  "design-system",
+  "editor",
+  "foundation",
+  "home",
+  "intelligence",
+  "notifications",
+  "opportunities",
+  "organizations",
+  "posts",
+  "privacy",
+  "profile",
+  "projects",
+  "pulls",
+  "repositories",
+  "runner",
+  "search",
+  "settings",
+  "talent",
+  "terms",
+  "welcome",
+  "work",
+]);
+const REPOSITORY_PATH = /^\/([^/]+)\/[^/]+$/;
+
 export function getNavigationSection(path: string) {
-  return NAV.find((section) =>
-    section.prefixes.some((prefix) => pathMatches(path, prefix)),
+  const section = NAV.find((s) =>
+    s.prefixes.some((prefix) => pathMatches(path, prefix)),
   );
+  if (section) return section;
+  const repository = REPOSITORY_PATH.exec(path);
+  if (repository && !SITE_SEGMENTS.has(repository[1]!))
+    return NAV.find((s) => s.href === "/code");
+  return undefined;
 }
 
 export function isNavigationLinkActive(path: string, href: string) {

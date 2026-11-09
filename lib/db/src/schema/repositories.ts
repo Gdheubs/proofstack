@@ -19,6 +19,12 @@ export const repositoriesTable = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => communityProjectsTable.id, { onDelete: "cascade" }),
+    // Addressed as /<owner handle>/<name>; the name is unique per owner,
+    // ignoring case.
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
     defaultBranch: text("default_branch").notNull().default("main"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -29,7 +35,15 @@ export const repositoriesTable = pgTable(
   },
   (t) => [
     uniqueIndex("repository_project_unique").on(t.projectId),
+    uniqueIndex("repository_owner_name_unique").on(
+      t.ownerId,
+      sql`lower(${t.name})`,
+    ),
     check("repository_quota_positive", sql`${t.quotaBytes}>0`),
+    check(
+      "repository_name_valid",
+      sql`${t.name} ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$' AND ${t.name} !~* '[.]git$'`,
+    ),
   ],
 );
 export const repositoryBranchesTable = pgTable(

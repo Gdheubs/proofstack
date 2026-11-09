@@ -8,6 +8,8 @@
 
 export type GetRepositoriesParams = {
 id?: string;
+owner?: string;
+name?: string;
 projectId?: string;
 branch?: string;
 path?: string;

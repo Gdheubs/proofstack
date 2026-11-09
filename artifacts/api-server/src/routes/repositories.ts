@@ -16,10 +16,26 @@ import {
   lockedRepository,
   pushRepository,
   validateRepositoryId,
+  repositoryIdByName,
 } from "../services/repositories";
 import { git } from "../services/repository-git";
 import { repoError } from "../services/repository-input";
 const router: IRouter = Router();
+// /api/gitn/<owner handle>/<name>/... (the website's /<owner>/<name>.git/...)
+// is the same repository as /api/git/<id>/...: resolve it and continue.
+router.use(async (req, _res, next) => {
+  const named =
+    /^\/gitn\/([^/]+)\/([^/]+)(\/(?:info\/refs|git-upload-pack|git-receive-pack))(\?.*)?$/.exec(
+      req.url,
+    );
+  if (!named) return next();
+  const id = await repositoryIdByName(
+    decodeURIComponent(named[1]!),
+    decodeURIComponent(named[2]!),
+  );
+  req.url = `/git/${id}${named[3]}${named[4] ?? ""}`;
+  next();
+});
 router.use(["/repositories", "/git"], (_req, res, next) => {
   res.set("Cache-Control", "private, no-store");
   next();

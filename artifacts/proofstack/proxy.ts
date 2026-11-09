@@ -12,6 +12,9 @@ export const PROXY_SECRET_HEADER = "x-proofstack-proxy-secret";
 // Headers the hosting edge sets itself, overwriting any client-sent copy.
 // Choose the one matching the actual host; others are spoofable there.
 const CLIENT_IP_SOURCES = ["cf-connecting-ip", "x-real-ip"];
+// Must match the /:owner/:repo.git rewrite in next.config.ts.
+export const GIT_PATH =
+  /^\/[^/]+\/[^/]+\.git\/(?:info\/refs|git-upload-pack|git-receive-pack)$/;
 
 // Every API request reaches Express from this tier's address, so name the
 // browser's address explicitly and prove it with the shared secret.
@@ -34,7 +37,9 @@ function forwardApi(request: NextRequest) {
 
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  if (path === "/api" || path.startsWith("/api/")) return forwardApi(request);
+  // Git clients use /<owner>/<repo>.git/…, which the API serves.
+  if (path === "/api" || path.startsWith("/api/") || GIT_PATH.test(path))
+    return forwardApi(request);
   const nonce = randomBytes(16).toString("base64");
   const requestId = randomUUID();
   const policy = buildContentSecurityPolicy(

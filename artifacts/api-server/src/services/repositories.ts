@@ -25,7 +25,10 @@ import {
   repoError,
   uuid,
   receivePackCommands,
+  repoNameSchema,
+  ownerHandleSchema,
 } from "./repository-input";
+import { authOrigin } from "../lib/auth-config";
 import {
   storageEnabled,
   persistRepository,
@@ -47,10 +50,12 @@ const writer = `(${manager} OR (EXISTS(SELECT 1 FROM community_contributors c WH
 // Internal SQL aliases only; never pass request data as the viewer expression.
 export const repositoryWriteWhere = (viewer: string) =>
   writer.replaceAll("$1", viewer);
-const columns = `r.id,r.project_id AS "projectId",p.title AS "projectTitle",p.slug AS "projectSlug",CASE WHEN p.visibility='public' AND coalesce(op.visibility,'public')='public' THEN 'public' ELSE 'restricted' END AS visibility,r.default_branch AS "defaultBranch",r.quota_bytes::float8 AS "quotaBytes",r.created_at::text AS "createdAt",coalesce(${manager},false) AS "canManage",coalesce(${writer},false) AS "canWrite"`;
+const columns = `r.id,r.name,(SELECT handle FROM profiles WHERE user_id=r.owner_id) AS "ownerHandle",r.project_id AS "projectId",p.title AS "projectTitle",p.slug AS "projectSlug",CASE WHEN p.visibility='public' AND coalesce(op.visibility,'public')='public' THEN 'public' ELSE 'restricted' END AS visibility,r.default_branch AS "defaultBranch",r.quota_bytes::float8 AS "quotaBytes",r.created_at::text AS "createdAt",coalesce(${manager},false) AS "canManage",coalesce(${writer},false) AS "canWrite"`;
 const joins = `FROM repositories r JOIN community_projects p ON p.id=r.project_id JOIN users owner ON owner.id=p.owner_id AND owner.status='active' LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id`;
 export type RepositoryRow = {
   id: string;
+  name: string;
+  ownerHandle: string | null;
   projectId: string;
   projectTitle: string;
   projectSlug: string;
@@ -113,6 +118,8 @@ export async function getRepositories(
   const parsed = repoQuerySchema.safeParse(raw);
   if (!parsed.success) throw repoError("Invalid repository query.");
   const d = parsed.data;
+  if (!d.id && d.owner && d.name)
+    d.id = await repositoryIdByName(d.owner, d.name);
   if (d.id)
     return lockedRepository(d.id, uid, async (repo, path, db, branches) => {
       const branch = branches.find(
@@ -309,6 +316,21 @@ export async function runRepositoryAction(
       ).rows[0].n;
       if (count >= 20)
         throw repoError("Repository limit reached (20 owned projects).", 409);
+      const name = d.name ?? project.slug;
+      if (!repoNameSchema.safeParse(name).success)
+        throw repoError("Choose a repository name.", 400);
+      if (
+        (
+          await db.query(
+            "SELECT 1 FROM repositories WHERE owner_id=$1 AND lower(name)=lower($2)",
+            [project.owner_id, name],
+          )
+        ).rows.length
+      )
+        throw repoError(
+          "You already have a repository with this name. Choose another.",
+          409,
+        );
       resultId = randomUUID();
       const path = await repoPath(resultId, true);
       await initialize(path);
@@ -322,10 +344,27 @@ export async function runRepositoryAction(
         "Initialize repository",
         { id: uid, name: profile.display_name },
       );
-      await db.query("INSERT INTO repositories(id,project_id) VALUES($1,$2)", [
-        resultId,
-        d.projectId,
-      ]);
+      await db.query(
+        "INSERT INTO repositories(id,project_id,owner_id,name) VALUES($1,$2,$3,$4)",
+        [resultId, d.projectId, project.owner_id, name],
+      );
+      // The project's Repository URL fills itself unless one was set.
+      const handle = (
+        await db.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          project.owner_id,
+        ])
+      ).rows[0]?.handle;
+      let origin = "";
+      try {
+        origin = authOrigin();
+      } catch {
+        // Without a configured site address the URL is left for the member.
+      }
+      if (handle && origin)
+        await db.query(
+          "UPDATE community_projects SET repository_url=$2,updated_at=now() WHERE id=$1 AND repository_url=''",
+          [d.projectId, `${origin}/${handle}/${name}`],
+        );
       await db.query(
         `INSERT INTO repository_branches(repository_id,name,head) VALUES($1,'main',$2)`,
         [resultId, head],
@@ -487,6 +526,23 @@ export async function tokenCredential(raw: string | undefined, id: string) {
 }
 export async function tokenUser(raw: string | undefined, id: string) {
   return (await tokenCredential(raw, id))?.userId ?? null;
+}
+// The repository at /<owner handle>/<name>, ignoring case. Read access is
+// checked by the caller, as for an id.
+export async function repositoryIdByName(owner: string, name: string) {
+  if (
+    !ownerHandleSchema.safeParse(owner).success ||
+    !repoNameSchema.safeParse(name).success
+  )
+    throw missing();
+  const row = (
+    await pool.query(
+      "SELECT r.id FROM repositories r JOIN profiles p ON p.user_id=r.owner_id WHERE lower(p.handle)=lower($1) AND lower(r.name)=lower($2)",
+      [owner, name],
+    )
+  ).rows[0];
+  if (!row) throw missing();
+  return row.id as string;
 }
 export async function validateRepositoryId(raw: string) {
   if (!uuid.safeParse(raw).success) throw missing();

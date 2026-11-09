@@ -37,9 +37,10 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         "INSERT INTO community_projects(id,owner_id,slug,title,description) VALUES($1::uuid,$2,$1::text,'Other owner','Scope test')",
         [unauthorized, outsider],
       );
-      await pool.query("INSERT INTO repositories(project_id) VALUES($1)", [
-        existing,
-      ]);
+      await pool.query(
+        "INSERT INTO repositories(project_id,owner_id,name) SELECT id,owner_id,slug FROM community_projects WHERE id=$1",
+        [existing],
+      );
     });
     afterAll(async () => {
       await pool.query("DELETE FROM users WHERE id=ANY($1::uuid[])", [

@@ -5,6 +5,17 @@ export const repoError = (message: string, status = 400) =>
 export const MAX_REPOSITORY_FILE_BYTES = 1024 * 1024;
 export const MAX_REPOSITORY_PUSH_FILE_BYTES = 10 * 1024 * 1024;
 export const uuid = z.string().uuid();
+// A repository's name in /<owner handle>/<name>; must match the
+// repository_name_valid database check.
+export const repoNameSchema = z
+  .string()
+  .trim()
+  .regex(
+    /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/,
+    "Use up to 100 letters, numbers, dots, hyphens or underscores, starting with a letter or number",
+  )
+  .refine((v) => !/[.]git$/i.test(v), "A repository name cannot end in .git");
+export const ownerHandleSchema = z.string().regex(/^[a-z][a-z0-9_-]{2,31}$/i);
 export const branchSchema = z
   .string()
   .min(1)
@@ -121,7 +132,14 @@ const commitMessage = z
     "Use a single-line commit message",
   );
 export const repoActionSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("create"), projectId: uuid }).strict(),
+  z
+    .object({
+      action: z.literal("create"),
+      projectId: uuid,
+      // Defaults to the project's slug.
+      name: repoNameSchema.optional(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("branch"),
@@ -184,6 +202,9 @@ export function repoInput(raw: unknown) {
 export const repoQuerySchema = z
   .object({
     id: uuid.optional(),
+    // Looks a repository up by its address instead of its id.
+    owner: ownerHandleSchema.optional(),
+    name: repoNameSchema.optional(),
     projectId: uuid.optional(),
     branch: branchSchema.optional(),
     revision: headSchema.optional(),

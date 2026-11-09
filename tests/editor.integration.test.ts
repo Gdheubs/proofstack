@@ -37,7 +37,10 @@ vi.mock(
 );
 import app from "../artifacts/api-server/src/app";
 import { seal, signedNonce } from "../artifacts/api-server/src/lib/auth-crypto";
-import { runRepositoryAction } from "../artifacts/api-server/src/services/repositories";
+import {
+  getRepositories,
+  runRepositoryAction,
+} from "../artifacts/api-server/src/services/repositories";
 import {
   commitChanges,
   createPullRequest,
@@ -89,6 +92,91 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("Code editor", () => {
   afterAll(async () => {
     vi.unstubAllEnvs();
     await pool.end();
+  });
+
+  describe("repository addresses (/<handle>/<name>)", () => {
+    const project = async (visibility: string) => {
+      const id = randomUUID();
+      await pool.query(
+        "INSERT INTO community_projects(id,owner_id,slug,title,description,visibility) VALUES($1,$2,$3,'Address project','Fixture',$4)",
+        [id, owner, id, visibility],
+      );
+      return id;
+    };
+    it("names, finds, fills the Repository URL and clones by address", async () => {
+      const handle = (
+        await pool.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          owner,
+        ])
+      ).rows[0].handle as string;
+      const first = await project("public");
+      const repo = (
+        await runRepositoryAction(req, sessionOf(owner), {
+          action: "create",
+          projectId: first,
+          name: "Weather-App",
+        })
+      ).id;
+      expect(
+        (
+          await pool.query(
+            "SELECT repository_url FROM community_projects WHERE id=$1",
+            [first],
+          )
+        ).rows[0].repository_url,
+      ).toBe(`${origin}/${handle}/Weather-App`);
+      // Found by address, ignoring the name's case.
+      const found = await getRepositories(
+        { owner: handle, name: "weather-app" },
+        null,
+      );
+      expect(found.repositories[0]).toMatchObject({
+        id: repo,
+        name: "Weather-App",
+        ownerHandle: handle,
+      });
+      await expect(
+        getRepositories({ owner: handle, name: "missing" }, null),
+      ).rejects.toMatchObject({ status: 404 });
+      // One name per owner, ignoring case.
+      await expect(
+        runRepositoryAction(req, sessionOf(owner), {
+          action: "create",
+          projectId: await project("public"),
+          name: "WEATHER-app",
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+      for (const name of ["x.git", ".hidden", "a/b", "", "a".repeat(101)])
+        await expect(
+          runRepositoryAction(req, sessionOf(owner), {
+            action: "create",
+            projectId: await project("public"),
+            name,
+          }),
+        ).rejects.toMatchObject({ status: 400 });
+      // git clone <site>/<handle>/<name>.git reaches the same repository.
+      const refs = await request(app)
+        .get(`/api/gitn/${handle}/Weather-App/info/refs`)
+        .query({ service: "git-upload-pack" })
+        .buffer(true)
+        .parse((res, done) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (c: Buffer) => chunks.push(c));
+          res.on("end", () => done(null, Buffer.concat(chunks)));
+        });
+      expect(refs.status).toBe(200);
+      expect(refs.headers["content-type"]).toContain(
+        "application/x-git-upload-pack-advertisement",
+      );
+      expect(refs.body.toString()).toContain("refs/heads/main");
+      expect(
+        (
+          await request(app)
+            .get(`/api/gitn/${handle}/nothing-here/info/refs`)
+            .query({ service: "git-upload-pack" })
+        ).status,
+      ).toBe(404);
+    });
   });
 
   describe("ProofStack-hosted repositories", () => {
