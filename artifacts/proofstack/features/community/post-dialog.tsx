@@ -54,7 +54,10 @@ export function PostDialog({
         if (r) onOpenChange(false);
       }}
     >
-      <Fld label="What did you build, learn, or ship?">
+      <Fld
+        label="What did you build, learn, or ship?"
+        hint="Paste a YouTube, Vimeo or Loom link to show the video as a player."
+      >
         <Textarea
           required
           rows={6}

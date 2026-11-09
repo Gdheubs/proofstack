@@ -9,6 +9,8 @@ import { useCommunityRun, useCsrf } from "@/hooks/use-community";
 import { ago } from "@/lib/community";
 import { PersonAvatar, PersonLink, Tags } from "./ui";
 import { Body } from "./body";
+import { VideoEmbed } from "./video-embed";
+import { findVideoLink } from "./video-link";
 import { ReactionBar } from "./reactions";
 import { PostDialog } from "./post-dialog";
 
@@ -62,6 +64,10 @@ export function PostCard({
       </header>
       <div className="mt-3 space-y-3">
         <Body text={post.body} mentions={post.mentions} />
+        {(() => {
+          const video = findVideoLink(post.body);
+          return video ? <VideoEmbed video={video} /> : null;
+        })()}
         <Tags items={post.tags} />
       </div>
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-3">

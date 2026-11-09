@@ -43,7 +43,7 @@ describe("Security and configuration foundations", () => {
       "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://proofstack-test.firebaseapp.com",
     );
     expect(policy).toContain(
-      "frame-src 'self' https://proofstack-test.firebaseapp.com",
+      "frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://proofstack-test.firebaseapp.com",
     );
     expect(policy).not.toContain("*.firebaseapp.com");
     expect(policy).not.toContain("'unsafe-eval'");

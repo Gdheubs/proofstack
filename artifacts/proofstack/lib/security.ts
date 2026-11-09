@@ -1,3 +1,7 @@
+// Video players that posts may embed (see features/community/video-link.ts).
+const VIDEO_FRAMES =
+  " https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com";
+
 export function buildContentSecurityPolicy(
   nonce: string,
   development: boolean,
@@ -22,7 +26,7 @@ export function buildContentSecurityPolicy(
     "img-src 'self' data: blob:",
     "font-src 'self'",
     `connect-src 'self'${firebase}${development ? " ws: wss:" : ""}`,
-    `frame-src 'self'${firebaseAuthDomain ? ` https://${firebaseAuthDomain}` : ""}`,
+    `frame-src 'self'${VIDEO_FRAMES}${firebaseAuthDomain ? ` https://${firebaseAuthDomain}` : ""}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
