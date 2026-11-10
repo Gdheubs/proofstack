@@ -27,3 +27,11 @@ Render Free wipes its disk on restart and deploy. With `REPOSITORY_STORE=r2`, ea
 ## Next
 
 Step 3 (hosted repositories in the Code editor and Run) and step 4 (demo site, Publish demo, auto-filled Demo URL).
+
+## Release and live check (November 10)
+
+- `9a53b2e` added private personal projects (owner and active contributors only), the live "Name already taken" check, the reserved-username guard, and identical answers for private and unknown clone addresses.
+- The Render deploy went out before the production migration; for a few minutes every request answered 503 `SERVICE_UPDATING` (schema guard), with no data affected. Migration `0020` was then applied to production (21 migrations) and the API recovered by itself. Extension prompts now carry the "wait for the migration" instruction themselves.
+- Owner's live test (Chrome extension): a Private project "QA Test Repo" created `https://proofstack-web.suhailalam302.workers.dev/suhai/qa-test-repo`, the Repository URL filled itself, the address opened with `README.md` and one commit, and a second project with the same name showed "Name already taken".
+- Signed-out check from outside: the private repository, its project page and `git clone` address answer exactly like addresses that do not exist (404 / 404 / 401 with the same error); it appears in no public list or search.
+- `b339f55`: the project page shows one **Code** button for a hosted repository (no "manual link" label), and the name check no longer flashes "Name already taken" while saving. CI and Security passed.
