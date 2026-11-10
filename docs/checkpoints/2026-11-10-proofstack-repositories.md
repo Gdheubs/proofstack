@@ -49,3 +49,11 @@ Step 3 (hosted repositories in the Code editor and Run) and step 4 (demo site, P
 - **Publish demo** (repository page, Live demo panel; owners and managers of public projects): choose a branch; the site is the top-level `index.html` or the first of `dist`, `build`, `public`, `docs`, `site` that has one; at most 500 files and 25 MB; the previous copy is replaced. The project's **Demo URL fills itself** (unless it links elsewhere). **Unpublish** deletes the copy and clears that Demo URL. Private projects cannot publish (403). 20 publishes per hour per member.
 - No database change. `DEMO_ORIGIN` on the API turns publishing on.
 - Validation: unit 841 passed (`tests/demo-site.test.ts`: address mapping, path tricks refused, headers, 404, redirect, method limit; folder choice and limits). Embedded PostgreSQL 234 passed, 2 skipped (`tests/repository-store.integration.test.ts`: nothing to publish explained, `dist/` site published with types, sources left out, Demo URL filled and reported, unpublish clears files and URL, private refused). Typecheck, lint, format; the built API starts.
+
+## Live result (November 10)
+
+- Demo Worker `proofstack-demos` created from the repository (root `artifacts/demos`), bound read-only to `proofstack-media`; `DEMO_ORIGIN=https://proofstack-demos.suhailalam302.workers.dev` set on the API; `d6e8351` live.
+- Owner's live test: public project "QA Demo" (`suhai/qa-demo`), `index.html` committed to branch `site`, **Publish demo** answered "Demo published at https://proofstack-demos.suhailalam302.workers.dev/suhai/qa-demo/", the page shows the content, and the project's Demo URL filled itself.
+- Checked from outside: the demo serves with `nosniff` and no cookies; `/suhai/qa-demo` redirects to the slash form; raw `../` is 404; encoded dots resolve to the demo home page, never into other storage; the unpublished private `qa-test-repo` is 404; POST is 405.
+- Project pages with a hosted repository now also show "Repository <handle>/<name>" beside "Live demo".
+- Sign-outs the owner saw after deploys come from the 30-minute inactivity limit on sessions, not from deploys (sessions live in the database and survive restarts). Changing that limit is a policy decision left to the owner.

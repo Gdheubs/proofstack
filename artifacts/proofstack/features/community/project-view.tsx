@@ -145,6 +145,15 @@ export function ProjectView({ slug }: { slug: string }) {
               Live demo
             </a>
           )}
+          {hosted && (
+            <Link
+              className="inline-flex items-center gap-1 underline underline-offset-2"
+              href={hosted}
+            >
+              <Code2 className="h-4 w-4" />
+              Repository {hosted.slice(1)}
+            </Link>
+          )}
           {p.repositoryUrl && !hosted && (
             <a
               className="inline-flex items-center gap-1 underline underline-offset-2"
