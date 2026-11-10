@@ -29,7 +29,7 @@ export function ProjectCard({ project: p }: { project: CommunityProject }) {
         </p>
         <Tags items={p.technologies.slice(0, 6)} />
         <p className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-          {p.visibility === "organization" && <Lock className="h-3 w-3" />}
+          {p.visibility !== "public" && <Lock className="h-3 w-3" />}
           by @{p.owner.handle} ·{" "}
           {p.contributors.filter((c) => c.status === "active").length}{" "}
           contributors

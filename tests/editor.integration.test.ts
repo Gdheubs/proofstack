@@ -169,13 +169,73 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("Code editor", () => {
         "application/x-git-upload-pack-advertisement",
       );
       expect(refs.body.toString()).toContain("refs/heads/main");
+      // Unknown addresses answer like private repositories (see below).
       expect(
         (
           await request(app)
             .get(`/api/gitn/${handle}/nothing-here/info/refs`)
             .query({ service: "git-upload-pack" })
         ).status,
-      ).toBe(404);
+      ).toBe(401);
+    });
+
+    it("keeps private repositories invisible except to the owner and contributors", async () => {
+      const handle = (
+        await pool.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          owner,
+        ])
+      ).rows[0].handle as string;
+      const secret = await project("private");
+      await runRepositoryAction(req, sessionOf(owner), {
+        action: "create",
+        projectId: secret,
+        name: "secret-app",
+      });
+      const lookup = (viewer: string | null, name = "secret-app") =>
+        getRepositories({ owner: handle, name }, viewer);
+      // The owner sees it.
+      expect((await lookup(owner)).repositories[0].name).toBe("secret-app");
+      // Visitors and other members get the same answer as for no repository.
+      for (const viewer of [null, outsider]) {
+        await expect(lookup(viewer)).rejects.toMatchObject({ status: 404 });
+        await expect(lookup(viewer, "never-made")).rejects.toMatchObject({
+          status: 404,
+        });
+      }
+      const clone = (name: string) =>
+        request(app)
+          .get(`/api/gitn/${handle}/${name}/info/refs`)
+          .query({ service: "git-upload-pack" });
+      const hidden = await clone("secret-app");
+      const missing = await clone("never-made");
+      expect(hidden.status).toBe(401);
+      // Same status and error; only the per-request id differs.
+      expect([missing.status, missing.body.error]).toEqual([
+        hidden.status,
+        hidden.body.error,
+      ]);
+      // An invited contributor can read it.
+      await pool.query(
+        "INSERT INTO community_contributors(project_id,user_id,status) VALUES($1,$2,'active')",
+        [secret, outsider],
+      );
+      expect((await lookup(outsider)).repositories[0].name).toBe("secret-app");
+    });
+
+    it("asks an owner whose username is a site page name to rename first", async () => {
+      await pool.query("UPDATE profiles SET handle='home' WHERE user_id=$1", [
+        owner,
+      ]);
+      await expect(
+        runRepositoryAction(req, sessionOf(owner), {
+          action: "create",
+          projectId: await project("public"),
+          name: "anything",
+        }),
+      ).rejects.toMatchObject({
+        status: 409,
+        message: expect.stringContaining("Choose a new username"),
+      });
     });
   });
 

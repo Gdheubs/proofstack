@@ -30,6 +30,12 @@ export async function projectAction(
         "PROJECT_ORGANIZATION_FIXED",
         "An existing project's organization cannot be changed",
       );
+    if (input.visibility === "private" && input.organizationId)
+      throw new ApiError(
+        400,
+        "PRIVATE_PERSONAL_ONLY",
+        "Organization projects use Organization only; Private is for personal projects",
+      );
     if (input.visibility === "organization" && !input.organizationId)
       throw new ApiError(
         400,

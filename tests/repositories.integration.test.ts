@@ -206,9 +206,25 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         await expect(getRepositories({ id }, null)).rejects.toMatchObject({
           status: 404,
         });
+        // A private personal project stays readable by its active
+        // contributors (like collaborators), never by anyone else.
+        expect(
+          (await getRepositories({ id }, contributor)).repositories[0].id,
+        ).toBe(id);
+        await expect(getRepositories({ id }, outsider)).rejects.toMatchObject({
+          status: 404,
+        });
+        await pool.query(
+          `UPDATE community_contributors SET status='pending' WHERE project_id=$1 AND user_id=$2`,
+          [project, contributor],
+        );
         await expect(
           getRepositories({ id }, contributor),
         ).rejects.toMatchObject({ status: 404 });
+        await pool.query(
+          `UPDATE community_contributors SET status='active' WHERE project_id=$1 AND user_id=$2`,
+          [project, contributor],
+        );
         await expect(clone(id, "anonymous-private")).rejects.toBeDefined();
         await clone(id, "private-clone", token);
         expect(

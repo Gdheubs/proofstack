@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCommunityList, useCommunityRun } from "@/hooks/use-community";
 import { useRepositoryRun } from "@/hooks/use-repository";
 import { useViewer } from "@/hooks/use-viewer";
+import { useDebounced } from "@/hooks/use-debounced";
+import { SITE_SEGMENTS } from "@/lib/navigation";
 import { assetUrl, csv, slugify } from "@/lib/community";
 import { AssistInline } from "./assist";
 import { Fld, FormDialog, selectCls } from "./ui";
@@ -67,11 +69,42 @@ export function ProjectDialog({
   const [makeRepo, setMakeRepo] = useState(true);
   const [repoName, setRepoName] = useState("");
   const [repoNameTouched, setRepoNameTouched] = useState(false);
-  const repoNameProblem = !REPO_NAME.test(repoName)
-    ? "Use up to 100 letters, numbers, dots, hyphens or underscores, starting with a letter or number."
-    : /[.]git$/i.test(repoName)
-      ? "A repository name cannot end in .git."
-      : null;
+  // Is this name already one of the member's repositories? (Names are unique
+  // per member; other members may use the same name.)
+  const checkName = useDebounced(repoName, 400);
+  const nameCheck = useGetRepositories(
+    { owner: viewer?.handle ?? "", name: checkName },
+    {
+      query: {
+        queryKey: getGetRepositoriesQueryKey({
+          owner: viewer?.handle ?? "",
+          name: checkName,
+        }),
+        enabled:
+          open &&
+          canHost &&
+          makeRepo &&
+          REPO_NAME.test(checkName) &&
+          !!viewer?.handle,
+        retry: false,
+        staleTime: 0,
+      },
+    },
+  );
+  const nameTaken =
+    checkName === repoName && !!nameCheck.data?.repositories.length;
+  // A username that is also a site page name cannot carry repository addresses.
+  const reservedHandle =
+    !!viewer?.handle && SITE_SEGMENTS.has(viewer.handle.toLowerCase());
+  const repoNameProblem = reservedHandle
+    ? `Your username "${viewer?.handle}" is also a ProofStack page name. Choose a new username in Settings, Profile to create repositories.`
+    : !REPO_NAME.test(repoName)
+      ? "Use up to 100 letters, numbers, dots, hyphens or underscores, starting with a letter or number."
+      : /[.]git$/i.test(repoName)
+        ? "A repository name cannot end in .git."
+        : nameTaken
+          ? `Name already taken: you already have a repository called "${repoName}". Choose another name.`
+          : null;
   const creatingRepo = canHost && makeRepo;
   useEffect(() => {
     if (!open) return;
@@ -117,7 +150,7 @@ export function ProjectDialog({
             demoUrl: f.demoUrl.trim(),
             // Filled by the server from the new repository's address.
             repositoryUrl: creatingRepo ? "" : f.repositoryUrl.trim(),
-            visibility: f.visibility as "public" | "organization",
+            visibility: f.visibility as "public" | "organization" | "private",
             organizationId:
               f.visibility === "organization" ? f.org || null : null,
           },
@@ -191,10 +224,7 @@ export function ProjectDialog({
         {creatingRepo ? (
           <Fld
             label="Repository name"
-            hint={
-              repoNameProblem ??
-              `Address: ${typeof window === "undefined" ? "" : window.location.origin}/${viewer?.handle}/${repoName || "…"}`
-            }
+            hint={`Address: ${typeof window === "undefined" ? "" : window.location.origin}/${viewer?.handle}/${repoName || "…"}`}
           >
             <Input
               required
@@ -206,6 +236,11 @@ export function ProjectDialog({
                 setRepoName(e.target.value.trim());
               }}
             />
+            {repoNameProblem && (
+              <span role="alert" className="block text-xs text-destructive">
+                {repoNameProblem}
+              </span>
+            )}
           </Fld>
         ) : (
           <Fld
@@ -246,6 +281,7 @@ export function ProjectDialog({
             onChange={(e) => set("visibility", e.target.value)}
           >
             <option value="public">Public</option>
+            <option value="private">Private (only you and contributors)</option>
             <option value="organization">Organization only</option>
           </select>
         </Fld>

@@ -12,4 +12,5 @@ export type CommunityProjectVisibility = typeof CommunityProjectVisibility[keyof
 export const CommunityProjectVisibility = {
   public: 'public',
   organization: 'organization',
+  private: 'private',
 } as const;

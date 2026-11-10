@@ -29,6 +29,7 @@ import {
   ownerHandleSchema,
 } from "./repository-input";
 import { authOrigin } from "../lib/auth-config";
+import { RESERVED_HANDLES } from "./community-input";
 import {
   storageEnabled,
   persistRepository,
@@ -316,6 +317,16 @@ export async function runRepositoryAction(
       ).rows[0].n;
       if (count >= 20)
         throw repoError("Repository limit reached (20 owned projects).", 409);
+      const ownerHandle = (
+        await db.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          project.owner_id,
+        ])
+      ).rows[0]?.handle as string | undefined;
+      if (ownerHandle && RESERVED_HANDLES.includes(ownerHandle.toLowerCase()))
+        throw repoError(
+          `Your username "${ownerHandle}" is also the name of a ProofStack page, so its repository addresses would not open. Choose a new username in Settings, Profile, then create the repository.`,
+          409,
+        );
       const name = d.name ?? project.slug;
       if (!repoNameSchema.safeParse(name).success)
         throw repoError("Choose a repository name.", 400);

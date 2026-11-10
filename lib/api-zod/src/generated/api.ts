@@ -651,7 +651,7 @@ export const GetCommunityResponse = zod.object({
   "screenshots": zod.array(zod.string()),
   "demoUrl": zod.string(),
   "repositoryUrl": zod.string(),
-  "visibility": zod.enum(['public', 'organization']),
+  "visibility": zod.enum(['public', 'organization', 'private']),
   "owner": zod.object({
   "id": zod.uuid(),
   "handle": zod.string(),
@@ -836,7 +836,7 @@ export const GetCommunityResponse = zod.object({
   "screenshots": zod.array(zod.string()),
   "demoUrl": zod.string(),
   "repositoryUrl": zod.string(),
-  "visibility": zod.enum(['public', 'organization']),
+  "visibility": zod.enum(['public', 'organization', 'private']),
   "owner": zod.object({
   "id": zod.uuid(),
   "handle": zod.string(),
@@ -1049,7 +1049,7 @@ export const GetCommunityResponse = zod.object({
   "screenshots": zod.array(zod.string()),
   "demoUrl": zod.string(),
   "repositoryUrl": zod.string(),
-  "visibility": zod.enum(['public', 'organization']),
+  "visibility": zod.enum(['public', 'organization', 'private']),
   "owner": zod.object({
   "id": zod.uuid(),
   "handle": zod.string(),
@@ -1234,7 +1234,7 @@ export const GetCommunityResponse = zod.object({
   "screenshots": zod.array(zod.string()),
   "demoUrl": zod.string(),
   "repositoryUrl": zod.string(),
-  "visibility": zod.enum(['public', 'organization']),
+  "visibility": zod.enum(['public', 'organization', 'private']),
   "owner": zod.object({
   "id": zod.uuid(),
   "handle": zod.string(),

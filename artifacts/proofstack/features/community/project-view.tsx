@@ -59,7 +59,11 @@ export function ProjectView({ slug }: { slug: string }) {
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Project
-              {p.visibility === "organization" ? " · organization only" : ""}
+              {p.visibility === "organization"
+                ? " · organization only"
+                : p.visibility === "private"
+                  ? " · private"
+                  : ""}
             </p>
             <h1 className="text-3xl font-semibold sm:text-4xl">{p.title}</h1>
           </div>

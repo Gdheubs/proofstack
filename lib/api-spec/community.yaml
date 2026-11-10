@@ -366,7 +366,7 @@ components:
         screenshots: { type: array, items: { type: string } }
         demoUrl: { type: string }
         repositoryUrl: { type: string }
-        visibility: { type: string, enum: [public, organization] }
+        visibility: { type: string, enum: [public, organization, private] }
         owner: { $ref: "#/components/schemas/CommunityPerson" }
         organizationId: { type: [string, "null"], format: uuid }
         contributors:

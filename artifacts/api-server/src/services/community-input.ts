@@ -212,7 +212,8 @@ const schemas = {
     screenshots: z.array(assetPath.min(1)).max(10).default([]),
     demoUrl: linkSchema.default(""),
     repositoryUrl: linkSchema.default(""),
-    visibility: z.enum(["public", "organization"]).default("public"),
+    // private: a personal project only its owner and active contributors see.
+    visibility: z.enum(["public", "organization", "private"]).default("public"),
     organizationId: id.nullable().default(null),
   }),
   "project-delete": z.object({ action: z.literal("project-delete"), id }),

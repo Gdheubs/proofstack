@@ -29,10 +29,12 @@ router.use(async (req, _res, next) => {
       req.url,
     );
   if (!named) return next();
+  // An unknown address continues as an id nobody can read, so it answers
+  // exactly like a private repository: its existence is never revealed.
   const id = await repositoryIdByName(
     decodeURIComponent(named[1]!),
     decodeURIComponent(named[2]!),
-  );
+  ).catch(() => "00000000-0000-0000-0000-000000000000");
   req.url = `/git/${id}${named[3]}${named[4] ?? ""}`;
   next();
 });

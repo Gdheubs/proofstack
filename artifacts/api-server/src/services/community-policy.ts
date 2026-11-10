@@ -27,6 +27,7 @@ export const memberAccessWhere = (
 export const projectReadWhere = (viewer = "$1") => `(
  (p.visibility='public' AND coalesce(op.visibility,'public')='public')
  OR (p.organization_id IS NULL AND p.owner_id=${viewer}::uuid)
+ OR (p.organization_id IS NULL AND p.visibility='private' AND EXISTS(SELECT 1 FROM community_contributors cc WHERE cc.project_id=p.id AND cc.user_id=${viewer}::uuid AND cc.status='active'))
  OR ${memberAccessWhere("p.organization_id", viewer)})`;
 // Internal SQL aliases only; never pass request input to these builders.
 export const postReadWhere = (alias = "p") => `(
