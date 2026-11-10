@@ -1,0 +1,7 @@
+{
+  "name": "@workspace/demos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ProofStack demo site Worker; deployed separately (see wrangler.jsonc)."
+}

@@ -1,0 +1,13 @@
+// ProofStack demo site (see worker.ts). Deployed by Cloudflare Workers Builds
+// with root directory artifacts/demos and deploy command
+// `npx wrangler@4.148.0 deploy`.
+{
+  "$schema": "https://unpkg.com/wrangler@4.148.0/config-schema.json",
+  "name": "proofstack-demos",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+  // Read-only use: the Worker only calls get() on keys under DEMO_PREFIX.
+  "r2_buckets": [{ "binding": "DEMOS", "bucket_name": "proofstack-media" }],
+  "vars": { "DEMO_PREFIX": "private/demos" },
+}

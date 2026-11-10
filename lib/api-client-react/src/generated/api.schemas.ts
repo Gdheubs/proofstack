@@ -716,6 +716,9 @@ export interface RepositoryProject {
 }
 
 export interface RepositoryData {
+  demoAvailable?: boolean;
+  /** @nullable */
+  demoUrl?: string | null;
   enabled: boolean;
   repositories: Repository[];
   projects: RepositoryProject[];
@@ -741,6 +744,8 @@ export const RepositoryInputAction = {
   commit: 'commit',
   'token-create': 'token-create',
   'token-revoke': 'token-revoke',
+  'demo-publish': 'demo-publish',
+  'demo-unpublish': 'demo-unpublish',
 } as const;
 
 export type RepositoryInputScope = typeof RepositoryInputScope[keyof typeof RepositoryInputScope];

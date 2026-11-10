@@ -14,6 +14,9 @@ import type { RepositoryProject } from './repositoryProject';
 import type { RepositoryToken } from './repositoryToken';
 
 export interface RepositoryData {
+  demoAvailable?: boolean;
+  /** @nullable */
+  demoUrl?: string | null;
   enabled: boolean;
   repositories: Repository[];
   projects: RepositoryProject[];

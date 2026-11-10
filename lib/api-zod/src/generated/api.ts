@@ -326,6 +326,8 @@ export const GetRepositoriesQueryParams = zod.object({
 })
 
 export const GetRepositoriesResponse = zod.object({
+  "demoAvailable": zod.boolean().optional(),
+  "demoUrl": zod.string().nullish(),
   "enabled": zod.boolean(),
   "repositories": zod.array(zod.object({
   "id": zod.string(),
@@ -385,7 +387,7 @@ export const GetRepositoriesResponse = zod.object({
 
 
 export const RunRepositoryActionBody = zod.object({
-  "action": zod.enum(['create', 'branch', 'commit', 'token-create', 'token-revoke']),
+  "action": zod.enum(['create', 'branch', 'commit', 'token-create', 'token-revoke', 'demo-publish', 'demo-unpublish']),
   "id": zod.string().optional(),
   "projectId": zod.string().optional(),
   "branch": zod.string().optional(),

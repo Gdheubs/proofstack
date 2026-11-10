@@ -344,6 +344,15 @@
           "offset"
         ],
         "properties": {
+          "demoAvailable": {
+            "type": "boolean"
+          },
+          "demoUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "enabled": {
             "type": "boolean"
           },
@@ -426,7 +435,9 @@
               "branch",
               "commit",
               "token-create",
-              "token-revoke"
+              "token-revoke",
+              "demo-publish",
+              "demo-unpublish"
             ]
           },
           "id": {

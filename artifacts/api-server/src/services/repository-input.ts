@@ -192,6 +192,15 @@ export const repoActionSchema = z.discriminatedUnion("action", [
   z
     .object({ action: z.literal("token-revoke"), id: uuid, tokenId: uuid })
     .strict(),
+  // Publish one branch's static files as the project's live demo.
+  z
+    .object({
+      action: z.literal("demo-publish"),
+      id: uuid,
+      branch: branchSchema,
+    })
+    .strict(),
+  z.object({ action: z.literal("demo-unpublish"), id: uuid }).strict(),
 ]);
 export function repoInput(raw: unknown) {
   const r = repoActionSchema.safeParse(raw);

@@ -135,6 +135,12 @@ The editor at `/editor` edits GitHub repositories through a GitHub OAuth App own
 
 Users grant the `repo` scope so they can commit to their private repositories, fork repositories and open pull requests. Their token is sealed with `SESSION_SECRET` in `github_connections` and never reaches the browser. It is deleted when they disconnect, delete their account, or GitHub reports it revoked. Rotating `SESSION_SECRET` makes users reconnect.
 
+### Demo site (published project demos)
+
+`artifacts/demos` is a second, small Cloudflare Worker that serves published demos at `<DEMO_ORIGIN>/<handle>/<repository>/` from the R2 bucket, reading only keys under `private/demos/` (`DEMO_PREFIX`). It must run on its own address, never on the web app's, so a demo's scripts cannot reach ProofStack cookies. Create it in Cloudflare Workers & Pages from this repository with root directory `artifacts/demos`, no build command, and deploy command `npx wrangler@4.148.0 deploy`; the R2 binding comes from its `wrangler.jsonc`. Then set `DEMO_ORIGIN` (exact HTTPS origin, no trailing slash) on the API. Without it, publishing answers "Demo hosting is not set up yet".
+
+Publishing (repository page, Live demo; owners and managers of **public** projects only) copies the chosen branch's site, taken from `index.html` at the top or in `dist`, `build`, `public`, `docs` or `site`, at most 500 files and 25 MB, replacing the previous copy, and fills the project's Demo URL unless it links elsewhere. Unpublishing deletes the copy and clears that Demo URL. All demos share one origin until a custom domain gives each its own subdomain, so demos can see each other's browser storage; they never see ProofStack's.
+
 ## Verification sequence
 
 1. Confirm the Git SHA, clean working tree, and green hosted CI.

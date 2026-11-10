@@ -231,6 +231,8 @@ importers:
         specifier: 3.1.0
         version: 3.1.0
 
+  artifacts/demos: {}
+
   artifacts/proofstack:
     dependencies:
       '@codemirror/lang-css':

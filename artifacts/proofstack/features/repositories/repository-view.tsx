@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Editor, BranchForm } from "./repository-forms";
 import { ClonePanel } from "./clone-panel";
+import { DemoPanel } from "./demo-panel";
 import { RepositoryNavigation } from "./repository-navigation";
 const location = (id: string, branch: string, path = "", revision = "") =>
   `/repositories/${id}?${new URLSearchParams({ branch, ...(path ? { path } : {}), ...(revision ? { revision } : {}) })}`;
@@ -320,6 +321,7 @@ export function RepositoryView({
                   Open project work board →
                 </Link>
               </section>
+              <DemoPanel data={d} />
               <ClonePanel data={d} />
             </aside>
           </div>

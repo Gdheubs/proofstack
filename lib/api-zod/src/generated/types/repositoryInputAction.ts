@@ -15,4 +15,6 @@ export const RepositoryInputAction = {
   commit: 'commit',
   'token-create': 'token-create',
   'token-revoke': 'token-revoke',
+  'demo-publish': 'demo-publish',
+  'demo-unpublish': 'demo-unpublish',
 } as const;

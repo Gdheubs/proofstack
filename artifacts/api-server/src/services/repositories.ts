@@ -30,6 +30,15 @@ import {
 } from "./repository-input";
 import { authOrigin } from "../lib/auth-config";
 import { RESERVED_HANDLES } from "./community-input";
+import { authLimit } from "./auth-limits";
+import {
+  demoFiles,
+  demoOrigin,
+  demoUrl,
+  publishDemo,
+  unpublishDemo,
+  type DemoFile,
+} from "./repository-demo";
 import {
   storageEnabled,
   persistRepository,
@@ -179,6 +188,21 @@ export async function getRepositories(
         tokens,
         usedBytes: await storageBytes(path),
         offset: d.offset,
+        // Publishing needs the demo site; the URL is the project's demo when
+        // it is this repository's published demo.
+        demoAvailable: !!demoOrigin(),
+        demoUrl: await (async () => {
+          const origin = demoOrigin();
+          if (!origin || !repo.ownerHandle) return null;
+          const url = demoUrl(origin, repo.ownerHandle, repo.name);
+          const current = (
+            await db.query(
+              "SELECT demo_url FROM community_projects WHERE id=$1",
+              [repo.projectId],
+            )
+          ).rows[0]?.demo_url;
+          return current === url ? url : null;
+        })(),
       };
     });
   const rows = (
@@ -295,6 +319,7 @@ export async function runRepositoryAction(
     const profile = await requireCommunityProfile(uid, db);
     let resultId: string;
     let token: string | undefined;
+    let demoMessage: string | undefined;
     if (d.action === "create") {
       const project = await authorizeProject(db, s, d.projectId, "edit");
       if (
@@ -412,6 +437,67 @@ export async function runRepositoryAction(
           `INSERT INTO repository_tokens(repository_id,user_id,name,token_hash,expires_at) VALUES($1,$2,$3,$4,now()+interval '30 days')`,
           [d.id, uid, d.name, `${d.scope}:${digest}`],
         );
+      } else if (d.action === "demo-publish" || d.action === "demo-unpublish") {
+        if (!repo.canManage) throw denied();
+        const origin = demoOrigin();
+        if (!origin) throw repoError("Demo hosting is not set up yet.", 503);
+        await authLimit(req, "demo-publish", uid, 20, 3600);
+        if (!repo.ownerHandle)
+          throw repoError("Choose a username before publishing a demo.", 409);
+        const url = demoUrl(origin, repo.ownerHandle, repo.name);
+        if (d.action === "demo-unpublish") {
+          await unpublishDemo(repo.ownerHandle, repo.name);
+          await db.query(
+            "UPDATE community_projects SET demo_url='',updated_at=now() WHERE id=$1 AND demo_url=$2",
+            [repo.projectId, url],
+          );
+          demoMessage = "Demo unpublished";
+        } else {
+          // Demos are public, so only public projects may publish one.
+          if (repo.visibility !== "public")
+            throw repoError(
+              "Only public projects can publish a demo, because anyone can open a demo. Make the project public first.",
+              403,
+            );
+          const head = (
+            await db.query(
+              "SELECT head FROM repository_branches WHERE repository_id=$1 AND name=$2",
+              [d.id, d.branch],
+            )
+          ).rows[0]?.head as string | undefined;
+          if (!head) throw repoError("Branch not found.", 404);
+          const path = await repoPath(d.id);
+          const listed = (await git(path, ["ls-tree", "-r", "-z", "-l", head]))
+            .toString("utf8")
+            .split("\0")
+            .filter(Boolean)
+            .flatMap((line): DemoFile[] => {
+              const tab = line.indexOf("\t");
+              const [mode, type, oid, size] = line
+                .slice(0, tab)
+                .trim()
+                .split(/\s+/);
+              return type === "blob" && (mode === "100644" || mode === "100755")
+                ? [
+                    {
+                      path: line.slice(tab + 1),
+                      oid: oid!,
+                      size: Number(size) || 0,
+                    },
+                  ]
+                : [];
+            });
+          const { files } = demoFiles(listed);
+          await publishDemo(repo.ownerHandle, repo.name, files, (oid) =>
+            git(path, ["cat-file", "blob", oid], "", {}, 16 * 1024 * 1024),
+          );
+          // The Demo URL fills itself unless the member linked elsewhere.
+          await db.query(
+            "UPDATE community_projects SET demo_url=$2,updated_at=now() WHERE id=$1 AND (demo_url='' OR demo_url LIKE $3)",
+            [repo.projectId, url, origin + "/%"],
+          );
+          demoMessage = `Demo published at ${url}`;
+        }
       } else if (d.action === "token-revoke") {
         const row = await db.query(
           `UPDATE repository_tokens SET revoked_at=coalesce(revoked_at,now()) WHERE id=$1 AND repository_id=$2 AND user_id=$3 RETURNING id`,
@@ -499,9 +585,10 @@ export async function runRepositoryAction(
     await audit(req, "repository." + d.action, uid, resultId, {}, db);
     return {
       message:
-        d.action === "token-create"
+        demoMessage ??
+        (d.action === "token-create"
           ? `Copy this ${d.scope} token now. It will not be shown again.`
-          : "Repository updated",
+          : "Repository updated"),
       id: resultId,
       ...(token ? { token } : {}),
     };

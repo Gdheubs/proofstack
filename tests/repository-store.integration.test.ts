@@ -14,7 +14,10 @@ import {
 import { pool } from "@workspace/db";
 import type { AuthSession } from "../artifacts/api-server/src/services/auth-sessions";
 import { r2 } from "../artifacts/api-server/src/lib/objectStorage";
-import { runRepositoryAction } from "../artifacts/api-server/src/services/repositories";
+import {
+  getRepositories,
+  runRepositoryAction,
+} from "../artifacts/api-server/src/services/repositories";
 import {
   commitChanges,
   listTree,
@@ -28,10 +31,18 @@ const sessionOf = (id: string) =>
     row: { last_mfa_at: new Date(), created_at: new Date() },
     providerUser: { factors: [{ status: "verified", factor_type: "totp" }] },
   }) as unknown as AuthSession;
-const req = { id: randomUUID(), get: () => undefined } as never;
+// A request as the rate limits see it (documentation address).
+const req = {
+  id: randomUUID(),
+  get: () => undefined,
+  headers: {},
+  ip: "192.0.2.10",
+  socket: { remoteAddress: "192.0.2.10" },
+} as never;
 
 // A fake R2: objects kept in memory, optionally failing writes.
 const objects = new Map<string, Buffer>();
+const types = new Map<string, string>();
 let failWrites = false;
 function fakeR2() {
   vi.spyOn(r2, "client").mockReturnValue({
@@ -43,6 +54,24 @@ function fakeR2() {
       if (command.constructor.name === "PutObjectCommand") {
         if (failWrites) throw new Error("R2 unavailable");
         objects.set(key, Buffer.from(command.input.Body as Buffer));
+        types.set(key, String(command.input.ContentType));
+        return {};
+      }
+      if (command.constructor.name === "ListObjectsV2Command") {
+        const start = `${command.input.Bucket}/${command.input.Prefix}`;
+        return {
+          Contents: [...objects.keys()]
+            .filter((k) => k.startsWith(start))
+            .map((k) => ({
+              Key: k.slice(String(command.input.Bucket).length + 1),
+            })),
+          IsTruncated: false,
+        };
+      }
+      if (command.constructor.name === "DeleteObjectsCommand") {
+        const del = command.input.Delete as { Objects: { Key: string }[] };
+        for (const o of del.Objects)
+          objects.delete(`${command.input.Bucket}/${o.Key}`);
         return {};
       }
       if (command.constructor.name === "GetObjectCommand") {
@@ -68,6 +97,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       root = await mkdtemp(join(tmpdir(), "ps-store-"));
       vi.stubEnv("REPOSITORY_ROOT", root);
       vi.stubEnv("REPOSITORY_STORE", "r2");
+      vi.stubEnv("SESSION_SECRET", "store-test-only-secret-at-least-32-chars");
       vi.stubEnv("PRIVATE_OBJECT_DIR", "/test-bucket/private");
       objects.clear();
       failWrites = false;
@@ -190,6 +220,105 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       ).rows;
       expect(heads.length).toBeGreaterThan(0);
       expect(heads.every((b) => b.head === head)).toBe(true);
+    });
+
+    it("publishes a public repository's site as its demo, and unpublishes it", async () => {
+      vi.stubEnv("DEMO_ORIGIN", "https://demos.example");
+      vi.stubEnv("AUTH_APP_ORIGIN", "https://proofstack.example");
+      await pool.query(
+        "UPDATE community_projects SET visibility='public' WHERE id=$1",
+        [project],
+      );
+      const handle = (
+        await pool.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          owner,
+        ])
+      ).rows[0].handle as string;
+      const repo = (
+        await runRepositoryAction(req, sessionOf(owner), {
+          action: "create",
+          projectId: project,
+          name: "Site-App",
+        })
+      ).id;
+      const { head } = await listTree(owner, {
+        source: "hosted",
+        repo,
+        branch: "main",
+      });
+      // main has only a README: there is nothing to publish yet.
+      await expect(
+        runRepositoryAction(req, sessionOf(owner), {
+          action: "demo-publish",
+          id: repo,
+          branch: "main",
+        }),
+      ).rejects.toMatchObject({
+        status: 400,
+        message: expect.stringContaining("index.html"),
+      });
+      await commitChanges(req, sessionOf(owner), {
+        source: "hosted",
+        repo,
+        branch: "main",
+        expectedHead: head,
+        newBranch: "site",
+        message: "Add a site",
+        changes: [
+          { path: "dist/index.html", content: "<h1>Hello</h1>" },
+          { path: "dist/css/site.css", content: "h1{color:red}" },
+          { path: "src/app.ts", content: "export {}" },
+        ],
+      });
+      const published = await runRepositoryAction(req, sessionOf(owner), {
+        action: "demo-publish",
+        id: repo,
+        branch: "site",
+      });
+      const url = `https://demos.example/${handle}/site-app/`;
+      expect(published.message).toBe(`Demo published at ${url}`);
+      const base = `test-bucket/private/demos/${handle}/site-app/`;
+      const demoKeys = [...objects.keys()]
+        .filter((k) => k.startsWith(base))
+        .sort();
+      // The dist folder becomes the site; sources outside it are not published.
+      expect(demoKeys).toEqual([base + "css/site.css", base + "index.html"]);
+      expect(objects.get(base + "index.html")!.toString()).toBe(
+        "<h1>Hello</h1>",
+      );
+      expect(types.get(base + "css/site.css")).toBe("text/css");
+      const demoUrlOf = async () =>
+        (
+          await pool.query(
+            "SELECT demo_url FROM community_projects WHERE id=$1",
+            [project],
+          )
+        ).rows[0].demo_url;
+      expect(await demoUrlOf()).toBe(url);
+      const view = await getRepositories({ id: repo }, owner);
+      expect([view.demoAvailable, view.demoUrl]).toEqual([true, url]);
+
+      // Unpublishing removes every file and clears the Demo URL.
+      await runRepositoryAction(req, sessionOf(owner), {
+        action: "demo-unpublish",
+        id: repo,
+      });
+      expect([...objects.keys()].some((k) => k.startsWith(base))).toBe(false);
+      expect(await demoUrlOf()).toBe("");
+
+      // Private projects never publish: anyone can open a demo.
+      await pool.query(
+        "UPDATE community_projects SET visibility='private' WHERE id=$1",
+        [project],
+      );
+      await expect(
+        runRepositoryAction(req, sessionOf(owner), {
+          action: "demo-publish",
+          id: repo,
+          branch: "site",
+        }),
+      ).rejects.toMatchObject({ status: 403 });
+      expect([...objects.keys()].some((k) => k.startsWith(base))).toBe(false);
     });
 
     it("reports a repository with no saved copy as unavailable", async () => {
