@@ -6,12 +6,13 @@ import {
   getGetCommunityQueryKey,
   useGetCommunity,
 } from "@workspace/api-client-react";
-import { Bookmark, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { Bookmark, Code2, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Confirm, Skeleton } from "@/features/auth/shared";
 import { useCommunityRun, useCsrf } from "@/hooks/use-community";
 import { assetUrl, errStatus } from "@/lib/community";
+import { hostedRepositoryPath } from "@/lib/repository-address";
 import { Empty, PersonAvatar, PersonLink, QueryError, Tags } from "./ui";
 import { Contributors } from "./contributors";
 import { EntryList } from "./entry-list";
@@ -28,6 +29,8 @@ export function ProjectView({ slug }: { slug: string }) {
   const [edit, setEdit] = useState(false);
   const [del, setDel] = useState(false);
   const p = q.data?.project;
+  // A repository hosted on ProofStack (<site>/<handle>/<name>) opens here.
+  const hosted = hostedRepositoryPath(p?.repositoryUrl ?? "");
   if (q.isPending)
     return (
       <div className="space-y-4">
@@ -69,8 +72,9 @@ export function ProjectView({ slug }: { slug: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href={`/repositories?project=${p.id}`}>
-                Hosted repository
+              <Link href={hosted ?? `/repositories?project=${p.id}`}>
+                <Code2 className="h-4 w-4" />
+                Code
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
@@ -141,7 +145,7 @@ export function ProjectView({ slug }: { slug: string }) {
               Live demo
             </a>
           )}
-          {p.repositoryUrl && (
+          {p.repositoryUrl && !hosted && (
             <a
               className="inline-flex items-center gap-1 underline underline-offset-2"
               href={p.repositoryUrl}
@@ -149,7 +153,7 @@ export function ProjectView({ slug }: { slug: string }) {
               rel="noopener noreferrer nofollow"
             >
               <ExternalLink className="h-4 w-4" />
-              Repository (manual link)
+              Repository
             </a>
           )}
         </div>

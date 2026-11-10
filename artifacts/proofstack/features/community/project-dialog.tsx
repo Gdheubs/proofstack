@@ -69,6 +69,7 @@ export function ProjectDialog({
   const [makeRepo, setMakeRepo] = useState(true);
   const [repoName, setRepoName] = useState("");
   const [repoNameTouched, setRepoNameTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
   // Is this name already one of the member's repositories? (Names are unique
   // per member; other members may use the same name.)
   const checkName = useDebounced(repoName, 400);
@@ -80,8 +81,10 @@ export function ProjectDialog({
           owner: viewer?.handle ?? "",
           name: checkName,
         }),
+        // Paused while saving: the new repository would match its own name.
         enabled:
           open &&
+          !saving &&
           canHost &&
           makeRepo &&
           REPO_NAME.test(checkName) &&
@@ -92,7 +95,7 @@ export function ProjectDialog({
     },
   );
   const nameTaken =
-    checkName === repoName && !!nameCheck.data?.repositories.length;
+    !saving && checkName === repoName && !!nameCheck.data?.repositories.length;
   // A username that is also a site page name cannot carry repository addresses.
   const reservedHandle =
     !!viewer?.handle && SITE_SEGMENTS.has(viewer.handle.toLowerCase());
@@ -124,6 +127,7 @@ export function ProjectDialog({
     setMakeRepo(true);
     setRepoName(project?.slug ?? "");
     setRepoNameTouched(false);
+    setSaving(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, project?.id]);
   const set = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));
@@ -138,6 +142,7 @@ export function ProjectDialog({
       error={error || repo.error}
       onSubmit={async () => {
         if (creatingRepo && repoNameProblem) return;
+        setSaving(true);
         const r = await run(
           {
             action: "project-save",
@@ -163,8 +168,9 @@ export function ProjectDialog({
             name: repoName,
           });
           // The project exists either way; a refused name is shown here.
-          if (!made) return;
+          if (!made) return setSaving(false);
         }
+        if (!r) setSaving(false);
         if (r) {
           onOpenChange(false);
           const slug = r.slug ?? f.slug;

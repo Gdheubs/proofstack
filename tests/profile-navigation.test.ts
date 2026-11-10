@@ -114,8 +114,10 @@ describe("manual project and organization navigation", () => {
     const html = render();
     expect(html).toContain('role="tab">Release records</button>');
     expect(html).toContain('role="tab">Repository links</button>');
-    expect(html).toContain("Hosted repository");
+    // One "Code" button: the hosted repository, or the project's repository list.
     expect(html).toContain('href="/repositories?project=project-1"');
+    expect(html).not.toContain("Hosted repository");
+    expect(html).toMatch(/project=project-1"[^>]*>(?:(?!<\/a>).)*Code<\/a>/s);
     expect(html).toContain("Manual release records");
     expect(html).toContain("Git releases");
     surface.tab = "repos";
