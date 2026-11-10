@@ -38,8 +38,31 @@ function forwardApi(request: NextRequest) {
   return NextResponse.next({ request: { headers } });
 }
 
+// The site's one address once a custom domain is set (NEXT_PUBLIC_SITE_URL).
+function canonicalHost() {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "").host || null;
+  } catch {
+    return null;
+  }
+}
+
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  // Visitors on an old address (*.workers.dev, www) go to the canonical one.
+  // API and Git calls are left alone so pages already open keep working.
+  const canonical = canonicalHost();
+  if (
+    canonical &&
+    request.nextUrl.host !== canonical &&
+    (request.method === "GET" || request.method === "HEAD") &&
+    !(path === "/api" || path.startsWith("/api/") || GIT_PATH.test(path))
+  ) {
+    const url = request.nextUrl.clone();
+    url.protocol = "https:";
+    url.host = canonical;
+    return NextResponse.redirect(url, 301);
+  }
   // Git clients use /<owner>/<repo>.git/…, which the API serves.
   if (path === "/api" || path.startsWith("/api/") || GIT_PATH.test(path))
     return forwardApi(request);

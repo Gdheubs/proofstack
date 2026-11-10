@@ -24,7 +24,6 @@ app.set(
   env.TRUST_PROXY_CIDRS.length ? env.TRUST_PROXY_CIDRS : false,
 );
 app.use(trustedProxyClient(env.PROXY_SHARED_SECRET));
-app.use(requireProxy(env.PROXY_SHARED_SECRET));
 
 app.use(
   pinoHttp({
@@ -73,6 +72,8 @@ app.use(
     },
   }),
 );
+// After request ids exist, so a refusal carries one.
+app.use(requireProxy(env.PROXY_SHARED_SECRET));
 app.use(requestMetrics);
 app.use(helmet());
 app.use(

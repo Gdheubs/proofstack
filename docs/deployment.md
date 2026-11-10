@@ -26,6 +26,11 @@ Set these in Render's secret/configuration UI:
 - `CORS_ALLOWED_ORIGINS`: that same exact frontend URL.
 - `TRUST_PROXY_CIDRS`: only Render's currently documented proxy ranges after verifying them for the deployment region.
 - `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket. With `PROXY_REQUIRED=true` the API also refuses any request that did not come through the web tier (health checks and the auth SMS hook excepted); turn it on only after the web tier has the same secret. `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (a Cloudflare Turnstile widget for the site's hostnames) turn on the bot check at sign-up, password reset and demo publishing; without the secret the check is off. Cloudflare outages fail open.
+
+### Moving to a custom domain
+
+Set `NEXT_PUBLIC_SITE_URL` (web build) to the new origin: pages requested on any other address, such as the old `*.workers.dev` one or `www`, redirect to it (API and Git calls are not redirected). Update `AUTH_APP_ORIGIN`, `CORS_ALLOWED_ORIGINS` and `DEMO_ORIGIN` on the API, the GitHub repository variable `SITE_URL` (keep-alive), the Supabase site/redirect URLs and the OAuth apps. Then rewrite saved links once per old origin: `ORIGIN_FROM=https://old ORIGIN_TO=https://new MIGRATION_TARGET_HOST=<db host> DATABASE_URL=… pnpm --filter @workspace/db run rewrite:origins` (project Repository and Demo URLs; run it for the site origin and again for the demo origin).
+
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and a 32+ character random `SESSION_SECRET`.
 
 - `PRIVATE_OBJECT_DIR`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: image storage (see below). Preflight checks the namespace and credentials.

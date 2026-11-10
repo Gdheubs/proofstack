@@ -52,3 +52,13 @@ widget (`features/auth/turnstile.tsx`) and sends `humanToken`; the API verifies
 it once with Cloudflare (`services/turnstile.ts`). The site CSP allows
 `challenges.cloudflare.com` for the script and challenge frame. Off until the
 keys exist; a Cloudflare outage lets the action through.
+
+## Part 5: custom domain follow-ups
+
+- Pages on an old address redirect to `NEXT_PUBLIC_SITE_URL` (proxy.ts).
+- `pnpm --filter @workspace/db run rewrite:origins` rewrites saved Repository
+  and Demo URLs from an old origin to the new one.
+- The `PROXY_REQUIRED` refusal now carries a request id.
+
+Live 2026-11-10: Render on d718de4 with PROXY_REQUIRED, Turnstile and
+GITHUB_TOKEN_SECRET set; production database at 22 migrations.

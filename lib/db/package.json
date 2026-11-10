@@ -11,6 +11,7 @@
     "generate": "drizzle-kit generate --config ./drizzle.config.ts",
     "migrate:dev": "node ./scripts/migrate-dev.mjs",
     "migrate:release": "node ./scripts/migrate-release.mjs",
+    "rewrite:origins": "node ./scripts/rewrite-origins.mjs",
     "test:integration": "vitest run tests/*.integration.test.ts"
   },
   "dependencies": {
