@@ -14,6 +14,10 @@ import {
 } from "./community-policy";
 import type { AuthSession } from "./auth-sessions";
 import { assertOwnedAssets } from "./community-assets";
+import {
+  forgetProjectRepositories,
+  unpublishHiddenDemos,
+} from "./repository-cleanup";
 export async function projectAction(
   db: CommunityDb,
   s: AuthSession,
@@ -79,6 +83,9 @@ export async function projectAction(
           [...values, uid],
         );
     const id = r.rows[0].id as string;
+    // A project that stops being public takes its demo down with it.
+    if (old && input.visibility !== "public")
+      await unpublishHiddenDemos(db, { projectId: id });
     if (!old) {
       await db.query(
         "INSERT INTO community_contributors(project_id,user_id,status) VALUES($1,$2,'active')",
@@ -111,7 +118,9 @@ export async function projectAction(
       "DELETE FROM events WHERE type LIKE 'community.project%' AND payload->>'resourceId'=$1",
       [input.id],
     );
-    // Posts stay independent; the deleted project's link is cleared by FK.
+    // Its repository's stored code and demo go first; posts stay
+    // independent (the deleted project's link is cleared by FK).
+    await forgetProjectRepositories(db, input.id);
     await db.query("DELETE FROM community_projects WHERE id=$1", [input.id]);
     return { message: "Project deleted" };
   }

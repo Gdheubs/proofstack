@@ -19,6 +19,13 @@ import {
   runRepositoryAction,
 } from "../artifacts/api-server/src/services/repositories";
 import {
+  assertHandleAvailable,
+  forgetProjectRepositories,
+  renameOwnerAddresses,
+  retireHandle,
+  unpublishHiddenDemos,
+} from "../artifacts/api-server/src/services/repository-cleanup";
+import {
   commitChanges,
   listTree,
   readFile,
@@ -72,6 +79,16 @@ function fakeR2() {
         const del = command.input.Delete as { Objects: { Key: string }[] };
         for (const o of del.Objects)
           objects.delete(`${command.input.Bucket}/${o.Key}`);
+        return {};
+      }
+      if (command.constructor.name === "DeleteObjectCommand") {
+        objects.delete(key);
+        return {};
+      }
+      if (command.constructor.name === "CopyObjectCommand") {
+        const from = objects.get(decodeURI(String(command.input.CopySource)));
+        if (!from) throw new Error("NoSuchKey");
+        objects.set(key, from);
         return {};
       }
       if (command.constructor.name === "GetObjectCommand") {
@@ -278,15 +295,44 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       const url = `https://demos.example/${handle}/site-app/`;
       expect(published.message).toBe(`Demo published at ${url}`);
       const base = `test-bucket/private/demos/${handle}/site-app/`;
+      const live = () => base + `v/${objects.get(base + "current")}/`;
+      const first = live();
       const demoKeys = [...objects.keys()]
         .filter((k) => k.startsWith(base))
         .sort();
       // The dist folder becomes the site; sources outside it are not published.
-      expect(demoKeys).toEqual([base + "css/site.css", base + "index.html"]);
-      expect(objects.get(base + "index.html")!.toString()).toBe(
+      expect(demoKeys).toEqual([
+        base + "current",
+        first + "css/site.css",
+        first + "index.html",
+      ]);
+      expect(objects.get(first + "index.html")!.toString()).toBe(
         "<h1>Hello</h1>",
       );
-      expect(types.get(base + "css/site.css")).toBe("text/css");
+      expect(types.get(first + "css/site.css")).toBe("text/css");
+
+      // A republish that fails part-way leaves the published version live.
+      failWrites = true;
+      await expect(
+        runRepositoryAction(req, sessionOf(owner), {
+          action: "demo-publish",
+          id: repo,
+          branch: "site",
+        }),
+      ).rejects.toMatchObject({ status: 503 });
+      failWrites = false;
+      expect(live()).toBe(first);
+      expect(
+        [...objects.keys()].filter((k) => k.startsWith(base)).sort(),
+      ).toEqual(demoKeys);
+      // A successful republish switches versions and removes the old one.
+      await runRepositoryAction(req, sessionOf(owner), {
+        action: "demo-publish",
+        id: repo,
+        branch: "site",
+      });
+      expect(live()).not.toBe(first);
+      expect([...objects.keys()].some((k) => k.startsWith(first))).toBe(false);
       const demoUrlOf = async () =>
         (
           await pool.query(
@@ -319,6 +365,96 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         }),
       ).rejects.toMatchObject({ status: 403 });
       expect([...objects.keys()].some((k) => k.startsWith(base))).toBe(false);
+    });
+
+    it("takes demos and saved code down when projects are hidden, renamed or deleted", async () => {
+      vi.stubEnv("DEMO_ORIGIN", "https://demos.example");
+      vi.stubEnv("AUTH_APP_ORIGIN", "https://proofstack.example");
+      await pool.query(
+        "UPDATE community_projects SET visibility='public' WHERE id=$1",
+        [project],
+      );
+      const handle = (
+        await pool.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          owner,
+        ])
+      ).rows[0].handle as string;
+      const repo = (
+        await runRepositoryAction(req, sessionOf(owner), {
+          action: "create",
+          projectId: project,
+          name: "Gone-App",
+        })
+      ).id;
+      const { head } = await listTree(owner, {
+        source: "hosted",
+        repo,
+        branch: "main",
+      });
+      await commitChanges(req, sessionOf(owner), {
+        source: "hosted",
+        repo,
+        branch: "main",
+        expectedHead: head,
+        newBranch: "site",
+        message: "Add a site",
+        changes: [{ path: "index.html", content: "<h1>Hi</h1>" }],
+      });
+      const publish = () =>
+        runRepositoryAction(req, sessionOf(owner), {
+          action: "demo-publish",
+          id: repo,
+          branch: "site",
+        });
+      const demoKeys = (h: string) =>
+        [...objects.keys()].filter((k) =>
+          k.startsWith(`test-bucket/private/demos/${h}/gone-app/`),
+        );
+      const project_ = async () =>
+        (
+          await pool.query(
+            "SELECT demo_url,repository_url FROM community_projects WHERE id=$1",
+            [project],
+          )
+        ).rows[0];
+      await publish();
+
+      // A username change moves the demo and the saved links.
+      const renamed = handle + "x";
+      await renameOwnerAddresses(pool, owner, handle, renamed);
+      expect(demoKeys(handle)).toEqual([]);
+      expect(demoKeys(renamed)).toContain(
+        `test-bucket/private/demos/${renamed}/gone-app/current`,
+      );
+      expect((await project_()).demo_url).toBe(
+        `https://demos.example/${renamed}/gone-app/`,
+      );
+      await pool.query("UPDATE profiles SET handle=$2 WHERE user_id=$1", [
+        owner,
+        renamed,
+      ]);
+      // The old username stays with this member for 90 days.
+      await retireHandle(pool, owner, handle);
+      await expect(
+        assertHandleAvailable(pool, randomUUID(), handle),
+      ).rejects.toMatchObject({ status: 409 });
+      await assertHandleAvailable(pool, owner, handle);
+
+      // Hiding the project takes its demo down.
+      await pool.query(
+        "UPDATE community_projects SET visibility='private' WHERE id=$1",
+        [project],
+      );
+      await unpublishHiddenDemos(pool, { projectId: project });
+      expect(demoKeys(renamed)).toEqual([]);
+      expect((await project_()).demo_url).toBe("");
+
+      // Deleting the project removes its saved code.
+      const bundle = `test-bucket/private/repositories/${repo}.bundle`;
+      expect(objects.has(bundle)).toBe(true);
+      await forgetProjectRepositories(pool, project);
+      expect(objects.has(bundle)).toBe(false);
+      await pool.query("DELETE FROM retired_handles WHERE user_id=$1", [owner]);
     });
 
     it("reports a repository with no saved copy as unavailable", async () => {

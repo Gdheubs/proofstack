@@ -54,7 +54,7 @@ export async function getAccount(session: AuthSession) {
        WHERE m.organization_id=requested.org_id AND m.status='active' ORDER BY p.display_name,m.user_id LIMIT 100) m`,
         [memberships.rows.map((o) => o.organizationId)],
       )
-    : { rows: [] };
+    : { rows: [] as { org_id: string; [key: string]: unknown }[] };
   const orgs = memberships.rows.map((org) => ({
     ...org,
     members: members.rows

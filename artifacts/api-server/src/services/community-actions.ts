@@ -11,6 +11,11 @@ import { organizationAction } from "./community-org-actions";
 import { assetAction, assertOwnedAssets } from "./community-assets";
 import { ApiError } from "../lib/errors";
 import { normalizePreferences } from "./notification-preferences";
+import {
+  assertHandleAvailable,
+  renameOwnerAddresses,
+  retireHandle,
+} from "./repository-cleanup";
 export async function runCommunityAction(
   req: Request,
   s: AuthSession,
@@ -22,10 +27,25 @@ export async function runCommunityAction(
     if (input.action === "profile-save") {
       const old = (
         await db.query(
-          "SELECT avatar_url FROM profiles WHERE user_id=$1 FOR UPDATE",
+          "SELECT avatar_url,handle FROM profiles WHERE user_id=$1 FOR UPDATE",
           [s.user.id],
         )
       ).rows[0];
+      const renamed =
+        !!input.handle &&
+        (old?.handle ?? "").toLowerCase() !== input.handle.toLowerCase();
+      if (renamed) {
+        await assertHandleAvailable(db, s.user.id, input.handle);
+        // Reclaiming one's own retired name lifts its reservation.
+        await db.query(
+          "DELETE FROM retired_handles WHERE handle=lower($1) AND user_id=$2",
+          [input.handle, s.user.id],
+        );
+        if (old?.handle) {
+          await renameOwnerAddresses(db, s.user.id, old.handle, input.handle);
+          await retireHandle(db, s.user.id, old.handle);
+        }
+      }
       if (input.avatarPath)
         await assertOwnedAssets(
           db,

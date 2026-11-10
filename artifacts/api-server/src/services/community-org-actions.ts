@@ -11,6 +11,7 @@ import { requireFresh, type AuthSession } from "./auth-sessions";
 import { ApiError } from "../lib/errors";
 import { adminClient, providerFailure } from "./auth-provider";
 import { roleRank } from "./organization-roles";
+import { unpublishHiddenDemos } from "./repository-cleanup";
 // Owner and admin roles require a verified native sign-in factor.
 async function assertTargetMfa(db: CommunityDb, userId: string) {
   const targetUser = (
@@ -174,6 +175,9 @@ export async function organizationAction(
       "INSERT INTO community_organization_profiles(organization_id,description,website,visibility) VALUES($1,$2,$3,$4) ON CONFLICT(organization_id) DO UPDATE SET description=EXCLUDED.description,website=EXCLUDED.website,visibility=EXCLUDED.visibility",
       [id, input.description, input.website, input.visibility],
     );
+    // A private organization's projects are no longer public: no demos.
+    if (input.id && input.visibility !== "public")
+      await unpublishHiddenDemos(db, { organizationId: id });
     return {
       message: input.id ? "Organization updated" : "Organization created",
       id,

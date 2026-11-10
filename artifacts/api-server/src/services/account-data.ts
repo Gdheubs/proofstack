@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import { ApiError } from "../lib/errors";
 import { privateAssetDirectory } from "./community-assets";
 import { DELETED_ACCOUNT_RETENTION_DAYS, TERMS_VERSION } from "./legal";
+import { forgetAccountRepositories, retireHandle } from "./repository-cleanup";
 
 // Erases an account inside the caller's transaction. Uploaded images are
 // queued for removal from object storage first; everything that references
@@ -60,6 +61,13 @@ export async function eraseAccount(db: PoolClient, userId: string) {
       DELETED_ACCOUNT_RETENTION_DAYS,
     ],
   );
+  // Stored code and demos go with the account; its username stays reserved
+  // for 90 days so nobody can take over its addresses.
+  await forgetAccountRepositories(db, userId);
+  const handle = (
+    await db.query("SELECT handle FROM profiles WHERE user_id=$1", [userId])
+  ).rows[0]?.handle as string | undefined;
+  if (handle) await retireHandle(db, null, handle);
   await db.query("DELETE FROM users WHERE id=$1", [userId]);
   return user.auth_subject as string;
 }

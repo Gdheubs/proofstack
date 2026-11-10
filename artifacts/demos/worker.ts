@@ -8,6 +8,7 @@ type R2Body = {
   body: ReadableStream;
   size: number;
   httpEtag: string;
+  text(): Promise<string>;
 };
 type R2Bucket = { get(key: string): Promise<R2Body | null> };
 export type Env = { DEMOS: R2Bucket; DEMO_PREFIX: string };
@@ -41,12 +42,14 @@ const TYPES: Record<string, string> = {
   xml: "application/xml",
   pdf: "application/pdf",
 };
-export const contentType = (path: string) =>
-  TYPES[path.split(".").pop()?.toLowerCase() ?? ""] ??
-  "application/octet-stream";
+// Only these types are served; anything else (programs, archives) is 404.
+export const contentType = (path: string): string | null =>
+  TYPES[path.split(".").pop()?.toLowerCase() ?? ""] ?? null;
 
+// A demo lives under <prefix>/<handle>/<repo>/: "current" names the live
+// version, whose files are under v/<version>/.
 export type Resolved =
-  | { kind: "file"; key: string; type: string }
+  | { kind: "file"; base: string; path: string; type: string }
   | { kind: "redirect"; location: string }
   | { kind: "home" }
   | { kind: "missing" };
@@ -78,16 +81,23 @@ export function resolve(pathname: string, prefix: string): Resolved {
     return { kind: "missing" };
   const file = rest.join("/");
   const path = file === "" || file.endsWith("/") ? `${file}index.html` : file;
+  const type = contentType(path);
+  if (!type) return { kind: "missing" };
   return {
     kind: "file",
-    key: `${prefix}/${handle.toLowerCase()}/${repo.toLowerCase()}/${path}`,
-    type: contentType(path),
+    base: `${prefix}/${handle.toLowerCase()}/${repo.toLowerCase()}/`,
+    path,
+    type,
   };
 }
 
 const HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
+  // Demos are not for search engines and cannot be framed by other sites.
+  "X-Robots-Tag": "noindex, nofollow",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Content-Security-Policy": "frame-ancestors 'self'",
 };
 const page = (status: number, title: string, body: string) =>
   new Response(
@@ -122,8 +132,18 @@ export default {
         status: 301,
         headers: { ...HEADERS, Location: target.location + url.search },
       });
-    const object =
-      target.kind === "file" ? await env.DEMOS.get(target.key) : null;
+    let object: R2Body | null = null;
+    if (target.kind === "file") {
+      const current = await env.DEMOS.get(`${target.base}current`);
+      const version = current ? (await current.text()).trim() : "";
+      if (/^[a-z0-9-]{1,40}$/.test(version))
+        object = await env.DEMOS.get(
+          `${target.base}v/${version}/${target.path}`,
+        );
+      // Demos published before versions existed have no "current".
+      else if (!current)
+        object = await env.DEMOS.get(`${target.base}${target.path}`);
+    }
     if (!object || target.kind !== "file")
       return page(
         404,

@@ -633,9 +633,15 @@ export async function repositoryIdByName(owner: string, name: string) {
     !repoNameSchema.safeParse(name).success
   )
     throw missing();
+  // The current username, or one its owner gave up in the last 90 days.
   const row = (
     await pool.query(
-      "SELECT r.id FROM repositories r JOIN profiles p ON p.user_id=r.owner_id WHERE lower(p.handle)=lower($1) AND lower(r.name)=lower($2)",
+      `SELECT r.id FROM repositories r JOIN profiles p ON p.user_id=r.owner_id
+       WHERE lower(p.handle)=lower($1) AND lower(r.name)=lower($2)
+       UNION ALL
+       SELECT r.id FROM retired_handles rh JOIN repositories r ON r.owner_id=rh.user_id
+       WHERE rh.handle=lower($1) AND rh.retired_at>now()-interval '90 days' AND lower(r.name)=lower($2)
+       LIMIT 1`,
       [owner, name],
     )
   ).rows[0];

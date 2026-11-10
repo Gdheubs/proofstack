@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { logger } from "../lib/logger";
 import {
   ObjectStorageService,
@@ -111,4 +115,24 @@ export function restoreRepository(
   })().finally(() => restoring.delete(id));
   restoring.set(id, work);
   return work;
+}
+
+// Deletes a repository's saved copy (after the repository is deleted).
+export async function deleteRepositoryBundle(id: string) {
+  if (!repositoryStoreEnabled()) return;
+  const target = location(id);
+  try {
+    await r2
+      .client()
+      .send(
+        new DeleteObjectCommand({ Bucket: target.bucket, Key: target.key }),
+      );
+  } catch (error) {
+    if (!isObjectNotFound(error))
+      throw repoError(
+        "Repository storage could not be cleared. Try again.",
+        503,
+      );
+  }
+  saved.delete(id);
 }

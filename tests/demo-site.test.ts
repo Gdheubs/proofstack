@@ -8,15 +8,16 @@ describe("demo site addresses", () => {
   it("maps /<handle>/<repo>/… to objects under the demo prefix only", () => {
     expect(resolve("/Suhai/QA-App/", prefix)).toEqual({
       kind: "file",
-      key: "private/demos/suhai/qa-app/index.html",
+      base: "private/demos/suhai/qa-app/",
+      path: "index.html",
       type: "text/html; charset=utf-8",
     });
     expect(resolve("/suhai/app/css/site.css", prefix)).toMatchObject({
-      key: "private/demos/suhai/app/css/site.css",
+      path: "css/site.css",
       type: "text/css; charset=utf-8",
     });
     expect(resolve("/suhai/app/docs/", prefix)).toMatchObject({
-      key: "private/demos/suhai/app/docs/index.html",
+      path: "docs/index.html",
     });
     expect(resolve("/suhai/app", prefix)).toEqual({
       kind: "redirect",
@@ -36,17 +37,29 @@ describe("demo site addresses", () => {
       "/-bad/app/",
       "/suhai/%E0%A4%A/",
       "/onlyone",
+      // Programs, archives and unknown types are never served.
+      "/suhai/app/setup.exe",
+      "/suhai/app/site.zip",
+      "/suhai/app/data.bin",
     ])
       expect(resolve(path, prefix).kind, path).toBe("missing");
   });
-  it("labels file types and serves with safe headers", async () => {
+  it("labels file types and serves the current version with safe headers", async () => {
     expect(contentType("a.WEBP")).toBe("image/webp");
-    expect(contentType("unknown.bin")).toBe("application/octet-stream");
+    expect(contentType("unknown.bin")).toBeNull();
+    const object = (text: string) => ({
+      body: new Response(text).body!,
+      size: text.length,
+      httpEtag: '"e1"',
+      text: async () => text,
+    });
     const stored = new Map([
-      [
-        "private/demos/suhai/app/index.html",
-        { body: new Response("<h1>hi</h1>").body!, size: 11, httpEtag: '"e1"' },
-      ],
+      ["private/demos/suhai/app/current", object("v1")],
+      ["private/demos/suhai/app/v/v1/index.html", object("<h1>hi</h1>")],
+      // An older version that is no longer current is never served.
+      ["private/demos/suhai/app/v/v0/old.html", object("old")],
+      // A demo published before versions existed.
+      ["private/demos/suhai/legacy/index.html", object("legacy")],
     ]);
     const env = {
       DEMO_PREFIX: prefix,
@@ -59,7 +72,22 @@ describe("demo site addresses", () => {
     expect(ok.status).toBe(200);
     expect(ok.headers.get("content-type")).toBe("text/html; charset=utf-8");
     expect(ok.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(ok.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(ok.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+    expect(ok.headers.get("content-security-policy")).toBe(
+      "frame-ancestors 'self'",
+    );
     expect(await ok.text()).toBe("<h1>hi</h1>");
+    const stale = await worker.fetch(
+      new Request("https://demos.example/suhai/app/old.html"),
+      env,
+    );
+    expect(stale.status).toBe(404);
+    const legacy = await worker.fetch(
+      new Request("https://demos.example/suhai/legacy/"),
+      env,
+    );
+    expect(await legacy.text()).toBe("legacy");
     const missing = await worker.fetch(
       new Request("https://demos.example/suhai/app/nope.html"),
       env,
@@ -103,6 +131,10 @@ describe("choosing what a demo publishes", () => {
   });
   it("explains a missing index.html and enforces the limits", () => {
     expect(() => demoFiles([file("README.md")])).toThrow(/index\.html/);
+    for (const blocked of ["downloads/setup.EXE", "site.zip", "a.tar.gz"])
+      expect(() => demoFiles([file("index.html"), file(blocked)])).toThrow(
+        /programs or archives/,
+      );
     expect(() =>
       demoFiles(
         Array.from({ length: 501 }, (_, i) => file(i ? `f${i}` : "index.html")),

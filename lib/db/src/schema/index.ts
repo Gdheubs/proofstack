@@ -33,3 +33,4 @@ export * from "./intelligence";
 export * from "./operations";
 export * from "./assessments";
 export * from "./github";
+export * from "./retired-handles";
