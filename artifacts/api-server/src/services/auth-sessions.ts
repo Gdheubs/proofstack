@@ -10,11 +10,7 @@ import {
   signedNonce,
   validNonce,
 } from "../lib/auth-crypto";
-import { authOrigin, authenticationProvider } from "../lib/auth-config";
-import {
-  readFirebaseAppSession,
-  type FirebaseAppSession,
-} from "./firebase-sessions";
+import { authOrigin } from "../lib/auth-config";
 import { env } from "../lib/env";
 import { ApiError } from "../lib/errors";
 import {
@@ -108,7 +104,7 @@ export type SessionRow = {
   last_mfa_at: Date | null;
   password_recovery: boolean;
 };
-// The shared identity is structural; Firebase must not fabricate a Supabase User.
+// The identity fields the application reads from the provider's User.
 export type ProviderIdentity = Pick<
   User,
   | "id"
@@ -125,7 +121,7 @@ export type ProviderIdentity = Pick<
     >
   >;
 };
-export type AuthSession = SupabaseAppSession | FirebaseAppSession;
+export type AuthSession = SupabaseAppSession;
 export type SupabaseAppSession = {
   // Optional only for backwards-compatible Supabase fixtures. Runtime sessions set it.
   provider?: "supabase";
@@ -238,18 +234,6 @@ export function requireAccount(
       403,
       "AGREEMENT_REQUIRED",
       "Confirm your date of birth and accept the Terms and Privacy Policy to continue",
-    );
-  return session;
-}
-export function requireSupabase(session: AuthSession): SupabaseAppSession {
-  if (
-    session.provider === "firebase" ||
-    authenticationProvider() !== "supabase"
-  )
-    throw new ApiError(
-      409,
-      "AUTH_METHOD_UNAVAILABLE",
-      "This security option is not available yet",
     );
   return session;
 }
@@ -462,8 +446,6 @@ export async function readSession(
   res: Response,
 ): Promise<AuthSession | null> {
   delete res.locals?.principal;
-  if (authenticationProvider() === "firebase")
-    return readFirebaseAppSession(req, res);
   const handle: unknown = req.cookies?.[SESSION_COOKIE];
   if (typeof handle !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(handle))
     return null;
@@ -473,8 +455,6 @@ export async function readSession(
       [digest(handle)],
     );
     const row = rows[0];
-    // Refuse other-provider rows before decrypting, mutating or contacting Supabase.
-    if (row?.provider_session_id.startsWith("firebase:")) return null;
     if (!row || sessionEnded(row)) {
       if (row)
         await tx.query(
@@ -586,7 +566,6 @@ export async function saveCredentials(
   credentials: Credentials,
   mfa = false,
 ) {
-  requireSupabase(session);
   const checked = await providerClient().auth.getUser(credentials.access_token);
   providerFailure(checked.error);
   if (!checked.data.user || checked.data.user.id !== session.providerUser.id)
@@ -640,21 +619,6 @@ export async function revokeSessions(
   });
   // Clear the local cookie even when native global revocation is unavailable.
   res.clearCookie(SESSION_COOKIE, cookieOptions);
-  if (session.provider === "firebase") {
-    if (global) {
-      const { getFirebaseAdminAuth, mapFirebaseAdminError } =
-        await import("./firebase-provider");
-      try {
-        await (
-          await getFirebaseAdminAuth()
-        ).revokeRefreshTokens(session.firebase.uid);
-      } catch (error) {
-        if (error instanceof ApiError) throw error;
-        throw mapFirebaseAdminError(error);
-      }
-    }
-    return;
-  }
   // Local revocation is immediate; native revocation failure is explicit.
   const result = await adminClient().auth.admin.signOut(
     session.credentials.access_token,

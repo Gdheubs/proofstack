@@ -64,66 +64,20 @@ export function resolveDevConfiguration(
   env.API_INTERNAL_ORIGIN = apiOrigin;
   env.CORS_ALLOWED_ORIGINS = env.AUTH_APP_ORIGIN;
   env.TRUST_PROXY_CIDRS = "";
-  env.AUTH_PROVIDER ??= "supabase";
-  if (!["firebase", "supabase"].includes(env.AUTH_PROVIDER))
-    invalid("AUTH_PROVIDER");
-  if (env.AUTH_PROVIDER === "firebase") {
-    if (!env.GOOGLE_APPLICATION_CREDENTIALS)
-      invalid("GOOGLE_APPLICATION_CREDENTIALS");
-    let web;
-    if (env.FIREBASE_WEB_CONFIG_FILE) {
-      try {
-        web = JSON.parse(readText(env.FIREBASE_WEB_CONFIG_FILE));
-      } catch {
-        invalid("FIREBASE_WEB_CONFIG_FILE");
-      }
-    } else {
-      web = {
-        projectId: env.FIREBASE_WEB_PROJECT_ID,
-        authDomain: env.FIREBASE_WEB_AUTH_DOMAIN,
-        apiKey: env.FIREBASE_WEB_API_KEY,
-        appId: env.FIREBASE_WEB_APP_ID,
-      };
-    }
+  try {
+    const identity = new URL(env.SUPABASE_URL);
     if (
-      !web ||
-      !/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(env.FIREBASE_PROJECT_ID ?? "") ||
-      web.projectId !== env.FIREBASE_PROJECT_ID ||
-      web.authDomain !== `${web.projectId}.firebaseapp.com` ||
-      typeof web.apiKey !== "string" ||
-      !web.apiKey.trim() ||
-      typeof web.appId !== "string" ||
-      !web.appId.trim()
+      identity.protocol !== "https:" ||
+      identity.origin !== env.SUPABASE_URL ||
+      !identity.hostname.endsWith(".supabase.co")
     )
-      invalid("FIREBASE_WEB_CONFIG");
-    if (
-      env.FIREBASE_WEB_AUTH_DOMAIN &&
-      env.FIREBASE_WEB_AUTH_DOMAIN !== web.authDomain
-    )
-      invalid("FIREBASE_WEB_AUTH_DOMAIN");
-    env.FIREBASE_WEB_AUTH_DOMAIN = web.authDomain;
-    if (env.FIREBASE_AUTH_EMULATOR_HOST !== undefined)
-      invalid("FIREBASE_AUTH_EMULATOR_HOST");
-  } else {
-    try {
-      const identity = new URL(env.SUPABASE_URL);
-      if (
-        identity.protocol !== "https:" ||
-        identity.origin !== env.SUPABASE_URL ||
-        !identity.hostname.endsWith(".supabase.co")
-      )
-        invalid("SUPABASE_URL");
-    } catch {
       invalid("SUPABASE_URL");
-    }
-    for (const key of ["SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SECRET_KEY"])
-      if (!env[key]) invalid(key);
+  } catch {
+    invalid("SUPABASE_URL");
   }
-  for (const field of [
-    "FIREBASE_GOOGLE_ENABLED",
-    "FIREBASE_GITHUB_ENABLED",
-    "INTELLIGENCE_ENABLED",
-  ]) {
+  for (const key of ["SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SECRET_KEY"])
+    if (!env[key]) invalid(key);
+  for (const field of ["INTELLIGENCE_ENABLED"]) {
     if (env[field] !== undefined && !["true", "false"].includes(env[field]))
       invalid(field);
   }
@@ -151,7 +105,6 @@ export function resolveDevConfiguration(
         "NUMBER_OF_PROCESSORS",
         "NODE_ENV",
         "API_INTERNAL_ORIGIN",
-        "FIREBASE_WEB_AUTH_DOMAIN",
       ].includes(key),
     ),
   );

@@ -71,7 +71,7 @@ vi.mock(
 );
 vi.mock("@/features/auth/mfa", () => ({
   MfaEnroll: () => null,
-  StepUpDialog: () => "Legacy step-up dialog",
+  StepUpDialog: () => "Step-up dialog",
 }));
 vi.mock(
   "@/components/ui/button",
@@ -97,16 +97,6 @@ vi.mock(
   () => import(`${process.cwd()}/artifacts/proofstack/lib/utils.ts`),
 );
 
-const publicConfig = {
-  provider: "firebase",
-  firebase: {
-    apiKey: "public-browser-key",
-    authDomain: "example.firebaseapp.com",
-    projectId: "example",
-    appId: "public-app-id",
-  },
-  providers: { google: true, github: true },
-};
 afterEach(() => {
   state.stepUp = null;
   state.phoneOtp = false;
@@ -114,7 +104,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-async function renderAccount(config: unknown = publicConfig, error?: Error) {
+async function renderAccount() {
   const root = `${process.cwd()}/artifacts/proofstack/node_modules`;
   const React = await import(`${root}/react/index.js`);
   Object.assign(globalThis, { React });
@@ -131,12 +121,6 @@ async function renderAccount(config: unknown = publicConfig, error?: Error) {
     defaultOptions: { queries: { retry: false, retryOnMount: false } },
   });
   client.setQueryData(["/api/auth/account"], state.account);
-  if (config) client.setQueryData(["/api/auth/firebase/config"], config);
-  if (error)
-    client
-      .getQueryCache()
-      .build(client, { queryKey: ["/api/auth/firebase/config"] })
-      .setState({ status: "error", error });
   return renderToStaticMarkup(
     React.createElement(
       QueryClientProvider,
@@ -146,129 +130,10 @@ async function renderAccount(config: unknown = publicConfig, error?: Error) {
   );
 }
 
-it("renders Firebase social credentials and read-only native factors, never legacy actions", async () => {
-  const html = await renderAccount();
-  expect(html).not.toContain("Change password");
-  expect(html).not.toContain("Add factor");
-  expect(html).not.toContain(">Remove<");
-  expect(html).not.toContain("Generate backup codes");
-  expect(html).not.toContain(">Recover<");
-  expect(html).toContain("Social sign-in");
-  expect(html).toContain("managed by that account");
-  expect(html).toContain("Personal authenticator");
-  expect(html).toContain("Your enrolled factors are checked");
-  expect(html).toContain("not available here yet");
-  expect(html).toContain("Profile");
-  expect(html).toContain("Devices");
-});
-
-it("fails closed while configuration is pending without hiding common account data", async () => {
-  const html = await renderAccount(null);
-  expect(html).not.toContain("Change password");
-  expect(html).not.toContain("Add factor");
-  expect(html).not.toContain("Legacy step-up dialog");
-  expect(html).toContain("Loading credential configuration");
-  expect(html).toContain("Save profile");
-  expect(html).toContain("Devices");
-  expect(html).toContain("Security activity");
-  expect(html).toContain("Organizations");
-});
-
-it("fails closed on configuration error even when stale configuration selected Supabase", async () => {
-  const html = await renderAccount(
-    { provider: "supabase" },
-    new Error("configuration offline"),
-  );
-  expect(html).not.toContain("Change password");
-  expect(html).not.toContain("Add factor");
-  expect(html).not.toContain("Legacy step-up dialog");
-  expect(html).toContain("configuration offline");
-  expect(html).toContain("Retry");
-  expect(html).toContain("Save profile");
-  expect(html).toContain("Devices");
-});
-
-it("routes Firebase step-up to native provider sign-in, not the Supabase challenge", async () => {
-  state.stepUp = {};
-  const html = await renderAccount();
-  expect(html).not.toContain("Legacy step-up dialog");
-  expect(html).toContain("Confirm it is you");
-  expect(html).toContain("fresh second-factor sign-in");
-  expect(html).toContain("Sign out and verify again");
-  expect(html).toContain("Cancel verification");
-  const { restartFirebaseSignIn } = await import(
-    `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
-  );
-  const run = vi.fn(async () => ({ signedOut: true }));
-  const cancel = vi.fn();
-  const navigate = vi.fn();
-  await restartFirebaseSignIn(run, cancel, navigate);
-  expect(run).toHaveBeenCalledExactlyOnceWith({
-    action: "logout",
-    scope: "local",
-  });
-  expect(cancel).toHaveBeenCalledExactlyOnceWith(false);
-  expect(navigate).toHaveBeenCalledExactlyOnceWith("/auth");
-});
-
-it("does not offer legacy phone credential actions in Firebase even with stale capability flags", async () => {
-  state.phoneOtp = true;
-  const html = await renderAccount();
-  expect(html).not.toContain("Send verification code");
-});
-
-it("does not redirect the Firebase journey unless the server confirms sign-out", async () => {
-  const { restartFirebaseSignIn } = await import(
-    `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
-  );
-  const cancel = vi.fn();
-  const navigate = vi.fn();
-  await expect(
-    restartFirebaseSignIn(
-      async () => ({ message: "not signed out" }),
-      cancel,
-      navigate,
-    ),
-  ).rejects.toThrow("Sign-out was not confirmed");
-  expect(cancel).not.toHaveBeenCalled();
-  expect(navigate).not.toHaveBeenCalled();
-});
-
-it.each([publicConfig, { provider: "supabase" }, null])(
-  "keeps organization authoring in Community and Account a membership summary (%s)",
-  async (config) => {
-    state.account.memberships = [
-      {
-        organizationId: "org-id",
-        name: "Builders",
-        slug: "builders",
-        role: "organization_owner",
-        members: [
-          {
-            userId: "member-id",
-            displayName: "Hidden member administration",
-            role: "organization_admin",
-          },
-        ],
-      },
-    ];
-    const html = await renderAccount(config);
-    expect(html).not.toContain("Create organization");
-    expect(html).not.toContain("Add or change a member");
-    expect(html).not.toContain("Member Account ID");
-    expect(html).not.toContain("Hidden member administration");
-    expect(html).toContain('href="/organizations/builders"');
-    expect(html).toContain("Builders");
-    expect(html).toContain("Your role: owner");
-    expect(html).toContain('href="/organizations"');
-    expect(html).toContain("Manage organizations");
-  },
-);
-
-it("preserves legacy credentials and step-up only for an explicit settled Supabase provider", async () => {
+it("renders credentials, factors and step-up without any provider lookup", async () => {
   state.phoneOtp = true;
   state.stepUp = {};
-  const html = await renderAccount({ provider: "supabase" });
+  const html = await renderAccount();
   for (const action of [
     "Change password",
     "Add factor",
@@ -276,54 +141,44 @@ it("preserves legacy credentials and step-up only for an explicit settled Supaba
     "Generate backup codes",
     ">Recover<",
     "Send verification code",
-    "Legacy step-up dialog",
+    "Step-up dialog",
   ])
     expect(html).toContain(action);
+  expect(html).toContain("Personal authenticator");
+  expect(html).toContain("Profile");
+  expect(html).toContain("Devices");
+  expect(html).toContain("Security activity");
+  expect(html).toContain("Organizations");
+  expect(html).not.toContain("Loading credential configuration");
   expect(html).not.toContain("Social sign-in");
-  expect(html).not.toContain("native Firebase second-factor");
 });
 
-it.each([null, publicConfig, {}])(
-  "fails closed on an error with absent, Firebase, or unrecognized cached configuration (%s)",
-  async (config) => {
-    const html = await renderAccount(
-      config,
-      new Error("configuration offline"),
-    );
-    expect(html).toContain("configuration offline");
-    expect(html).toContain("Retry");
-    expect(html).not.toContain("Social sign-in");
-    expect(html).not.toContain("Change password");
-    expect(html).not.toContain("Add factor");
-    expect(html).not.toContain("Legacy step-up dialog");
-  },
-);
-
-it("does not default to legacy when a settled configuration is unrecognized", async () => {
-  const html = await renderAccount({});
-  expect(html).toContain("Authentication configuration is unavailable");
-  expect(html).toContain("Retry");
-  expect(html).not.toContain("Change password");
-  expect(html).not.toContain("Add factor");
-});
-
-it("keeps failed Firebase sign-out in place instead of continuing the protected action", async () => {
-  const { restartFirebaseSignIn } = await import(
-    `${process.cwd()}/artifacts/proofstack/features/account/sections.tsx`
-  );
-  const cancel = vi.fn();
-  const navigate = vi.fn();
-  await expect(
-    restartFirebaseSignIn(
-      async () => {
-        throw new Error("logout offline");
-      },
-      cancel,
-      navigate,
-    ),
-  ).rejects.toThrow("logout offline");
-  expect(cancel).not.toHaveBeenCalled();
-  expect(navigate).not.toHaveBeenCalled();
+it("keeps organization authoring in Community and Account a membership summary", async () => {
+  state.account.memberships = [
+    {
+      organizationId: "org-id",
+      name: "Builders",
+      slug: "builders",
+      role: "organization_owner",
+      members: [
+        {
+          userId: "member-id",
+          displayName: "Hidden member administration",
+          role: "organization_admin",
+        },
+      ],
+    },
+  ];
+  const html = await renderAccount();
+  expect(html).not.toContain("Create organization");
+  expect(html).not.toContain("Add or change a member");
+  expect(html).not.toContain("Member Account ID");
+  expect(html).not.toContain("Hidden member administration");
+  expect(html).toContain('href="/organizations/builders"');
+  expect(html).toContain("Builders");
+  expect(html).toContain("Your role: owner");
+  expect(html).toContain('href="/organizations"');
+  expect(html).toContain("Manage organizations");
 });
 
 it("shows an organization empty state linked to its single management home", async () => {

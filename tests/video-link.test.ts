@@ -75,7 +75,12 @@ describe("video links in posts", () => {
   it("lets the site load exactly these players and keeps them sandboxed", () => {
     const policy = buildContentSecurityPolicy("testNonce123", false);
     const frames = /frame-src ([^;]+)/.exec(policy)![1]!.split(" ");
-    expect(frames).toEqual(["'self'", ...VIDEO_FRAME_ORIGINS]);
+    // Plus the Turnstile challenge frame (see features/auth/turnstile.tsx).
+    expect(frames).toEqual([
+      "'self'",
+      ...VIDEO_FRAME_ORIGINS,
+      "https://challenges.cloudflare.com",
+    ]);
     const embed = readFileSync(
       `${process.cwd()}/artifacts/proofstack/features/community/video-embed.tsx`,
       "utf8",

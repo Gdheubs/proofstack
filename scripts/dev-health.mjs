@@ -14,11 +14,6 @@ export async function verifyApiReadiness(origin, request = fetch) {
       (body) => body.status === "ready",
     ],
     [
-      "/api/auth/firebase/config",
-      "authentication configuration",
-      (body) => ["firebase", "supabase"].includes(body.provider),
-    ],
-    [
       "/api/auth/context",
       "anonymous session/CSRF configuration",
       (body) =>

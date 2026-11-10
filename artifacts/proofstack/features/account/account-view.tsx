@@ -1,22 +1,17 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchBrowserAuthConfig } from "../auth/browser-firebase-auth";
 import {
   getGetAccountQueryKey,
   useGetAccount,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { errInfo, useAct } from "@/hooks/use-auth";
-import { ErrorBlock, Notice, Panel, Skeleton } from "@/features/auth/shared";
+import { ErrorBlock, Notice, Skeleton } from "@/features/auth/shared";
 import { StepUpDialog } from "@/features/auth/mfa";
 import { useGate } from "@/features/account/use-gate";
 import {
   ActivityPanel,
-  FirebaseCredentialsPanel,
-  FirebaseSecurityPanel,
-  FirebaseStepUpPanel,
   IdentityPanel,
   OrganizationSummaryPanel,
   PasswordPanel,
@@ -29,16 +24,6 @@ import { PrivacyPanel } from "@/features/legal/privacy-panel";
 export function AccountView() {
   const { q, ctx, ok } = useGate();
   const { act, raw, stepUp, settleStepUp } = useAct();
-  const authConfig = useQuery({
-    queryKey: ["/api/auth/firebase/config"],
-    queryFn: ({ signal }) => fetchBrowserAuthConfig(signal),
-    staleTime: 0,
-    retry: 1,
-  });
-  const provider =
-    authConfig.isPending || authConfig.isError
-      ? undefined
-      : authConfig.data?.provider;
   const acc = useGetAccount({
     query: { queryKey: getGetAccountQueryKey(), enabled: ok },
   });
@@ -80,11 +65,6 @@ export function AccountView() {
         </div>
       </div>
       {logoutError && <Notice tone="error">{logoutError}</Notice>}
-      {provider === "firebase" && stepUp && (
-        <div className="mb-5">
-          <FirebaseStepUpPanel run={raw} onSettle={settleStepUp} />
-        </div>
-      )}
       {ok &&
         account?.activity.some(
           (event) => event.action === "auth.suspicious_login",
@@ -118,51 +98,24 @@ export function AccountView() {
         <div className="grid items-start gap-5 md:grid-cols-2">
           <div className="space-y-5">
             <IdentityPanel account={account} ctx={ctx} act={act} />
-            {provider === "supabase" && (
-              <PhonePanel account={account} ctx={ctx} act={act} />
-            )}
-            {provider === "firebase" ? (
-              <FirebaseCredentialsPanel />
-            ) : provider === "supabase" ? (
-              <PasswordPanel account={account} ctx={ctx} act={act} />
-            ) : (
-              <Panel title="Credentials" eyebrow="Authentication">
-                {authConfig.isPending ? (
-                  <Notice>Loading credential configuration...</Notice>
-                ) : (
-                  <ErrorBlock
-                    message={
-                      authConfig.isError
-                        ? errInfo(authConfig.error).message
-                        : "Authentication configuration is unavailable. Retry to continue."
-                    }
-                    onRetry={() => authConfig.refetch()}
-                  />
-                )}
-              </Panel>
-            )}
+            <PhonePanel account={account} ctx={ctx} act={act} />
+            <PasswordPanel account={account} ctx={ctx} act={act} />
             <ActivityPanel account={account} ctx={ctx} act={act} />
           </div>
           <div className="space-y-5">
-            {provider === "firebase" ? (
-              <FirebaseSecurityPanel account={account} />
-            ) : provider === "supabase" ? (
-              <SecurityPanel account={account} ctx={ctx} act={act} />
-            ) : null}
+            <SecurityPanel account={account} ctx={ctx} act={act} />
             <SessionsPanel account={account} ctx={ctx} act={act} />
             <OrganizationSummaryPanel account={account} />
-            {provider === "supabase" && <PrivacyPanel act={act} />}
+            <PrivacyPanel act={act} />
           </div>
         </div>
       )}
-      {provider === "supabase" && (
-        <StepUpDialog
-          open={!!stepUp}
-          factors={ctx?.factors ?? []}
-          run={raw}
-          onSettle={settleStepUp}
-        />
-      )}
+      <StepUpDialog
+        open={!!stepUp}
+        factors={ctx?.factors ?? []}
+        run={raw}
+        onSettle={settleStepUp}
+      />
     </div>
   );
 }

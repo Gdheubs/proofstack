@@ -33,33 +33,13 @@ describe("Security and configuration foundations", () => {
       }),
     ).toThrow("BIND_HOST");
   });
-  it("allows Firebase native token/iframe traffic only for an exact configured auth domain", () => {
-    const policy = buildContentSecurityPolicy(
-      "testNonce123",
-      false,
-      "proofstack-test.firebaseapp.com",
-    );
+  it("keeps the content security policy same-origin apart from video players", () => {
+    const policy = buildContentSecurityPolicy("testNonce123", false);
+    expect(policy).toContain("connect-src 'self';");
     expect(policy).toContain(
-      "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://proofstack-test.firebaseapp.com",
+      "frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://challenges.cloudflare.com;",
     );
-    expect(policy).toContain(
-      "frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://proofstack-test.firebaseapp.com",
-    );
-    expect(policy).not.toContain("*.firebaseapp.com");
     expect(policy).not.toContain("'unsafe-eval'");
-    expect(buildContentSecurityPolicy("testNonce123", false)).not.toContain(
-      "identitytoolkit.googleapis.com",
-    );
-  });
-  it.each([
-    "https://evil.example",
-    "*.firebaseapp.com",
-    "proofstack-test.firebaseapp.com; connect-src *",
-    "proofstack-test.firebaseapp.com/extra",
-  ])("rejects an invalid Firebase CSP domain %s", (domain) => {
-    expect(() =>
-      buildContentSecurityPolicy("testNonce123", false, domain),
-    ).toThrow("Firebase auth domain");
   });
   it("accepts explicit proxy networks but rejects universal ranges and hostnames", () => {
     for (const value of ["127.0.0.1", "10.1.0.0/16", "::1", "2001:db8::/64"])

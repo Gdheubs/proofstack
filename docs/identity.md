@@ -1,6 +1,6 @@
 # Phase 2 — identity, accounts and security
 
-The Supabase-specific flows below apply only in `AUTH_PROVIDER=supabase` (the default). Firebase Google/GitHub identity, session wiring, supported account operations, and deliberately pending MFA/credential operations are documented separately in [Firebase authentication](firebase-auth.md). Do not treat Supabase enrollment/recovery instructions as Firebase support.
+Supabase Auth is the only identity provider (the Firebase code path was removed on November 10, 2026).
 
 ## Implemented boundaries
 
@@ -10,7 +10,7 @@ The browser holds a random 256-bit `__Host-ps-session` HttpOnly, Secure cookie. 
 
 Each authenticated request verifies the exact credential with Supabase `getUser()` before interpreting claims. On-demand refresh is serialized per app session. Local revocation is immediate, including individual devices and logout-all; global logout also requests native provider revocation. Provider access JWTs may remain valid until their own expiry, but cannot re-enter a revoked app session.
 
-Sessions end after seven days without activity; each visit extends them, up to thirty days after sign-in (owner decision, November 10, 2026). Sensitive actions still require a sign-in or second factor within the last five minutes. Password-reset sessions expire after ten minutes and are never extended. Firebase-mode sessions keep the seven-day provider cookie lifetime. Code verification handles expire after five minutes; signup/OAuth/reset PKCE flows after twenty minutes. Native expiry also applies. Only the latest browser-bound flow can be verified. Callback cookies and PKCE verifier state prevent accepting an unsolicited callback. Email links must be opened in the browser that requested them. Invalid callbacks return a safe `/auth?error=callback_failed`.
+Sessions end after seven days without activity; each visit extends them, up to thirty days after sign-in (owner decision, November 10, 2026). Sensitive actions still require a sign-in or second factor within the last five minutes. Password-reset sessions expire after ten minutes and are never extended. Code verification handles expire after five minutes; signup/OAuth/reset PKCE flows after twenty minutes. Native expiry also applies. Only the latest browser-bound flow can be verified. Callback cookies and PKCE verifier state prevent accepting an unsolicited callback. Email links must be opened in the browser that requested them. Invalid callbacks return a safe `/auth?error=callback_failed`.
 
 The API requires an exact application Origin and signed double-submit CSRF token on mutations. Auth responses are private/no-store. Development cookies use SameSite=None for Replit's iframe; production uses Lax. Use a top-level app tab when browser third-party-cookie policy prevents preview authentication. Social sign-in must run outside the iframe.
 

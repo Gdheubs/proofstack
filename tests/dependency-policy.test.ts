@@ -52,11 +52,4 @@ describe("native install and security dependency policy", () => {
       "'@expo/ngrok-bin>@expo/ngrok-bin-win32-x64': '-'",
     );
   });
-
-  it("patches only the vulnerable Firestore gRPC dependency", () => {
-    expect(workspace).toContain("'@firebase/firestore>@grpc/grpc-js': 1.13.7");
-    expect(lock).not.toContain("'@grpc/grpc-js@1.9.16'");
-    expect(lock).toContain("'@grpc/grpc-js@1.13.7'");
-    expect(lock).toContain("'@grpc/grpc-js@1.14.6'");
-  });
 });

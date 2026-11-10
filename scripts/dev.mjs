@@ -70,14 +70,6 @@ async function main() {
   for (const [field, file] of [
     ["DEV_TLS_KEY_FILE", config.tlsKeyFile],
     ["DEV_TLS_CERT_FILE", config.tlsCertFile],
-    ...(config.env.AUTH_PROVIDER === "firebase"
-      ? [
-          [
-            "GOOGLE_APPLICATION_CREDENTIALS",
-            config.env.GOOGLE_APPLICATION_CREDENTIALS,
-          ],
-        ]
-      : []),
   ]) {
     try {
       accessSync(file, constants.R_OK);

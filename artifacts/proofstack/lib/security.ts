@@ -1,3 +1,6 @@
+// The Turnstile bot check (features/auth/turnstile.tsx) loads its script and
+// challenge frame from Cloudflare.
+const TURNSTILE = " https://challenges.cloudflare.com";
 // Video players that posts may embed (see features/community/video-link.ts).
 const VIDEO_FRAMES =
   " https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com";
@@ -5,28 +8,18 @@ const VIDEO_FRAMES =
 export function buildContentSecurityPolicy(
   nonce: string,
   development: boolean,
-  firebaseAuthDomain?: string,
 ): string {
   if (!/^[A-Za-z0-9+/=]+$/.test(nonce)) {
     throw new Error("Invalid CSP nonce");
   }
-  if (
-    firebaseAuthDomain &&
-    !/^[a-z][a-z0-9-]{4,28}[a-z0-9]\.firebaseapp\.com$/.test(firebaseAuthDomain)
-  ) {
-    throw new Error("Invalid Firebase auth domain for CSP");
-  }
-  const firebase = firebaseAuthDomain
-    ? ` https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://${firebaseAuthDomain}`
-    : "";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${TURNSTILE}${development ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
-    `connect-src 'self'${firebase}${development ? " ws: wss:" : ""}`,
-    `frame-src 'self'${VIDEO_FRAMES}${firebaseAuthDomain ? ` https://${firebaseAuthDomain}` : ""}`,
+    `connect-src 'self'${development ? " ws: wss:" : ""}`,
+    `frame-src 'self'${VIDEO_FRAMES}${TURNSTILE}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -5,6 +5,8 @@ import { ExternalLink, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { card, field } from "@/features/careers/shared";
 import { useRepositoryRun } from "@/hooks/use-repository";
+import { useSession } from "@/hooks/use-auth";
+import { TurnstileField } from "@/features/auth/turnstile";
 import { ActionForm } from "./action-form";
 
 // Publishes one branch's static site (HTML, CSS, JS, images) as the
@@ -13,6 +15,8 @@ export function DemoPanel({ data: d }: { data: RepositoryData }) {
   const repo = d.repositories[0]!;
   const a = useRepositoryRun();
   const [branch, setBranch] = useState(d.branch);
+  const [humanToken, setHumanToken] = useState<string | null>(null);
+  const siteKey = useSession().data?.capabilities?.turnstileSiteKey ?? "";
   if (!d.demoAvailable || !repo.canManage) return null;
   const isPublic = repo.visibility === "public";
   return (
@@ -47,7 +51,12 @@ export function DemoPanel({ data: d }: { data: RepositoryData }) {
           className="space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            void a.run({ action: "demo-publish", id: repo.id, branch });
+            void a.run({
+              action: "demo-publish",
+              id: repo.id,
+              branch,
+              ...(humanToken ? { humanToken } : {}),
+            });
           }}
         >
           <label className="block text-sm">
@@ -64,6 +73,11 @@ export function DemoPanel({ data: d }: { data: RepositoryData }) {
               ))}
             </select>
           </label>
+          <TurnstileField
+            siteKey={siteKey}
+            action="demo-publish"
+            onToken={setHumanToken}
+          />
           <ActionForm
             action={a}
             label={d.demoUrl ? "Publish again" : "Publish demo"}

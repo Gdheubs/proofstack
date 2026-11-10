@@ -1,11 +1,7 @@
 "use client";
+import { TurnstileField } from "./turnstile";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { createAuthReturn, type AuthReturn } from "../../lib/auth-return";
-import { useQuery } from "@tanstack/react-query";
-import {
-  BrowserAuthSelection,
-  fetchBrowserAuthConfig,
-} from "./browser-firebase-auth";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink } from "lucide-react";
@@ -45,13 +41,7 @@ import { SOCIAL_BUTTON, SocialMark } from "@/features/auth/social-brand";
 
 type Method = "password" | "email-code" | "phone-code";
 
-function Shell({
-  children,
-  firebase = false,
-}: {
-  children: React.ReactNode;
-  firebase?: boolean;
-}) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:grid-cols-[1fr_30rem] md:py-20">
       <div className="rise">
@@ -71,17 +61,13 @@ function Shell({
         </p>
         <ul className="mt-8 space-y-3 text-sm text-muted-foreground">
           <li className="border-l-2 border-accent pl-3">
-            {firebase
-              ? "Sign in with your existing Google or GitHub account."
-              : "New passwords need 12+ characters."}
+            New passwords need 12+ characters.
           </li>
           <li className="border-l-2 border-accent pl-3">
             Privileged roles always require a second factor.
           </li>
           <li className="border-l-2 border-accent pl-3">
-            {firebase
-              ? "Only a short-lived sign-in token is sent to this app. Account access tokens are never kept."
-              : "Codes are checked by the server. Provider credentials stay there."}
+            Codes are checked by the server. Provider credentials stay there.
           </li>
         </ul>
       </div>
@@ -185,6 +171,7 @@ function PasswordTab({
 }) {
   const s = useSend();
   const [mode, setMode] = useState<"login" | "signup" | "reset">(initialMode);
+  const [humanToken, setHumanToken] = useState<string | null>(null);
   // After sign-up or a reset request: the email's code is entered here.
   const [verify, setVerify] = useState<{
     handle: string;
@@ -223,7 +210,11 @@ function PasswordTab({
         e.preventDefault();
         if (mode === "reset") {
           return s.send(async () => {
-            const r = await s.raw({ action: "password-reset", email });
+            const r = await s.raw({
+              action: "password-reset",
+              email,
+              ...(humanToken ? { humanToken } : {}),
+            });
             if (r.handle) setVerify({ handle: r.handle, purpose: "reset" });
             else s.setMsg(r.message);
           });
@@ -243,6 +234,7 @@ function PasswordTab({
               kind,
               birthDate,
               acceptTerms: true,
+              ...(humanToken ? { humanToken } : {}),
             });
             if (r.handle) setVerify({ handle: r.handle, purpose: "signup" });
             else s.setMsg(r.message);
@@ -312,6 +304,13 @@ function PasswordTab({
           onBirthDate={setBirthDate}
           accepted={accepted}
           onAccepted={setAccepted}
+        />
+      )}
+      {mode !== "login" && (
+        <TurnstileField
+          siteKey={caps.turnstileSiteKey}
+          action={mode === "signup" ? "signup" : "password-reset"}
+          onToken={setHumanToken}
         />
       )}
       <Status err={s.err} msg={s.msg} />
@@ -733,14 +732,6 @@ function AuthInner({ returnTo }: { returnTo: AuthReturn }) {
   );
 }
 
-function LegacyAuthView({ returnTo }: { returnTo: AuthReturn }) {
-  return (
-    <Suspense fallback={null}>
-      <AuthInner returnTo={returnTo} />
-    </Suspense>
-  );
-}
-
 export function AuthView() {
   const capturedReturn = useRef<AuthReturn | null>(null);
   const [returnTo, setReturnTo] = useState<AuthReturn | null>(null);
@@ -759,13 +750,7 @@ export function AuthView() {
     }
     setReturnTo(capturedReturn.current);
   }, []);
-  const query = useQuery({
-    queryKey: ["/api/auth/firebase/config"],
-    queryFn: ({ signal }) => fetchBrowserAuthConfig(signal),
-    staleTime: 0,
-    retry: 1,
-  });
-  // Capture the URL once before mounting either flow: callbacks may omit next,
+  // Capture the URL once before mounting the flow: callbacks may omit next,
   // and already-authenticated users must not race the initial capture effect.
   if (!returnTo)
     return (
@@ -773,18 +758,11 @@ export function AuthView() {
         <p role="status">Loading sign-in options...</p>
       </Shell>
     );
-  const content = (
-    <BrowserAuthSelection
-      query={query}
-      returnTo={returnTo}
-      legacy={<LegacyAuthView returnTo={returnTo} />}
-    />
+  return (
+    <Suspense fallback={null}>
+      <AuthInner returnTo={returnTo} />
+    </Suspense>
   );
-  // The legacy view owns its original shell. Failed/stale configuration must
-  // never render it, even if an earlier request selected Supabase.
-  if (!query.isPending && !query.isError && query.data?.provider === "supabase")
-    return content;
-  return <Shell firebase>{content}</Shell>;
 }
 
 // After a reset link or code: the member is signed in for ten minutes only to

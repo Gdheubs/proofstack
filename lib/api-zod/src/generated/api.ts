@@ -397,6 +397,7 @@ export const RunRepositoryActionBody = zod.object({
   "content": zod.string().optional(),
   "message": zod.string().optional(),
   "name": zod.string().optional(),
+  "humanToken": zod.string().optional(),
   "tokenId": zod.string().optional(),
   "scope": zod.enum(['read', 'write']).optional(),
   "remove": zod.boolean().optional()
@@ -1615,7 +1616,8 @@ export const GetAuthContextResponse = zod.object({
   "totp": zod.boolean(),
   "phoneMfa": zod.boolean(),
   "emailDelivery": zod.enum(['development-limited', 'configured']),
-  "pendingSetup": zod.array(zod.string())
+  "pendingSetup": zod.array(zod.string()),
+  "turnstileSiteKey": zod.string().describe('Public Turnstile site key; empty when the bot check is off.')
 })
 })
 
@@ -1632,6 +1634,7 @@ export const RunAuthActionBody = zod.object({
   "kind": zod.enum(['developer', 'recruiter']).optional(),
   "birthDate": zod.coerce.date().optional(),
   "acceptTerms": zod.boolean().optional(),
+  "humanToken": zod.string().optional().describe('Turnstile token for sign-up and password reset when the check is on.'),
   "confirm": zod.enum(['DELETE']).optional(),
   "code": zod.string().optional(),
   "handle": zod.string().optional(),

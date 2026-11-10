@@ -34,3 +34,21 @@ owner's "migrate production") before the API is deployed.
   (Pwned Passwords range API, k-anonymity, fails open; `PASSWORD_BREACH_CHECK=off`).
 - A member can have at most 10 demos published at once.
 - `/community` left the sitemap.
+
+## Part 3: Firebase removed
+
+Supabase Auth is the only identity provider. The unused Firebase provider,
+its browser sign-in module, routes (`/auth/firebase/*`), environment
+variables (`AUTH_PROVIDER`, `FIREBASE_*`, `GOOGLE_APPLICATION_CREDENTIALS`),
+CSP allowances, dependencies (`firebase`, `firebase-admin`) and tests are
+gone: one less sign-in surface to audit, and a smaller API bundle.
+
+## Part 4: Turnstile bot check (approved)
+
+Sign-up, password reset and demo publishing carry a Cloudflare Turnstile token
+when `TURNSTILE_SECRET_KEY` is set on the API. The browser gets the public site
+key from `/api/auth/context` (`capabilities.turnstileSiteKey`), renders the
+widget (`features/auth/turnstile.tsx`) and sends `humanToken`; the API verifies
+it once with Cloudflare (`services/turnstile.ts`). The site CSP allows
+`challenges.cloudflare.com` for the script and challenge frame. Off until the
+keys exist; a Cloudflare outage lets the action through.

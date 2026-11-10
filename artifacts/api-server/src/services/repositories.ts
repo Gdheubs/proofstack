@@ -40,6 +40,7 @@ import {
   unpublishDemo,
   type DemoFile,
 } from "./repository-demo";
+import { assertHuman } from "./turnstile";
 import {
   storageEnabled,
   persistRepository,
@@ -443,6 +444,8 @@ export async function runRepositoryAction(
         const origin = demoOrigin();
         if (!origin) throw repoError("Demo hosting is not set up yet.", 503);
         await authLimit(req, "demo-publish", uid, 20, 3600);
+        if (d.action === "demo-publish")
+          await assertHuman(req, d.humanToken, "demo-publish");
         if (!repo.ownerHandle)
           throw repoError("Choose a username before publishing a demo.", 409);
         const url = demoUrl(origin, repo.ownerHandle, repo.name);

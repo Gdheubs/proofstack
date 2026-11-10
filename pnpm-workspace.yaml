@@ -8,7 +8,6 @@ allowBuilds:
   esbuild: true
   # Downloads the Cloudflare Workers runtime used by wrangler/OpenNext.
   workerd: true
-  '@firebase/util': false
   protobufjs: false
 
 autoInstallPeers: false
@@ -51,8 +50,6 @@ overrides:
   body-parser: 2.4.0
   # GHSA-6pq8-jhm2-2vcw (qs.stringify DoS), used by Express and supertest.
   qs: 6.16.1
-  # GHSA-gg6h-894w-4m9c (re2js ReDoS) under the legacy Firebase client.
-  re2js: 2.8.7
   # GHSA-5j98-mcp5-4vw2 (glob CLI) affects 10.2.0-10.4.x; the build-time
   # minifier used by the Cloudflare adapter needs the v10 API.
   '@node-minify/core>glob': 10.5.0
@@ -65,8 +62,6 @@ overrides:
   # Storage transport dependencies use only v4; 11.1.1 retains CommonJS support.
   "uuid@9.0.1": "11.1.1"
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
-  # Keep Firestore on its compatible branch while fixing both gRPC advisories.
-  '@firebase/firestore>@grpc/grpc-js': 1.13.7
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-arm64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-x64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-freebsd-ia32': '-'

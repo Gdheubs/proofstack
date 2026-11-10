@@ -40,16 +40,6 @@ const code = z
   .string()
   .trim()
   .regex(/^\d{6,10}$/, "Enter the provider-issued code");
-export const firebaseSessionSchema = z
-  .object({
-    idToken: z
-      .string()
-      .min(1)
-      .max(16_384)
-      .refine((value) => value.trim() === value && !/\s/.test(value)),
-  })
-  .strict();
-
 export const authActionSchema = z.discriminatedUnion("action", [
   z
     .object({
@@ -60,6 +50,7 @@ export const authActionSchema = z.discriminatedUnion("action", [
       kind,
       birthDate: birthDateSchema,
       acceptTerms: z.literal(true),
+      humanToken: z.string().max(2048).optional(),
     })
     .strict(),
   z
@@ -98,7 +89,13 @@ export const authActionSchema = z.discriminatedUnion("action", [
       provider: z.enum(SOCIAL_PROVIDERS),
     })
     .strict(),
-  z.object({ action: z.literal("password-reset"), email }).strict(),
+  z
+    .object({
+      action: z.literal("password-reset"),
+      email,
+      humanToken: z.string().max(2048).optional(),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("accept-terms"),

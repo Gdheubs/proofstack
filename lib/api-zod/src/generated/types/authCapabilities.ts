@@ -20,4 +20,6 @@ export interface AuthCapabilities {
   phoneMfa: boolean;
   emailDelivery: AuthCapabilitiesEmailDelivery;
   pendingSetup: string[];
+  /** Public Turnstile site key; empty when the bot check is off. */
+  turnstileSiteKey: string;
 }

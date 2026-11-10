@@ -23,6 +23,8 @@ export interface AuthActionInput {
   kind?: AuthActionInputKind;
   birthDate?: Date;
   acceptTerms?: boolean;
+  /** Turnstile token for sign-up and password reset when the check is on. */
+  humanToken?: string;
   confirm?: AuthActionInputConfirm;
   code?: string;
   handle?: string;

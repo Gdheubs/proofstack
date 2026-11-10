@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { authenticationProvider, authOrigin } from "../lib/auth-config";
+import { authOrigin } from "../lib/auth-config";
 import { ApiError } from "../lib/errors";
 import {
   authLimit,
@@ -16,13 +16,13 @@ import {
 import { assertAdult, recordAgreement, TERMS_VERSION } from "./legal";
 import { eraseAccount } from "./account-data";
 import { assertPasswordNotBreached } from "./password-breach";
+import { assertHuman } from "./turnstile";
 import {
   audit,
   createSession,
   requireAccount,
   requireFresh,
   requirePrimary,
-  requireSupabase,
   revokeSessions,
   transaction,
   SESSION_COOKIE,
@@ -46,24 +46,6 @@ export async function runAction(
   optional: AuthSession | null,
 ) {
   if (
-    authenticationProvider() === "firebase" &&
-    ![
-      "logout",
-      "revoke-session",
-      "update-profile",
-      "create-organization",
-      "organization-role",
-      "user-role",
-      "user-status",
-      "accept-terms",
-    ].includes(input.action)
-  )
-    throw new ApiError(
-      409,
-      "AUTH_METHOD_UNAVAILABLE",
-      "This sign-in option is not available yet",
-    );
-  if (
     input.action.startsWith("mfa-") ||
     input.action === "recovery-codes" ||
     input.action === "recover-mfa"
@@ -75,6 +57,7 @@ export async function runAction(
       await authLimit(req, "signup", input.email, 3, 3600);
       // Refuse before any account exists, so nothing is stored for under-18s.
       assertAdult(input.birthDate);
+      await assertHuman(req, input.humanToken, "signup");
       await assertPasswordNotBreached(input.password);
       const storage: Record<string, string> = {};
       const client = providerClient(storage);
@@ -281,6 +264,7 @@ export async function runAction(
     }
     case "password-reset": {
       await authLimit(req, "password-reset", input.email, 3, 3600);
+      await assertHuman(req, input.humanToken, "password-reset");
       const storage: Record<string, string> = {};
       await audit(req, "auth.password_reset_requested");
       const result = await providerClient(storage).auth.resetPasswordForEmail(
@@ -301,7 +285,7 @@ export async function runAction(
       };
     }
     case "update-password": {
-      const session = requireSupabase(requireAccount(optional));
+      const session = requireAccount(optional);
       requireFresh(session, session.mfaRequired);
       await assertPasswordNotBreached(input.password);
       const result = await session.client.auth.updateUser({
@@ -321,7 +305,7 @@ export async function runAction(
       };
     }
     case "update-email": {
-      const session = requireSupabase(requireAccount(optional));
+      const session = requireAccount(optional);
       requireFresh(session, session.mfaRequired);
       await authLimit(req, "update-email", session.user.id, 3, 3600);
       // The provider confirms with both addresses before the change applies.
@@ -359,7 +343,6 @@ export async function runAction(
     }
     case "delete-account": {
       const session = requirePrimary(optional);
-      requireSupabase(session);
       // Deletion cannot be undone: require a fresh sign-in or MFA check.
       requireFresh(
         session,
@@ -431,7 +414,7 @@ export async function runAction(
       return { message: "Profile updated" };
     }
     case "send-phone-verification": {
-      const session = requireSupabase(requireAccount(optional));
+      const session = requireAccount(optional);
       requireFresh(session, session.mfaRequired);
       if (!(await capabilities()).phoneOtp)
         throw new ApiError(

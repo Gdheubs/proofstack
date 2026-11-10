@@ -70,7 +70,6 @@ async function buildAll() {
       "@google-cloud/*",
       "@google/*",
       "googleapis",
-      "firebase-admin",
       "@parcel/watcher",
       "@sentry/profiling-node",
       // Kept external, as Sentry recommends for bundlers, so it and its

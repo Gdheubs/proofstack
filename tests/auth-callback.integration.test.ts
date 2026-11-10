@@ -23,7 +23,6 @@ const require = createRequire(
 const cookieParser: () => express.RequestHandler = require("cookie-parser");
 beforeEach(() => {
   for (const [name, value] of Object.entries({
-    AUTH_PROVIDER: "supabase",
     AUTH_APP_ORIGIN: "https://proofstack.example.test",
     SESSION_SECRET: "callback-test-only-key-at-least-32-characters",
     SUPABASE_URL: "https://callback-test.supabase.co",

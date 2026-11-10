@@ -25,7 +25,7 @@ Set these in Render's secret/configuration UI:
 - `AUTH_APP_ORIGIN`: the exact HTTPS frontend (Worker) URL, without a trailing slash.
 - `CORS_ALLOWED_ORIGINS`: that same exact frontend URL.
 - `TRUST_PROXY_CIDRS`: only Render's currently documented proxy ranges after verifying them for the deployment region.
-- `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket. With `PROXY_REQUIRED=true` the API also refuses any request that did not come through the web tier (health checks and the auth SMS hook excepted); turn it on only after the web tier has the same secret.
+- `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket. With `PROXY_REQUIRED=true` the API also refuses any request that did not come through the web tier (health checks and the auth SMS hook excepted); turn it on only after the web tier has the same secret. `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (a Cloudflare Turnstile widget for the site's hostnames) turn on the bot check at sign-up, password reset and demo publishing; without the secret the check is off. Cloudflare outages fail open.
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and a 32+ character random `SESSION_SECRET`.
 
 - `PRIVATE_OBJECT_DIR`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: image storage (see below). Preflight checks the namespace and credentials.

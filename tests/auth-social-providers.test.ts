@@ -42,7 +42,6 @@ import {
 import * as identityProvider from "../artifacts/api-server/src/services/auth-provider";
 
 const supabase = {
-  AUTH_PROVIDER: "supabase",
   SUPABASE_URL: "https://fixture.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_fixture",
   SUPABASE_SECRET_KEY: "s".repeat(40),
@@ -149,22 +148,6 @@ describe("social provider capabilities", () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("keeps Firebase mode limited to its own Google/GitHub flags", async () => {
-    stub({
-      AUTH_PROVIDER: "firebase",
-      FIREBASE_PROJECT_ID: "test-firebase-project",
-      FIREBASE_WEB_PROJECT_ID: "test-firebase-project",
-      FIREBASE_WEB_API_KEY: "unit-test-public-web-config",
-      FIREBASE_WEB_AUTH_DOMAIN: "test-firebase-project.firebaseapp.com",
-      FIREBASE_WEB_APP_ID: "unit-test-web-app",
-      FIREBASE_GOOGLE_ENABLED: "false",
-      FIREBASE_GITHUB_ENABLED: "true",
-    });
-    const { result, fetch } = await freshCapabilities({ google: true });
-    expect(result.socialProviders).toEqual(["github"]);
-    expect(fetch).not.toHaveBeenCalled();
   });
 });
 

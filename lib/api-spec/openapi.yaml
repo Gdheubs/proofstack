@@ -214,6 +214,7 @@ components:
           phoneMfa,
           emailDelivery,
           pendingSetup,
+          turnstileSiteKey,
         ]
       properties:
         password: { type: boolean }
@@ -229,6 +230,9 @@ components:
         phoneMfa: { type: boolean }
         emailDelivery: { type: string, enum: [development-limited, configured] }
         pendingSetup: { type: array, items: { type: string } }
+        turnstileSiteKey:
+          description: Public Turnstile site key; empty when the bot check is off.
+          type: string
     AuthContext:
       type: object
       required:
@@ -289,6 +293,9 @@ components:
         kind: { type: string, enum: [developer, recruiter] }
         birthDate: { type: string, format: date }
         acceptTerms: { type: boolean }
+        humanToken:
+          description: Turnstile token for sign-up and password reset when the check is on.
+          type: string
         confirm: { type: string, enum: [DELETE] }
         code: { type: string }
         handle: { type: string }

@@ -19,6 +19,7 @@ export interface RepositoryInput {
   content?: string;
   message?: string;
   name?: string;
+  humanToken?: string;
   tokenId?: string;
   scope?: RepositoryInputScope;
   remove?: boolean;

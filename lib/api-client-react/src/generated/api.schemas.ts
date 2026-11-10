@@ -110,6 +110,8 @@ export interface AuthCapabilities {
   phoneMfa: boolean;
   emailDelivery: AuthCapabilitiesEmailDelivery;
   pendingSetup: string[];
+  /** Public Turnstile site key; empty when the bot check is off. */
+  turnstileSiteKey: string;
 }
 
 export interface AuthContext {
@@ -215,6 +217,8 @@ export interface AuthActionInput {
   kind?: AuthActionInputKind;
   birthDate?: string;
   acceptTerms?: boolean;
+  /** Turnstile token for sign-up and password reset when the check is on. */
+  humanToken?: string;
   confirm?: AuthActionInputConfirm;
   code?: string;
   handle?: string;
@@ -767,6 +771,7 @@ export interface RepositoryInput {
   content?: string;
   message?: string;
   name?: string;
+  humanToken?: string;
   tokenId?: string;
   scope?: RepositoryInputScope;
   remove?: boolean;

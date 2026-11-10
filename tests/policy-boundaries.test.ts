@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { pool } from "@workspace/db";
-import {
-  authActionSchema,
-  firebaseSessionSchema,
-} from "../artifacts/api-server/src/services/auth-input";
+import { authActionSchema } from "../artifacts/api-server/src/services/auth-input";
 import type { AuthSession } from "../artifacts/api-server/src/services/auth-sessions";
 import {
   authorizeOrg,
@@ -52,27 +49,13 @@ beforeEach(() => vi.clearAllMocks());
 // These unit fakes exercise decision/control flow and bound query inputs.
 // Native SQL/HTTP tenant tests remain a separate mandatory verification gate.
 describe("strict identity inputs", () => {
-  it("normalizes contact input and validates the token transport, not token authenticity", () => {
+  it("normalizes contact input", () => {
     expect(
       authActionSchema.parse({
         action: "password-reset",
         email: "DEV@EXAMPLE.TEST",
       }),
     ).toEqual({ action: "password-reset", email: "dev@example.test" });
-    expect(
-      firebaseSessionSchema.parse({ idToken: "unit-only.jwt.transport" })
-        .idToken,
-    ).toBe("unit-only.jwt.transport");
-  });
-  it.each([
-    " unit.token",
-    "unit.token ",
-    "unit token",
-    "unit\ttoken",
-    "",
-    "x".repeat(16385),
-  ])("rejects malformed token transport %#", (idToken) => {
-    expect(firebaseSessionSchema.safeParse({ idToken }).success).toBe(false);
   });
 });
 

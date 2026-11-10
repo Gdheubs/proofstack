@@ -198,6 +198,7 @@ export const repoActionSchema = z.discriminatedUnion("action", [
       action: z.literal("demo-publish"),
       id: uuid,
       branch: branchSchema,
+      humanToken: z.string().max(2048).optional(),
     })
     .strict(),
   z.object({ action: z.literal("demo-unpublish"), id: uuid }).strict(),

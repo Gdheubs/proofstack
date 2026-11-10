@@ -38,39 +38,14 @@ check(
     databaseUrl?.searchParams.get("sslmode") ?? "",
   ),
 );
-const provider = process.env.AUTH_PROVIDER ?? "supabase";
-let identityConfigured = false;
-if (provider === "supabase") {
-  identityConfigured =
-    httpsOrigin(process.env.SUPABASE_URL) &&
+check(
+  "Managed identity configuration",
+  httpsOrigin(process.env.SUPABASE_URL) &&
     new URL(process.env.SUPABASE_URL).hostname.endsWith(".supabase.co") &&
     Boolean(
       process.env.SUPABASE_PUBLISHABLE_KEY && process.env.SUPABASE_SECRET_KEY,
-    );
-} else if (provider === "firebase") {
-  try {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const web = process.env.FIREBASE_WEB_CONFIG_FILE
-      ? JSON.parse(await readFile(process.env.FIREBASE_WEB_CONFIG_FILE, "utf8"))
-      : {
-          apiKey: process.env.FIREBASE_WEB_API_KEY,
-          projectId: process.env.FIREBASE_WEB_PROJECT_ID,
-          authDomain: process.env.FIREBASE_WEB_AUTH_DOMAIN,
-          appId: process.env.FIREBASE_WEB_APP_ID,
-        };
-    identityConfigured =
-      typeof projectId === "string" &&
-      /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(projectId) &&
-      web.projectId === projectId &&
-      web.authDomain === `${projectId}.firebaseapp.com` &&
-      typeof web.apiKey === "string" &&
-      Boolean(web.apiKey.trim()) &&
-      typeof web.appId === "string" &&
-      Boolean(web.appId.trim()) &&
-      process.env.FIREBASE_AUTH_EMULATOR_HOST === undefined;
-  } catch {}
-}
-check("Managed identity configuration", identityConfigured);
+    ),
+);
 const objectDir = process.env.PRIVATE_OBJECT_DIR ?? "";
 check(
   "Private object storage namespace",
@@ -101,9 +76,6 @@ for (const name of [
   "MAINTENANCE_MODE",
   "AUTH_EMAIL_SMTP_READY",
   "AUTH_PHONE_MFA_READY",
-  "FIREBASE_GOOGLE_ENABLED",
-  "FIREBASE_GITHUB_ENABLED",
-  "FIREBASE_TOTP_ENABLED",
 ]) {
   check(
     `${name} is a boolean flag`,
@@ -190,7 +162,7 @@ console.log(
   JSON.stringify(
     {
       results,
-      note: "Read-only configuration, schema coverage, exact migration ledger and role-grant checks only. Firebase ADC/token verification, provider delivery/MFA, proxy trust, complete schema/type diff, private object storage, durable Git storage, backup restore and browser acceptance still require staging verification. Schema-only publication needs a separately reviewed migration-history and system-data plan; this command never repairs them.",
+      note: "Read-only configuration, schema coverage, exact migration ledger and role-grant checks only. Provider token verification, delivery/MFA, proxy trust, complete schema/type diff, private object storage, durable Git storage, backup restore and browser acceptance still require staging verification. Schema-only publication needs a separately reviewed migration-history and system-data plan; this command never repairs them.",
     },
     null,
     2,

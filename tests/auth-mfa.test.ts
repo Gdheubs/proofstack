@@ -45,10 +45,6 @@ const boundary = vi.hoisted(() => ({
 vi.mock("@workspace/db", () => ({
   pool: { connect: boundary.database, query: boundary.database },
 }));
-// Avoid the circular session hydrator; these tests supply an already-read session.
-vi.mock("../artifacts/api-server/src/services/firebase-sessions", () => ({
-  readFirebaseAppSession: vi.fn(),
-}));
 vi.mock("../artifacts/api-server/src/services/auth-limits", () => ({
   authLimit: boundary.authLimit,
 }));
@@ -178,7 +174,6 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers();
   vi.setSystemTime(now);
-  vi.stubEnv("AUTH_PROVIDER", "supabase");
   vi.stubEnv(
     "SESSION_SECRET",
     "unit-test-only-mfa-key-with-at-least-32-characters",
@@ -250,31 +245,6 @@ describe("MFA session and freshness restrictions (real guards)", () => {
     expect(boundary.authLimit).not.toHaveBeenCalled();
     expectNoMutation();
   });
-
-  it.each(["configured-provider", "session-provider"])(
-    "rejects Firebase via %s",
-    async (mode) => {
-      let current: AuthSession = session();
-      if (mode === "configured-provider")
-        vi.stubEnv("AUTH_PROVIDER", "firebase");
-      else
-        current = {
-          ...current,
-          provider: "firebase",
-          client: null,
-          credentials: {
-            provider: "firebase",
-            sessionCookie: "unit-session-cookie",
-          },
-          firebase: { uid: "provider-id", projectId: "unit-project" },
-        };
-      await expect(
-        act({ action: "mfa-enroll", factorType: "totp" }, current),
-      ).rejects.toMatchObject({ status: 409, code: "AUTH_METHOD_UNAVAILABLE" });
-      expect(boundary.authLimit).not.toHaveBeenCalled();
-      expectNoMutation();
-    },
-  );
 
   it("stops before provider calls when the shared MFA limiter rejects", async () => {
     boundary.authLimit.mockRejectedValue(
