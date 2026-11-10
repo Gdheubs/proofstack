@@ -257,8 +257,18 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")("Code editor", () => {
 
     it("lists only writable repositories and their files", async () => {
       const mine = await listRepositories(owner, { source: "hosted" });
+      const handle = (
+        await pool.query("SELECT handle FROM profiles WHERE user_id=$1", [
+          owner,
+        ])
+      ).rows[0].handle;
+      // Listed by address: <handle>/<name> (the name defaults to the slug).
       expect(mine.repositories).toEqual([
-        expect.objectContaining({ id: repo, canWrite: true }),
+        expect.objectContaining({
+          id: repo,
+          canWrite: true,
+          name: expect.stringMatching(new RegExp(`^${handle}/`)),
+        }),
       ]);
       expect(
         (await listRepositories(outsider, { source: "hosted" })).repositories,

@@ -160,8 +160,13 @@ export function Workbench() {
       const s = await editorApi.sources();
       setSources(s);
       const wanted = params.get("source");
+      // ProofStack repositories first for members who have not connected
+      // GitHub; ?source= wins.
       setSource(
-        wanted === "hosted" || (!s.github.available && s.hosted.available)
+        wanted === "hosted" ||
+          (wanted !== "github" &&
+            s.hosted.available &&
+            (!s.github.available || !s.github.connected))
           ? "hosted"
           : "github",
       );
@@ -407,8 +412,7 @@ export function Workbench() {
       const nextTree = await editorApi.tree(source, repo, result.branch);
       resetWork();
       setTree(nextTree);
-      const toBranch =
-        source === "github" && result.branch !== repository?.defaultBranch;
+      const toBranch = result.branch !== repository?.defaultBranch;
       if (toBranch) setPrTitle(commitMessage.trim());
       setOfferPr(toBranch);
       setCommitMessage("");
@@ -518,7 +522,21 @@ export function Workbench() {
           </Button>
         </div>
       );
-    if (!repos.length && !busy) return "No repositories you can open yet.";
+    if (!repos.length && !busy)
+      return source === "hosted" ? (
+        <div className="max-w-md space-y-3 text-left">
+          <p className="font-medium">No ProofStack repositories yet</p>
+          <p className="text-muted-foreground">
+            Create a project and keep "Create a ProofStack repository" ticked.
+            Its code opens here at your-username/repository-name.
+          </p>
+          <Button asChild>
+            <Link href="/projects">Go to Projects</Link>
+          </Button>
+        </div>
+      ) : (
+        "No repositories you can open yet."
+      );
     return null;
   };
   const blocker = sourceBody();
@@ -753,18 +771,27 @@ export function Workbench() {
           ) : (
             <span className="flex flex-wrap items-center gap-2">
               {notice}
-              {offerPr && (
-                <button
-                  type="button"
-                  className="underline"
-                  onClick={() => {
-                    setOfferPr(false);
-                    setPanel("pulls");
-                  }}
-                >
-                  Open a pull request
-                </button>
-              )}
+              {offerPr &&
+                (source === "hosted" ? (
+                  // ProofStack pull requests are reviewed on the repository.
+                  <Link
+                    className="underline"
+                    href={`/repositories/${repo}/pulls`}
+                  >
+                    Open a pull request
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => {
+                      setOfferPr(false);
+                      setPanel("pulls");
+                    }}
+                  >
+                    Open a pull request
+                  </button>
+                ))}
               <button
                 type="button"
                 aria-label="Dismiss"

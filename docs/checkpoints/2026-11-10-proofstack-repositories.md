@@ -35,3 +35,10 @@ Step 3 (hosted repositories in the Code editor and Run) and step 4 (demo site, P
 - Owner's live test (Chrome extension): a Private project "QA Test Repo" created `https://proofstack-web.suhailalam302.workers.dev/suhai/qa-test-repo`, the Repository URL filled itself, the address opened with `README.md` and one commit, and a second project with the same name showed "Name already taken".
 - Signed-out check from outside: the private repository, its project page and `git clone` address answer exactly like addresses that do not exist (404 / 404 / 401 with the same error); it appears in no public list or search.
 - `b339f55`: the project page shows one **Code** button for a hosted repository (no "manual link" label), and the name check no longer flashes "Name already taken" while saving. CI and Security passed.
+
+## Step 3 — ProofStack repositories in Code
+
+- The editor lists ProofStack repositories by address (`handle/name`) and opens on them for members who have not connected GitHub (`?source=github|hosted` still wins). With no repository yet, it explains how to create one and links to Projects.
+- The repository page is titled by its address, with the project as the eyebrow, and offers **Open in Code** (`/code?source=hosted&repo=<id>`) to members who can write; read-only viewers do not see it.
+- The default branch stays protected: commits go to a new branch, and the notice then links **Open a pull request** to the repository's own pull requests page (GitHub repositories keep the in-editor panel). Run and Preview work on ProofStack repositories as on GitHub ones; preview images load only for GitHub repositories for now.
+- Validation: unit 836 passed (new: address title and Open in Code only for writers); embedded PostgreSQL 233 passed, 2 skipped (editor list by address); typecheck, lint, format; the built API starts.

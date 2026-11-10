@@ -58,7 +58,17 @@ export function RepositoryView({
   const writable = r.canWrite && !historical && d.branch !== r.defaultBranch;
   return (
     <>
-      <PageHead eyebrow="Source · Native Git repository" title={r.projectTitle}>
+      <PageHead
+        eyebrow={`Repository · ${r.projectTitle}`}
+        title={r.ownerHandle ? `${r.ownerHandle}/${r.name}` : r.name}
+      >
+        {r.canWrite && (
+          <Button asChild size="sm">
+            <Link href={`/code?source=hosted&repo=${encodeURIComponent(id)}`}>
+              Open in Code
+            </Link>
+          </Button>
+        )}
         <Link className="underline" href={`/projects/${r.projectSlug}`}>
           Project →
         </Link>

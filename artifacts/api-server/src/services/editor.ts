@@ -169,12 +169,13 @@ export async function listRepositories(uid: string, raw: unknown) {
     }));
   hostedEnabled();
   const { rows } = await pool.query(
-    `SELECT r.id,p.title AS name,r.default_branch AS "defaultBranch",
+    `SELECT r.id,coalesce(pr.handle||'/','')||r.name AS name,r.default_branch AS "defaultBranch",
      p.visibility<>'public' AS private,coalesce(${repositoryWriteWhere("$1")},false) AS "canWrite"
      FROM repositories r JOIN community_projects p ON p.id=r.project_id
      JOIN users owner_u ON owner_u.id=p.owner_id AND owner_u.status='active'
+     LEFT JOIN profiles pr ON pr.user_id=r.owner_id
      LEFT JOIN community_organization_profiles op ON op.organization_id=p.organization_id
-     WHERE ${projectReadWhere()} AND ${repositoryWriteWhere("$1")} ORDER BY p.title LIMIT 100`,
+     WHERE ${projectReadWhere()} AND ${repositoryWriteWhere("$1")} ORDER BY name LIMIT 100`,
     [uid],
   );
   return { repositories: rows };

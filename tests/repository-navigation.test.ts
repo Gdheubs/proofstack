@@ -44,6 +44,8 @@ beforeAll(async () => {
 const repository = (canManage: boolean) => ({
   id: repositoryId,
   title: "Repository one",
+  name: "repo-one",
+  ownerHandle: "owner",
   projectTitle: "Project one",
   projectSlug: "project-one",
   projectId: "project-one",
@@ -246,6 +248,29 @@ describe("repository-scoped navigation (N7)", () => {
       expectRepositoryMenu(html, "source", canManage);
       expect(html).toContain('href="/projects/project-one"');
       expect(html).toContain('href="/repositories"');
+      // Titled by its address; read-only viewers get no editor button.
+      expect(html).toContain("owner/repo-one");
+      expect(html).not.toContain("/code?source=hosted");
     },
   );
+  it("offers Open in Code to members who can write", async () => {
+    const { RepositoryView } = await import(
+      `${frontend}/features/repositories/repository-view.tsx`
+    );
+    const { getGetRepositoriesQueryKey } = await import(
+      `${process.cwd()}/lib/api-client-react/src/generated/api.ts`
+    );
+    const data = sourceData(false);
+    data.repositories[0] = { ...data.repositories[0]!, canWrite: true };
+    const html = await renderPage(RepositoryView, { id: repositoryId }, [
+      [
+        getGetRepositoriesQueryKey({ id: repositoryId, offset: 0, path: "" }),
+        data,
+      ],
+    ]);
+    expect(html).toContain(
+      `href="/code?source=hosted&amp;repo=${repositoryId}"`,
+    );
+    expect(html).toContain("Open in Code");
+  });
 });
