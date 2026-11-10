@@ -5,7 +5,6 @@ import { SITE_URL } from "@/lib/site";
 const PATHS = [
   "",
   "/projects",
-  "/community",
   "/opportunities",
   "/talent",
   "/assessments",

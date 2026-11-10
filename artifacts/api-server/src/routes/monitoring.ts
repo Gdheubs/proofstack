@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto";
 import { Router, type IRouter } from "express";
+import { rateLimitAddress } from "../lib/client-ip";
+import { consumeRateLimit } from "../services/rate-limit";
 
 // Browser error reports are posted here and relayed to the configured
 // monitoring project, so the browser never contacts a third-party host and
@@ -24,6 +27,20 @@ router.post("/monitoring/tunnel", async (req, res): Promise<void> => {
   const expected = target();
   const body = Buffer.isBuffer(req.body) ? req.body : null;
   if (!expected || !body?.length) {
+    res.status(204).end();
+    return;
+  }
+  // A browser sends a handful of reports; more is someone using this relay
+  // to flood the monitoring project. Extra reports are dropped quietly.
+  try {
+    const address = createHash("sha256")
+      .update(rateLimitAddress(req))
+      .digest("hex");
+    if (!(await consumeRateLimit(`monitoring:${address}`, 600, 30)).allowed) {
+      res.status(429).end();
+      return;
+    }
+  } catch {
     res.status(204).end();
     return;
   }

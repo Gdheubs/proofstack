@@ -13,7 +13,7 @@
   Referrer-Policy: no-referrer
 
 /runner/preview/*
-  Content-Security-Policy: sandbox allow-scripts allow-modals; default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; style-src 'unsafe-inline' blob: https:; img-src blob: data: https:; font-src blob: data: https:; media-src blob: data: https:; connect-src https:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'
+  Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; style-src 'unsafe-inline' blob: https:; img-src blob: data: https:; font-src blob: data: https:; media-src blob: data: https:; connect-src https:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'
   Cache-Control: no-cache
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer

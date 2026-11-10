@@ -15,6 +15,7 @@ import {
 } from "./auth-provider";
 import { assertAdult, recordAgreement, TERMS_VERSION } from "./legal";
 import { eraseAccount } from "./account-data";
+import { assertPasswordNotBreached } from "./password-breach";
 import {
   audit,
   createSession,
@@ -74,6 +75,7 @@ export async function runAction(
       await authLimit(req, "signup", input.email, 3, 3600);
       // Refuse before any account exists, so nothing is stored for under-18s.
       assertAdult(input.birthDate);
+      await assertPasswordNotBreached(input.password);
       const storage: Record<string, string> = {};
       const client = providerClient(storage);
       await audit(req, "auth.signup_requested");
@@ -301,6 +303,7 @@ export async function runAction(
     case "update-password": {
       const session = requireSupabase(requireAccount(optional));
       requireFresh(session, session.mfaRequired);
+      await assertPasswordNotBreached(input.password);
       const result = await session.client.auth.updateUser({
         password: input.password,
       });

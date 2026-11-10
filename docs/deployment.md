@@ -25,7 +25,7 @@ Set these in Render's secret/configuration UI:
 - `AUTH_APP_ORIGIN`: the exact HTTPS frontend (Worker) URL, without a trailing slash.
 - `CORS_ALLOWED_ORIGINS`: that same exact frontend URL.
 - `TRUST_PROXY_CIDRS`: only Render's currently documented proxy ranges after verifying them for the deployment region.
-- `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket.
+- `PROXY_SHARED_SECRET`: a random value of at least 32 characters, identical to the web tier's value. Preflight fails without it; otherwise every browser behind the web proxy shares one rate-limit bucket. With `PROXY_REQUIRED=true` the API also refuses any request that did not come through the web tier (health checks and the auth SMS hook excepted); turn it on only after the web tier has the same secret.
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and a 32+ character random `SESSION_SECRET`.
 
 - `PRIVATE_OBJECT_DIR`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`: image storage (see below). Preflight checks the namespace and credentials.
@@ -133,7 +133,7 @@ The editor at `/editor` edits GitHub repositories through a GitHub OAuth App own
    - Authorization callback URL: `<AUTH_APP_ORIGIN>/api/editor/github/callback`.
 2. Set `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` on Render. Without both, the editor shows GitHub as not available.
 
-Users grant the `repo` scope so they can commit to their private repositories, fork repositories and open pull requests. Their token is sealed with `SESSION_SECRET` in `github_connections` and never reaches the browser. It is deleted when they disconnect, delete their account, or GitHub reports it revoked. Rotating `SESSION_SECRET` makes users reconnect.
+Users grant the `repo` scope so they can commit to their private repositories, fork repositories and open pull requests. Their token is sealed with `SESSION_SECRET` in `github_connections` and never reaches the browser. It is deleted when they disconnect, delete their account, or GitHub reports it revoked. Set `GITHUB_TOKEN_SECRET` (32+ characters) to seal tokens with their own secret instead; tokens sealed earlier stay readable. To rotate `SESSION_SECRET`, put the old value in `SESSION_SECRET_PREVIOUS` so sealed tokens and forms keep working; members are signed out once, because session lookups use the new key.
 
 ### Demo site (published project demos)
 

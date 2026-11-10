@@ -8,6 +8,7 @@ import {
   CLIENT_IP_HEADER,
   PROXY_SECRET_HEADER,
   rateLimitAddress,
+  requireProxy,
   trustedProxyClient,
 } from "../artifacts/api-server/src/lib/client-ip";
 import { parseEnvironment } from "../artifacts/api-server/src/lib/env";
@@ -97,6 +98,43 @@ describe("trusted client address from the web tier", () => {
   });
 });
 
+describe("API reachable only through the web tier", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  function guarded() {
+    const app = express();
+    app.use(trustedProxyClient(secret));
+    app.use(requireProxy(secret));
+    app.get(["/api/x", "/api/healthz"], (_req, res) => res.json({ ok: true }));
+    app.use(
+      (
+        e: { status: number; code: string },
+        _req: express.Request,
+        res: express.Response,
+        _next: express.NextFunction,
+      ) => res.status(e.status).json({ code: e.code }),
+    );
+    return app;
+  }
+  it("refuses direct requests when PROXY_REQUIRED is on", async () => {
+    vi.stubEnv("PROXY_REQUIRED", "true");
+    const direct = await request(guarded()).get("/api/x");
+    expect([direct.status, direct.body.code]).toEqual([403, "PROXY_REQUIRED"]);
+    const wrong = await request(guarded())
+      .get("/api/x")
+      .set(PROXY_SECRET_HEADER, "w".repeat(40));
+    expect(wrong.status).toBe(403);
+    const relayed = await request(guarded())
+      .get("/api/x")
+      .set(PROXY_SECRET_HEADER, secret);
+    expect(relayed.status).toBe(200);
+    // Host health probes call the API directly.
+    expect((await request(guarded()).get("/api/healthz")).status).toBe(200);
+  });
+  it("allows direct requests while PROXY_REQUIRED is off", async () => {
+    expect((await request(guarded()).get("/api/x")).status).toBe(200);
+  });
+});
+
 describe("web proxy forwarding", () => {
   afterEach(() => vi.unstubAllEnvs());
   const forwarded = (response: Response, name: string) =>
@@ -123,7 +161,7 @@ describe("web proxy forwarding", () => {
     expect(response.headers.get("Content-Security-Policy")).toBeNull();
   });
 
-  it("strips client-supplied trust headers and forwards nothing when unconfigured", () => {
+  it("strips client-supplied trust headers and forwards no unvouched address", () => {
     vi.stubEnv("TRUSTED_CLIENT_IP_HEADER", "x-forwarded-for");
     vi.stubEnv("PROXY_SHARED_SECRET", secret);
     const response = web.proxy(
@@ -136,7 +174,8 @@ describe("web proxy forwarding", () => {
       }),
     );
     expect(forwarded(response, CLIENT_IP_HEADER)).toBeNull();
-    expect(forwarded(response, PROXY_SECRET_HEADER)).toBeNull();
+    // Its own secret, never the client-supplied guess.
+    expect(forwarded(response, PROXY_SECRET_HEADER)).toBe(secret);
     const overridden = response.headers.get("x-middleware-override-headers");
     expect(overridden).not.toContain(CLIENT_IP_HEADER);
   });

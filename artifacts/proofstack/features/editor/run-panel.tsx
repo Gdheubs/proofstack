@@ -41,7 +41,7 @@ function PreviewFrame({ payload }: { payload: PreviewPayload }) {
       ref={ref}
       title={`Preview of ${payload.entry}`}
       src="/runner/preview/"
-      sandbox="allow-scripts allow-modals"
+      sandbox="allow-scripts"
       className="h-full w-full bg-white"
     />
   );
@@ -228,7 +228,16 @@ export function RunPanel({
             />
           </label>
         ) : preview ? (
-          <PreviewFrame key={previewVersion} payload={preview} />
+          <div className="flex h-full flex-col">
+            {/* Someone else's page can imitate a sign-in form. */}
+            <p className="border-b bg-amber-50 px-3 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+              Preview of this repository&apos;s code, not a ProofStack page.
+              Never enter your password or personal details here.
+            </p>
+            <div className="min-h-0 flex-1">
+              <PreviewFrame key={previewVersion} payload={preview} />
+            </div>
+          </div>
         ) : null}
       </div>
     </section>

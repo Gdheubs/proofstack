@@ -17,6 +17,8 @@ import { repoError } from "./repository-input";
 // failure never leaves a half-published demo. Only public projects publish.
 export const MAX_DEMO_FILES = 500;
 export const MAX_DEMO_BYTES = 25 * 1024 * 1024;
+// Demos one member may have published at once.
+export const MAX_PUBLISHED_DEMOS = 10;
 // Where a site's index.html may live, in order of preference.
 export const DEMO_FOLDERS = ["", "dist", "build", "public", "docs", "site"];
 // Downloadable programs and archives are never served from a demo.

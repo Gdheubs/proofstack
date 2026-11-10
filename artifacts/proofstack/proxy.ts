@@ -28,9 +28,12 @@ function forwardApi(request: NextRequest) {
     source && CLIENT_IP_SOURCES.includes(source)
       ? request.headers.get(source)?.trim()
       : undefined;
-  if (secret && address && /^[0-9A-Fa-f:.]{2,45}$/.test(address)) {
-    headers.set(CLIENT_IP_HEADER, address);
+  // The secret also proves the request came through this tier
+  // (PROXY_REQUIRED on the API), even when no address is available.
+  if (secret) {
     headers.set(PROXY_SECRET_HEADER, secret);
+    if (address && /^[0-9A-Fa-f:.]{2,45}$/.test(address))
+      headers.set(CLIENT_IP_HEADER, address);
   }
   return NextResponse.next({ request: { headers } });
 }

@@ -116,9 +116,9 @@ describe("runner sandbox policy", () => {
   });
   it("seals the preview: opaque origin, no forms or top navigation", () => {
     const csp = policy("/runner/preview/*");
-    expect(csp).toMatch(/^sandbox allow-scripts allow-modals;/);
+    expect(csp).toMatch(/^sandbox allow-scripts;/);
     expect(csp).not.toMatch(
-      /allow-same-origin|allow-top-navigation|allow-forms|allow-popups/,
+      /allow-same-origin|allow-top-navigation|allow-forms|allow-popups|allow-modals/,
     );
     expect(csp).toContain("form-action 'none'");
   });
@@ -144,7 +144,7 @@ describe("runner sandbox policy", () => {
     const hook = readFileSync(`${root}/features/editor/use-runner.tsx`, "utf8");
     const panel = readFileSync(`${root}/features/editor/run-panel.tsx`, "utf8");
     expect(hook).toContain('sandbox="allow-scripts"');
-    expect(panel).toContain('sandbox="allow-scripts allow-modals"');
+    expect(panel).toContain('sandbox="allow-scripts"');
     for (const source of [hook, panel]) {
       expect(source).not.toContain("allow-same-origin");
       expect(source).not.toContain("dangerouslySetInnerHTML");

@@ -66,6 +66,26 @@ router.post("/repositories/action", async (req, res) => {
     throw e;
   }
 });
+export const PACK_SLOTS = 4;
+export const ANONYMOUS_PACK_SLOTS = 2;
+const packing = { all: 0, anonymous: 0 };
+// Returns a release function, or false when no slot is free.
+export function claimPackSlot(member: boolean): (() => void) | false {
+  if (
+    packing.all >= PACK_SLOTS ||
+    (!member && packing.anonymous >= ANONYMOUS_PACK_SLOTS)
+  )
+    return false;
+  packing.all++;
+  if (!member) packing.anonymous++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    packing.all--;
+    if (!member) packing.anonymous--;
+  };
+}
 const gitRequest = async (
   req: express.Request,
   res: express.Response,
@@ -82,7 +102,21 @@ const gitRequest = async (
     throw repoError("Expected a Git upload-pack request.", 415);
   res.set("WWW-Authenticate", 'Basic realm="ProofStack read-only Git"');
   const uid = await tokenUser(req.get("authorization"), id);
-  await authLimit(req, "git-read", uid ?? rateLimitAddress(req), 60, 60);
+  // Anonymous clients get a smaller budget than members with a token.
+  await authLimit(
+    req,
+    uid ? "git-read" : "git-read-anon",
+    uid ?? rateLimitAddress(req),
+    uid ? 60 : 20,
+    60,
+  );
+  // Packing is CPU- and memory-heavy: a few at a time keeps the server
+  // responsive, and anonymous clones can never take every slot.
+  const slot = advertise ? null : claimPackSlot(Boolean(uid));
+  if (slot === false) {
+    res.set("Retry-After", "10");
+    throw repoError("Git is busy. Retry in a few seconds.", 503);
+  }
   let output: Buffer;
   try {
     output = await lockedRepository(id, uid, async (_repo, path) =>
@@ -106,6 +140,8 @@ const gitRequest = async (
         401,
       );
     throw e;
+  } finally {
+    if (slot) slot();
   }
   res.type(
     advertise

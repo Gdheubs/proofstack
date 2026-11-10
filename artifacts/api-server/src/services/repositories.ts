@@ -35,6 +35,7 @@ import {
   demoFiles,
   demoOrigin,
   demoUrl,
+  MAX_PUBLISHED_DEMOS,
   publishDemo,
   unpublishDemo,
   type DemoFile,
@@ -466,6 +467,19 @@ export async function runRepositoryAction(
             )
           ).rows[0]?.head as string | undefined;
           if (!head) throw repoError("Branch not found.", 404);
+          // Bounds one member's share of demo storage and public pages.
+          const published = (
+            await db.query(
+              `SELECT count(*)::int AS n FROM community_projects p JOIN repositories r ON r.project_id=p.id
+               WHERE r.owner_id=(SELECT owner_id FROM repositories WHERE id=$1) AND p.id<>$2 AND p.demo_url LIKE $3`,
+              [d.id, repo.projectId, origin + "/%"],
+            )
+          ).rows[0].n as number;
+          if (published >= MAX_PUBLISHED_DEMOS)
+            throw repoError(
+              `You can have ${MAX_PUBLISHED_DEMOS} demos published at a time. Unpublish one first.`,
+              409,
+            );
           const path = await repoPath(d.id);
           const listed = (await git(path, ["ls-tree", "-r", "-z", "-l", head]))
             .toString("utf8")
