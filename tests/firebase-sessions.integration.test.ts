@@ -137,7 +137,7 @@ describe("Firebase application session persistence (real SQL)", () => {
       const row = await sessionRow(b.req.cookies[SESSION_COOKIE]);
       if (state === "idle")
         await pool.query(
-          "UPDATE sessions SET last_seen_at=now()-interval '31 minutes' WHERE id=$1",
+          "UPDATE sessions SET last_seen_at=now()-interval '8 days' WHERE id=$1",
           [row.id],
         );
       process.env.AUTH_PROVIDER = "supabase";
@@ -419,7 +419,7 @@ describe("Firebase application session persistence (real SQL)", () => {
           ]);
         if (reason === "idle")
           await pool.query(
-            "UPDATE sessions SET last_seen_at=now()-interval '31 minutes' WHERE id=$1",
+            "UPDATE sessions SET last_seen_at=now()-interval '8 days' WHERE id=$1",
             [row.id],
           );
         if (reason === "expired")
@@ -483,7 +483,7 @@ describe("Firebase application session persistence (real SQL)", () => {
         );
       if (reason === "idle")
         await pool.query(
-          "UPDATE sessions SET last_seen_at=now()-interval '31 minutes' WHERE id=$1",
+          "UPDATE sessions SET last_seen_at=now()-interval '8 days' WHERE id=$1",
           [row.id],
         );
       if (reason === "expired")

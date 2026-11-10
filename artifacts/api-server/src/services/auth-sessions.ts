@@ -35,6 +35,38 @@ import {
 } from "./legal";
 
 export const SESSION_COOKIE = "__Host-ps-session";
+// A session ends after 7 days without activity; each visit extends it, up to
+// 30 days after sign-in. Sensitive actions still need a recent sign-in or
+// second factor (requireFresh).
+export const SESSION_IDLE_MS = 7 * 86400000;
+export const SESSION_MAX_MS = 30 * 86400000;
+// Revoked, emptied, expired, idle for too long, or older than the cap.
+export function sessionEnded(
+  row: Pick<
+    SessionRow,
+    | "revoked_at"
+    | "encrypted_credentials"
+    | "expires_at"
+    | "last_seen_at"
+    | "created_at"
+  >,
+  now = Date.now(),
+) {
+  return (
+    !!row.revoked_at ||
+    !row.encrypted_credentials ||
+    new Date(row.expires_at).getTime() <= now ||
+    now - new Date(row.last_seen_at).getTime() > SESSION_IDLE_MS ||
+    now - new Date(row.created_at).getTime() > SESSION_MAX_MS
+  );
+}
+// Activity extends a session ($1) to now + idle ($3), never beyond sign-in +
+// cap ($2) and never shorter than it already is; recovery sessions keep
+// their ten minutes.
+export const EXTEND_SESSION_SQL = `UPDATE sessions SET last_seen_at=now(),
+  expires_at=CASE WHEN password_recovery THEN expires_at
+    ELSE GREATEST(expires_at,LEAST(created_at+$2*interval '1 millisecond',now()+$3*interval '1 millisecond')) END
+  WHERE id=$1 RETURNING expires_at`;
 export const CSRF_COOKIE = "__Host-ps-csrf";
 export const FLOW_COOKIE = "__Host-ps-flow";
 export const DEVICE_COOKIE = "__Host-ps-device";
@@ -443,13 +475,7 @@ export async function readSession(
     const row = rows[0];
     // Refuse other-provider rows before decrypting, mutating or contacting Supabase.
     if (row?.provider_session_id.startsWith("firebase:")) return null;
-    if (
-      !row ||
-      row.revoked_at ||
-      !row.encrypted_credentials ||
-      new Date(row.expires_at).getTime() <= Date.now() ||
-      Date.now() - new Date(row.last_seen_at).getTime() > 30 * 60000
-    ) {
+    if (!row || sessionEnded(row)) {
       if (row)
         await tx.query(
           "UPDATE sessions SET revoked_at=COALESCE(revoked_at,now()),encrypted_credentials=NULL WHERE id=$1",
@@ -503,9 +529,23 @@ export async function readSession(
         [row.id, seal(hydrated.credentials)],
       );
     }
-    await tx.query("UPDATE sessions SET last_seen_at=now() WHERE id=$1", [
+    // Activity extends the session (not a password-recovery one), up to
+    // SESSION_MAX_MS after sign-in.
+    const extended = await tx.query<{ expires_at: Date }>(EXTEND_SESSION_SQL, [
       row.id,
+      SESSION_MAX_MS,
+      SESSION_IDLE_MS,
     ]);
+    const until = new Date(extended.rows[0]!.expires_at).getTime();
+    // The cookie follows when it has noticeably moved (at most once a day).
+    if (
+      !row.password_recovery &&
+      until - new Date(row.expires_at).getTime() > 86400000
+    )
+      res.cookie(SESSION_COOKIE, handle, {
+        ...cookieOptions,
+        maxAge: Math.max(0, until - Date.now()),
+      });
     const membership = await tx.query(
       `SELECT 1 FROM organization_members m JOIN roles r ON r.id=m.role_id
        WHERE m.user_id=$1 AND m.status='active'

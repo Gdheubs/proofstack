@@ -24,6 +24,7 @@ import {
   type ProviderIdentity,
   type AccountUser,
   type SessionRow,
+  SESSION_IDLE_MS,
 } from "./auth-sessions";
 
 export type FirebaseAppSession = {
@@ -195,7 +196,7 @@ function unusable(row: SessionRow): boolean {
     !!row.revoked_at ||
     !row.encrypted_credentials ||
     new Date(row.expires_at).getTime() <= Date.now() ||
-    Date.now() - new Date(row.last_seen_at).getTime() > 30 * 60000
+    Date.now() - new Date(row.last_seen_at).getTime() > SESSION_IDLE_MS
   );
 }
 async function invalidate(row: SessionRow) {
