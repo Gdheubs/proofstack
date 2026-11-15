@@ -175,6 +175,25 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         "INSERT INTO sessions(user_id,provider_session_id,handle_hash,expires_at,encrypted_credentials,device_label) VALUES($1,$2,'secret-hash',now()+interval '1 hour','secret-credentials','Chrome on Windows')",
         [uid, randomUUID()],
       );
+      // An open skill check: its answer key must never be exported.
+      await pool.query(
+        "INSERT INTO assessment_attempts(user_id,assessment_id,question_version,snapshot) VALUES($1,'export-check',1,$2::jsonb)",
+        [
+          uid,
+          JSON.stringify({
+            title: "Export check",
+            skill: "Testing",
+            questions: [
+              {
+                id: "q1",
+                prompt: "Pick one",
+                options: [{ id: "o1", label: "A" }],
+                correctOptionId: "answer-key-o1",
+              },
+            ],
+          }),
+        ],
+      );
       const data = await transaction((tx) => exportAccount(tx, uid));
       expect(data.account.email).toBe(`${uid}@example.test`);
       expect(data.data["profiles.user_id"]).toHaveLength(1);
@@ -184,6 +203,12 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
       const text = JSON.stringify(data);
       expect(text).not.toContain("secret-hash");
       expect(text).not.toContain("secret-credentials");
+      expect(text).not.toContain("correctOptionId");
+      expect(text).not.toContain("answer-key-o1");
+      // The questions the member saw are still part of their data.
+      expect(
+        JSON.stringify(data.data["assessment_attempts.user_id"]),
+      ).toContain("Pick one");
     });
 
     it("deletes the account, keeps registration details for 180 days, then purges them", async () => {

@@ -84,6 +84,20 @@ const NOT_EXPORTED = new Set([
   "lease_token",
   "encrypted_token",
 ]);
+// Keys removed wherever they appear inside exported JSON values: answer keys
+// and grading material are not the member's personal data, and exporting
+// them during an open skill check would hand over the answers.
+const NOT_EXPORTED_NESTED = new Set(["correctOptionId"]);
+function redact(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redact);
+  if (value && typeof value === "object" && !(value instanceof Date))
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !NOT_EXPORTED_NESTED.has(key))
+        .map(([key, nested]) => [key, redact(nested)]),
+    );
+  return value;
+}
 
 // A copy of the personal data held for one account (DPDP Act s.11). Every
 // table with a foreign key to users is found from the catalog, so new tables
@@ -99,7 +113,9 @@ export async function exportAccount(db: PoolClient, userId: string) {
   const clean = (rows: Record<string, unknown>[]) =>
     rows.map((row) =>
       Object.fromEntries(
-        Object.entries(row).filter(([key]) => !NOT_EXPORTED.has(key)),
+        Object.entries(row)
+          .filter(([key]) => !NOT_EXPORTED.has(key))
+          .map(([key, value]) => [key, redact(value)]),
       ),
     );
   const account = (
