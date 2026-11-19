@@ -1,10 +1,20 @@
+// Skill check pages a sign-in link may return to: the hub and its one-segment
+// pages (assigned, results, studio, review, a legacy attempt), a series, one
+// result and an invitation. The exam pages are left out on purpose: they are
+// entered only by a full page load after starting an attempt.
+const SKILLS_RETURN =
+  "/assessments(?:/(?!take$|device-check$)[A-Za-z0-9_-]{1,128}" +
+  "|/series/[a-z0-9-]{1,128}" +
+  "|/results/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" +
+  "|/join/[A-Za-z0-9_-]{1,128})?";
+// Workspace pages a sign-in link may return to; the feed otherwise.
+const RETURN_PATH = new RegExp(
+  `^(?:/home|/code|/welcome|/account|/settings(?:/[a-z-]{1,32})?|${SKILLS_RETURN})$`,
+);
+
 /** Deliberately narrow: no query/hash data, URL normalization or extra decoding. */
 export function safeAuthReturn(value: unknown): string {
-  return typeof value === "string" &&
-    // Workspace pages a sign-in link may return to; the feed otherwise.
-    /^(?:\/home|\/code|\/welcome|\/account|\/settings(?:\/[a-z-]{1,32})?|\/assessments(?:\/[A-Za-z0-9_-]{1,128})?)$/.exec(
-      value,
-    )?.[0] === value
+  return typeof value === "string" && RETURN_PATH.exec(value)?.[0] === value
     ? value
     : "/home";
 }

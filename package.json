@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:check": "node scripts/dev.mjs --check",
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "preinstall": "node scripts/preinstall.mjs",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck && tsc -p tests/tsconfig.json --noEmit",
@@ -15,6 +15,7 @@
     "test": "vitest run --exclude '**/*.integration.test.ts'",
     "test:all": "RUN_DB_TESTS=1 vitest run",
     "test:coverage": "vitest run --config vitest.coverage.config.ts",
+    "test:core-only": "vitest run --config vitest.core-only.config.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "test:embedded": "RUN_DB_TESTS=1 vitest run --config vitest.embedded.config.ts"
   },

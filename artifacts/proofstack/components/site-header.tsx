@@ -29,6 +29,7 @@ import {
   getNavigationSection,
   pathMatches,
 } from "@/lib/navigation";
+import { isExamPath } from "@/lib/chrome";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -182,6 +183,9 @@ export function SiteHeader() {
   const { unread } = useViewer();
   const navClass = (active: boolean) =>
     `inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`;
+
+  // An attempt fills the page: no way out except the exam's own controls.
+  if (isExamPath(path)) return null;
 
   if (!signedIn)
     return (

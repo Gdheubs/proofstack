@@ -269,6 +269,9 @@ importers:
       '@uiw/react-codemirror':
         specifier: ^4.25.12
         version: 4.25.12(@codemirror/state@6.7.6)(@codemirror/view@6.43.14)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      hls.js:
+        specifier: ^1.7.4
+        version: 1.7.4
       next:
         specifier: ^16.4.2
         version: 16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@25.9.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -4034,6 +4037,9 @@ packages:
 
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
+
+  hls.js@1.7.4:
+    resolution: {integrity: sha512-3GlxGdPvT2YHvQYOt+yOzT/DEior/qJVNIylHA77kgeoBTdQQqi70GwefNEUmHQeNGyjC8U62+bruqW/Tpm+tg==}
 
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
@@ -9541,6 +9547,8 @@ snapshots:
   hermes-parser@0.25.1:
     dependencies:
       hermes-estree: 0.25.1
+
+  hls.js@1.7.4: {}
 
   http-errors@2.0.1:
     dependencies:

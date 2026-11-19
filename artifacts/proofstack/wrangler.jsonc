@@ -18,5 +18,10 @@
   "observability": { "enabled": true },
   "vars": {
     "TRUSTED_CLIENT_IP_HEADER": "cf-connecting-ip",
+    // Optional, and off while absent (lib/security-media.ts). Each must be an
+    // exact HTTPS origin; anything else stops every page with an error.
+    //   "MEDIA_ORIGIN": the media Worker (recorded answers, voice clips)
+    //   "VIDEO_ORIGIN": hosted video playback and posters
+    //   "VIDEO_UPLOAD_ORIGIN": direct video uploads
   },
 }

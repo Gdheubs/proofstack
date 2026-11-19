@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Skill Check platform, Wave 0 wiring](2026-11-19-skill-check-wave0.md) — WIP checkpoint for the additive 0022 foundation and shared API/UI wiring; typecheck and lint pass, acceptance suites remain open.
 - [UI redesign phase 2: Settings](2026-10-24-redesign-phase-2.md) — /settings with ten sections; change-email flow; notification preferences (migration 0019) honoured by notify(); members-only profile visibility enforced; old addresses redirect.
 - [UI redesign phase 1](2026-10-24-redesign-phase-1.md) — landing page with animated mock-ups, signed-in app shell with profile menu and phone bottom bar, /home feed, /welcome onboarding, profile headline/links (migration 0018), writing assist page removed.
 - [Structured logging and Sentry monitoring](2026-10-22-logging-monitoring.md) — pino with trace IDs and status-based levels; Sentry for API errors/traces and browser errors through a same-origin relay; morgan and winston deliberately not added.

@@ -19,7 +19,7 @@ export const NAV: NavigationSection[] = [
   {
     href: "/home",
     label: "Home",
-    prefixes: ["/home", "/community", "/posts", "/bookmarks"],
+    prefixes: ["/home", "/community", "/posts", "/bookmarks", "/shorts", "/topics"],
     children: [],
   },
   {
@@ -55,7 +55,7 @@ export const NAV: NavigationSection[] = [
   {
     href: "/assessments",
     label: "Skills",
-    prefixes: ["/assessments"],
+    prefixes: ["/assessments", "/verify"],
     children: [],
   },
 ];
@@ -114,6 +114,9 @@ export const SITE_SEGMENTS = new Set([
   "settings",
   "talent",
   "terms",
+  "verify",
+  "shorts",
+  "topics",
   "welcome",
   "work",
 ]);

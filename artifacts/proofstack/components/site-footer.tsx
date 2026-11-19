@@ -1,10 +1,17 @@
+"use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/logo";
+import { isExamPath } from "@/lib/chrome";
 import { internalPagesHidden } from "@/lib/internal-pages";
 import { LEGAL_LINKS } from "@/features/legal/legal-page";
 import { OPERATOR } from "@/lib/legal";
 
+// Reads the address in the browser, like the header and the bottom tabs, so
+// all three leave an exam page together.
 export function SiteFooter() {
+  const path = usePathname();
+  if (isExamPath(path)) return null;
   return (
     <footer className="border-t">
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:grid-cols-2 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
@@ -61,7 +68,11 @@ export function SiteFooter() {
           ))}
         </nav>
       </div>
-      <p className="mx-auto max-w-6xl px-5 pb-8 text-xs text-muted-foreground">
+      {/* The year can differ between the server and a browser at New Year. */}
+      <p
+        suppressHydrationWarning
+        className="mx-auto max-w-6xl px-5 pb-8 text-xs text-muted-foreground"
+      >
         © {new Date().getFullYear()} {OPERATOR.brand}. Grievance Officer:{" "}
         {OPERATOR.grievanceOfficer}, {OPERATOR.grievanceEmail}.
       </p>

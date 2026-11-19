@@ -1,3 +1,5 @@
+import { withMediaCsp } from "./security-media";
+
 // The Turnstile bot check (features/auth/turnstile.tsx) loads its script and
 // challenge frame from Cloudflare.
 const TURNSTILE = " https://challenges.cloudflare.com";
@@ -12,7 +14,7 @@ export function buildContentSecurityPolicy(
   if (!/^[A-Za-z0-9+/=]+$/.test(nonce)) {
     throw new Error("Invalid CSP nonce");
   }
-  return [
+  return withMediaCsp([
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${TURNSTILE}${development ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
@@ -25,5 +27,5 @@ export function buildContentSecurityPolicy(
     "form-action 'self'",
     "frame-ancestors 'self'",
     ...(development ? [] : ["upgrade-insecure-requests"]),
-  ].join("; ");
+  ]).join("; ");
 }

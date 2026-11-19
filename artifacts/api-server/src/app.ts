@@ -117,6 +117,7 @@ app.use("/api", (req, _res, next) => {
     process.env.MAINTENANCE_MODE === "true" &&
     !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
     !req.path.startsWith("/auth/") &&
+    !req.path.startsWith("/skills/attempts/") &&
     !/^\/git\/[0-9a-f-]+\/git-upload-pack$/.test(req.path)
   )
     return next(
@@ -134,6 +135,28 @@ app.post(
   "/api/auth/hooks/send-sms",
   express.raw({ type: "application/json", limit: "32kb", inflate: false }),
   sendSmsHook,
+);
+// Provider hooks need their original bytes for signature verification.
+app.use(
+  "/api/media/hooks/video",
+  express.raw({ type: "application/json", limit: "64kb", inflate: false }),
+);
+app.use(
+  "/api/platform/hooks/mail",
+  express.raw({ type: "application/json", limit: "64kb", inflate: false }),
+);
+// Attempt writes have a larger answer budget but are capped before parsing.
+app.use(
+  "/api/skills/attempts",
+  express.json({ limit: "256kb", strict: true, inflate: false }),
+);
+app.use(
+  "/api/skills/authoring/action",
+  express.json({ limit: "1mb", strict: true, inflate: false }),
+);
+app.use(
+  "/api/education/action",
+  express.json({ limit: "1mb", strict: true, inflate: false }),
 );
 app.use(
   "/api/repositories/action",

@@ -9,6 +9,7 @@ import {
   isNavigationLinkActive,
   pathMatches,
 } from "@/lib/navigation";
+import { isExamPath } from "@/lib/chrome";
 
 const ICONS: Record<string, typeof Home> = {
   "/home": Home,
@@ -19,11 +20,12 @@ const ICONS: Record<string, typeof Home> = {
 };
 
 // Phone navigation for signed-in members: five destinations within thumb
-// reach. The spacer keeps page content from hiding behind the bar.
+// reach. The spacer keeps page content from hiding behind the bar. An exam
+// page shows no tabs.
 export function BottomTabs() {
   const path = usePathname();
   const session = useSession();
-  if (!session.data?.authenticated) return null;
+  if (!session.data?.authenticated || isExamPath(path)) return null;
   // A tab is current for its whole section: an application thread lights up
   // Jobs, a repository lights up Code.
   const section = getNavigationSection(path)?.href;

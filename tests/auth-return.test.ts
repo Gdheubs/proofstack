@@ -40,9 +40,53 @@ describe("safe post-sign-in destinations", () => {
     "/assessments",
     "/assessments/javascript",
     "/assessments/attempt_123-abc",
+    "/assessments/assigned",
+    "/assessments/studio",
+    "/assessments/review",
+    "/assessments/results",
+    "/assessments/series/javascript-foundations",
+    "/assessments/series/sql-2",
+    "/assessments/results/3f1c2a9e-8b7d-4c6f-9a1e-0b2d4f6a8c1e",
+    "/assessments/join/Zm9vYmFyLWludml0ZS10b2tlbl8xMjM0NTY3ODkwYWJjZGVm",
   ])("preserves an allowlisted skill-check destination (%s)", (path) =>
     expect(safeAuthReturn(path)).toBe(path),
   );
+  // The exam is entered only by a full page load after starting an attempt:
+  // a client-side return would keep the previous page's camera policy.
+  it.each([
+    "/assessments/take",
+    "/assessments/take/3f1c2a9e-8b7d-4c6f-9a1e-0b2d4f6a8c1e",
+    "/assessments/device-check",
+  ])("never returns to an exam page (%s)", (path) =>
+    expect(safeAuthReturn(path)).toBe("/home"),
+  );
+  it.each([
+    "/assessments/series/",
+    "/assessments/series/Upper",
+    "/assessments/series/a/b",
+    "/assessments/series/a?start=1",
+    "/assessments/series/a#start",
+    "/assessments/series/%2e%2e",
+    "/assessments/results/not-a-uuid",
+    "/assessments/results/3F1C2A9E-8B7D-4C6F-9A1E-0B2D4F6A8C1E",
+    "/assessments/results/3f1c2a9e-8b7d-4c6f-9a1e-0b2d4f6a8c1e/appeal",
+    "/assessments/results/3f1c2a9e-8b7d-4c6f-9a1e-0b2d4f6a8c1e?share=1",
+    "/assessments/join/",
+    "/assessments/join/token/extra",
+    "/assessments/join/token?next=//evil.test",
+    "/assessments/join/token#x",
+    "/assessments/join/to.ken",
+    "/assessments/studio/series",
+    "/assessments/review/task",
+    "/assessments/studio?scope=platform",
+    "/verify/ABCD-1234",
+    "/shorts",
+    "/topics/react",
+    "/organizations/acme/cohorts",
+    "/account/admin/access",
+  ])("rejects pages outside the skill-check return list (%s)", (path) => {
+    expect(safeAuthReturn(path)).toBe("/home");
+  });
   it.each([
     null,
     undefined,

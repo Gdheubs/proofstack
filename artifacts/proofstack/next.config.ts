@@ -53,6 +53,23 @@ const config: NextConfig = {
             : []),
         ],
       },
+      // The exam pages are the only ones that may use the camera and
+      // microphone, and only for this site itself (never an embedded frame).
+      // A later entry replaces the same header of an earlier one and leaves
+      // the earlier entry's other headers in force. The value must match
+      // EXAM_PERMISSIONS_POLICY in lib/chrome.ts; a test compares the two.
+      ...["/assessments/take/:path*", "/assessments/device-check"].map(
+        (source) => ({
+          source,
+          headers: [
+            {
+              key: "Permissions-Policy",
+              value:
+                "camera=(self), microphone=(self), fullscreen=(self), geolocation=(), payment=(), display-capture=()",
+            },
+          ],
+        }),
+      ),
     ];
   },
 };

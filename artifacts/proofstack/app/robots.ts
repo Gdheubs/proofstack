@@ -16,6 +16,16 @@ export default function robots(): MetadataRoute.Robots {
         "/editor",
         "/code",
         "/notifications",
+        // A credential is checked by whoever holds its code, not found by search.
+        "/verify",
+        // An attempt, and each member's own skill check pages.
+        "/assessments/take",
+        "/assessments/device-check",
+        "/assessments/assigned",
+        "/assessments/join",
+        "/assessments/results/",
+        "/assessments/studio",
+        "/assessments/review",
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
