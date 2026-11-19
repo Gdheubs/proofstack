@@ -2,7 +2,7 @@
 
 Parent: `e346e76` (API contracts; hosted CI reached codegen and found a
 regenerated Zod export collision).
-Status: **follow-up in progress** pending hosted CI. The first follow-up passed
+Status: **complete** for the codegen export follow-up. The first attempt passed
 codegen and generated-output checks, then typecheck exposed missing direct
 exports for existing API types; the normalizer now restores those exports.
 
@@ -25,9 +25,14 @@ available through `ApiTypes`.
 - ESLint on the test and normalization script: passed.
 - Prettier on the changed config, barrel, script and checkpoint: passed after
   formatting the package script entry.
+- Hosted `ProofStack CI` run `44600375934` on
+  `e0763cbfbdfbd9723608c01e1ef7de5a27846c1f`: passed, including migrations,
+  generated-output check, audit, lint, format, typecheck, coverage, integration
+  tests, PostgreSQL 17 backup/restore, API build/health, and Worker size gate.
+- Hosted `ProofStack Security` run `44600376052` on the same SHA: passed.
 
 ## Next step
 
-Run the full relevant local checks, commit and push this correction, then
-inspect CI for the exact pushed SHA. Do not treat the failed parent CI run as a
-pass.
+Proceed to DB-2 in `docs/skill-check-platform.md`: implement the additive
+0023_media_social schema and its constraint, export-policy, and migration
+acceptance tests. The migration is not applied to a production database.
