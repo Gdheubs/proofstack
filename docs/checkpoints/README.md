@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Skill Check navigation inventory follow-up](2026-11-20-navigation-inventory.md) — fixes the route ownership assertion exposed by hosted CI; focused navigation and full coverage suite pass locally.
 - [Wave 0 formatting follow-up](2026-11-19-wave0-format-fix.md) — fixes the navigation formatting failure reported by hosted CI after the Next.js security update.
 - [Next.js audit remediation](2026-11-19-nextjs-audit-remediation.md) — raises the frontend minimum to the patched 16.4.5 release after hosted CI flagged vulnerable 16.4.2 dependencies; audit, typecheck and lint pass.
 - [Skill Check platform, Wave 0 wiring](2026-11-19-skill-check-wave0.md) — WIP checkpoint for the additive 0022 foundation and shared API/UI wiring; typecheck and lint pass, acceptance suites remain open.
