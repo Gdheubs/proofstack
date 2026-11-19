@@ -19,7 +19,14 @@ export const NAV: NavigationSection[] = [
   {
     href: "/home",
     label: "Home",
-    prefixes: ["/home", "/community", "/posts", "/bookmarks", "/shorts", "/topics"],
+    prefixes: [
+      "/home",
+      "/community",
+      "/posts",
+      "/bookmarks",
+      "/shorts",
+      "/topics",
+    ],
     children: [],
   },
   {
