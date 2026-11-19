@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Skill Check API codegen barrel fix](2026-11-20-skill-check-api-codegen-fix.md) — normalizes the Zod package barrel after generation, addressing the collision found in hosted CI for the API contracts checkpoint.
 - [Skill Check platform API contracts](2026-11-20-skill-check-api-contracts.md) — adds contracts and generated clients for the new Skill Check route families; typecheck and focused API tests pass, while the platform handlers remain feature-off stubs.
 - [CI backup and restore pipe fix](2026-11-20-backup-restore-pipe-fix.md) — fixes the restore drill's short-circuited schema detection; full hosted CI passed, including the PostgreSQL 17 backup/restore drill and worker size gate.
 - [Skill Check navigation inventory follow-up](2026-11-20-navigation-inventory.md) — fixes the route ownership assertion exposed by hosted CI; focused navigation and full coverage suite pass locally.
