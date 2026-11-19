@@ -2,14 +2,19 @@
 
 Parent: `e346e76` (API contracts; hosted CI reached codegen and found a
 regenerated Zod export collision).
-Status: **follow-up in progress** pending hosted CI.
+Status: **follow-up in progress** pending hosted CI. The first follow-up passed
+codegen and generated-output checks, then typecheck exposed missing direct
+exports for existing API types; the normalizer now restores those exports.
 
 ## Scope
 
 Made the Zod package barrel normalization part of the API-spec codegen command.
 Orval generates a wildcard export for both schema values and TypeScript types,
 which collides for request bodies sharing a name. The deterministic post-codegen
-script restores the collision-safe `ApiTypes` namespace after every generation.
+script restores the collision-safe `ApiTypes` namespace after every generation
+and explicitly re-exports all non-colliding generated types so existing
+`@workspace/api-zod` imports keep working. Conflicting request body types stay
+available through `ApiTypes`.
 
 ## Validation actually run
 
