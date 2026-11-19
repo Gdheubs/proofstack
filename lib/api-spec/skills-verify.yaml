@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info: { title: Skills verify, version: 1.0.0 }
+paths:
+  /skills/verify:
+    get:
+      operationId: verifySkillCredential
+      parameters:
+        - {
+            name: code,
+            in: query,
+            required: true,
+            schema: { type: string, minLength: 1, maxLength: 120 },
+          }
+      responses:
+        "200":
+          {
+            description: Public credential statement with a constant response shape,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable }
+  /skills/verify/keys:
+    get:
+      operationId: getSkillCredentialKeys
+      parameters:
+        - { name: key_id, in: query, schema: { type: string } }
+      responses:
+        "200":
+          {
+            description: Public signing keys,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable }

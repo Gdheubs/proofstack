@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: { title: Media hooks, version: 1.0.0 }
+paths:
+  /media/hooks/video:
+    post:
+      operationId: receiveVideoHook
+      description: Raw signed video provider events; receipt is idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            { schema: { type: object, additionalProperties: true } }
+      responses:
+        "202": { description: Receipt accepted }
+        default: { description: Unavailable or invalid hook }

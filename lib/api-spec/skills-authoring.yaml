@@ -1,0 +1,195 @@
+openapi: 3.1.0
+info: { title: Skills authoring, version: 1.0.0 }
+paths:
+  /skills/authoring:
+    get:
+      operationId: getSkillsAuthoring
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum:
+                  [
+                    templates,
+                    library,
+                    question,
+                    rubric,
+                    anchor-set,
+                    series,
+                    test,
+                    version,
+                    diff,
+                    reviews,
+                    stats,
+                    rulings,
+                  ],
+              },
+          }
+        - { name: id, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: scope,
+            in: query,
+            schema: { type: string, enum: [platform, organization] },
+          }
+        - {
+            name: organizationId,
+            in: query,
+            schema: { type: string, format: uuid },
+          }
+      responses:
+        "200":
+          {
+            description: Authoring workspace data,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /skills/authoring/action:
+    post:
+      operationId: runSkillsAuthoringAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: question-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: question-variant } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: question-share } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: rubric-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: anchor-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: pool-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties:
+                      { action: { const: series-create-from-template } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: series-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: test-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: version-create } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: structure-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: template-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: question-import } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: ai-draft } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: submit-review } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: review-decide } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: publish } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: retire } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: ruling-propose } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: ruling-approve } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Authoring action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }

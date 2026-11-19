@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info: { title: Organization results, version: 1.0.0 }
+paths:
+  /org-results:
+    get:
+      operationId: getOrganizationResults
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum: [progress, results, report, application, export],
+              },
+          }
+        - {
+            name: organizationId,
+            in: query,
+            schema: { type: string, format: uuid },
+          }
+        - { name: id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          {
+            description: Shared and authorized organization results,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }

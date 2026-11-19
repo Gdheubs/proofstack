@@ -1560,6 +1560,430 @@ export const RequestCommunityUploadResponse = zod.object({
 })
 
 
+export const getPlatformQueryQMax = 120;
+
+
+
+export const GetPlatformQueryParams = zod.object({
+  "view": zod.enum(['me', 'grants', 'users', 'organizations', 'entitlements']),
+  "q": zod.coerce.string().max(getPlatformQueryQMax).optional(),
+  "cursor": zod.coerce.string().optional()
+})
+
+export const GetPlatformResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunPlatformActionBody = zod.union([zod.object({
+  "action": zod.literal("grant-save")
+}),zod.object({
+  "action": zod.literal("grant-revoke")
+}),zod.object({
+  "action": zod.literal("organization-account-request")
+}),zod.object({
+  "action": zod.literal("organization-verify")
+}),zod.object({
+  "action": zod.literal("member-grant-save")
+}),zod.object({
+  "action": zod.literal("member-grant-revoke")
+}),zod.object({
+  "action": zod.literal("entitlement-save")
+}),zod.object({
+  "action": zod.literal("entitlement-revoke")
+})])
+
+export const RunPlatformActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * Raw signed delivery reports from the configured mail sender.
+ */
+export const ReceiveMailHookBody = zod.record(zod.string(), zod.unknown())
+
+export const ReceiveMailHookResponse = zod.void()
+
+
+export const GetMediaQueryParams = zod.object({
+  "view": zod.enum(['mine'])
+})
+
+export const GetMediaResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunMediaActionBody = zod.union([zod.object({
+  "action": zod.literal("reserve")
+}),zod.object({
+  "action": zod.literal("complete")
+}),zod.object({
+  "action": zod.literal("abort")
+}),zod.object({
+  "action": zod.literal("delete")
+}),zod.object({
+  "action": zod.literal("playback-ticket")
+})])
+
+export const RunMediaActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const UploadMediaContentParams = zod.object({
+  "id": zod.uuid()
+})
+
+export const UploadMediaContentResponse = zod.void()
+
+
+export const GetMediaItemParams = zod.object({
+  "id": zod.uuid()
+})
+
+export const GetMediaItemResponse = zod.unknown()
+
+
+/**
+ * Raw signed video provider events; receipt is idempotent.
+ */
+export const ReceiveVideoHookBody = zod.record(zod.string(), zod.unknown())
+
+export const ReceiveVideoHookResponse = zod.void()
+
+
+export const GetSocialQueryParams = zod.object({
+  "view": zod.enum(['feed', 'following', 'shorts', 'topic', 'topics', 'media', 'routines', 'post']),
+  "cursor": zod.coerce.string().optional()
+})
+
+export const GetSocialResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunSocialActionBody = zod.union([zod.object({
+  "action": zod.literal("post-create")
+}),zod.object({
+  "action": zod.literal("post-delete")
+}),zod.object({
+  "action": zod.literal("repost")
+}),zod.object({
+  "action": zod.literal("block")
+})])
+
+export const RunSocialActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetModerationQueryParams = zod.object({
+  "view": zod.enum(['queue', 'report']),
+  "id": zod.uuid().optional()
+})
+
+export const GetModerationResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunModerationActionBody = zod.union([zod.object({
+  "action": zod.literal("report")
+}),zod.object({
+  "action": zod.literal("triage")
+}),zod.object({
+  "action": zod.literal("restrict")
+}),zod.object({
+  "action": zod.literal("lift")
+}),zod.object({
+  "action": zod.literal("suspend")
+})])
+
+export const RunModerationActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSkillsAuthoringQueryParams = zod.object({
+  "view": zod.enum(['templates', 'library', 'question', 'rubric', 'anchor-set', 'series', 'test', 'version', 'diff', 'reviews', 'stats', 'rulings']),
+  "id": zod.uuid().optional(),
+  "scope": zod.enum(['platform', 'organization']).optional(),
+  "organizationId": zod.uuid().optional()
+})
+
+export const GetSkillsAuthoringResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunSkillsAuthoringActionBody = zod.union([zod.object({
+  "action": zod.literal("question-save")
+}),zod.object({
+  "action": zod.literal("question-variant")
+}),zod.object({
+  "action": zod.literal("question-share")
+}),zod.object({
+  "action": zod.literal("rubric-save")
+}),zod.object({
+  "action": zod.literal("anchor-save")
+}),zod.object({
+  "action": zod.literal("pool-save")
+}),zod.object({
+  "action": zod.literal("series-create-from-template")
+}),zod.object({
+  "action": zod.literal("series-save")
+}),zod.object({
+  "action": zod.literal("test-save")
+}),zod.object({
+  "action": zod.literal("version-create")
+}),zod.object({
+  "action": zod.literal("structure-save")
+}),zod.object({
+  "action": zod.literal("template-save")
+}),zod.object({
+  "action": zod.literal("question-import")
+}),zod.object({
+  "action": zod.literal("ai-draft")
+}),zod.object({
+  "action": zod.literal("submit-review")
+}),zod.object({
+  "action": zod.literal("review-decide")
+}),zod.object({
+  "action": zod.literal("publish")
+}),zod.object({
+  "action": zod.literal("retire")
+}),zod.object({
+  "action": zod.literal("ruling-propose")
+}),zod.object({
+  "action": zod.literal("ruling-approve")
+})])
+
+export const RunSkillsAuthoringActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSkillsQueryParams = zod.object({
+  "view": zod.enum(['catalog', 'series', 'me', 'assigned', 'results', 'result', 'consents', 'sharing', 'ledger']),
+  "slug": zod.coerce.string().optional(),
+  "id": zod.uuid().optional()
+})
+
+export const GetSkillsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunSkillsActionBody = zod.union([zod.object({
+  "action": zod.literal("start")
+}),zod.object({
+  "action": zod.literal("resume")
+}),zod.object({
+  "action": zod.literal("preview-start")
+}),zod.object({
+  "action": zod.literal("consent-save")
+}),zod.object({
+  "action": zod.literal("consent-withdraw")
+}),zod.object({
+  "action": zod.literal("invitation-respond")
+}),zod.object({
+  "action": zod.literal("sharing-revoke")
+}),zod.object({
+  "action": zod.literal("credential-update")
+}),zod.object({
+  "action": zod.literal("appeal-open")
+}),zod.object({
+  "action": zod.literal("appeal-withdraw")
+})])
+
+export const RunSkillsActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSkillAttemptStateParams = zod.object({
+  "attemptId": zod.uuid()
+})
+
+export const GetSkillAttemptStateResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunSkillAttemptActionParams = zod.object({
+  "attemptId": zod.uuid()
+})
+
+export const RunSkillAttemptActionBody = zod.union([zod.object({
+  "action": zod.literal("sync")
+}),zod.object({
+  "action": zod.literal("open-section")
+}),zod.object({
+  "action": zod.literal("close-section")
+}),zod.object({
+  "action": zod.literal("reveal-item")
+}),zod.object({
+  "action": zod.literal("submit")
+}),zod.object({
+  "action": zod.literal("record-start")
+}),zod.object({
+  "action": zod.literal("record-ticket")
+}),zod.object({
+  "action": zod.literal("record-part")
+}),zod.object({
+  "action": zod.literal("record-status")
+}),zod.object({
+  "action": zod.literal("record-complete")
+}),zod.object({
+  "action": zod.literal("take-choose")
+})])
+
+export const RunSkillAttemptActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunSkillInterviewActionParams = zod.object({
+  "attemptId": zod.uuid()
+})
+
+export const RunSkillInterviewActionBody = zod.union([zod.object({
+  "action": zod.literal("start")
+}),zod.object({
+  "action": zod.literal("turn")
+}),zod.object({
+  "action": zod.literal("end")
+})])
+
+export const RunSkillInterviewActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const verifySkillCredentialQueryCodeMax = 120;
+
+
+
+export const VerifySkillCredentialQueryParams = zod.object({
+  "code": zod.coerce.string().min(1).max(verifySkillCredentialQueryCodeMax)
+})
+
+export const VerifySkillCredentialResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSkillCredentialKeysQueryParams = zod.object({
+  "key_id": zod.coerce.string().optional()
+})
+
+export const GetSkillCredentialKeysResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSkillsGradingQueryParams = zod.object({
+  "view": zod.enum(['queues', 'task', 'calibration', 'appeals', 'appeal', 'cases', 'case', 'rulings', 'stats']),
+  "id": zod.uuid().optional()
+})
+
+export const GetSkillsGradingResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunSkillsGradingActionBody = zod.union([zod.object({
+  "action": zod.literal("claim-next")
+}),zod.object({
+  "action": zod.literal("release")
+}),zod.object({
+  "action": zod.literal("declare-conflict")
+}),zod.object({
+  "action": zod.literal("identity-revealed")
+}),zod.object({
+  "action": zod.literal("grade-submit")
+}),zod.object({
+  "action": zod.literal("calibration-start")
+}),zod.object({
+  "action": zod.literal("calibration-submit")
+}),zod.object({
+  "action": zod.literal("adjudicate")
+}),zod.object({
+  "action": zod.literal("appeal-assign")
+}),zod.object({
+  "action": zod.literal("appeal-decide")
+}),zod.object({
+  "action": zod.literal("integrity-decide")
+}),zod.object({
+  "action": zod.literal("incident-grant")
+}),zod.object({
+  "action": zod.literal("resume-grant")
+}),zod.object({
+  "action": zod.literal("ruling-apply")
+}),zod.object({
+  "action": zod.literal("support-view")
+})])
+
+export const RunSkillsGradingActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetEducationQueryParams = zod.object({
+  "view": zod.enum(['cohorts', 'cohort', 'roster', 'assignments', 'assignment', 'sittings', 'sitting', 'my', 'invite']),
+  "id": zod.uuid().optional(),
+  "token": zod.coerce.string().optional()
+})
+
+export const GetEducationResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunEducationActionBody = zod.union([zod.object({
+  "action": zod.literal("cohort-save")
+}),zod.object({
+  "action": zod.literal("cohort-archive")
+}),zod.object({
+  "action": zod.literal("join-code-rotate")
+}),zod.object({
+  "action": zod.literal("enrollment-approve")
+}),zod.object({
+  "action": zod.literal("enrollment-remove")
+}),zod.object({
+  "action": zod.literal("invite-resend")
+}),zod.object({
+  "action": zod.literal("enrollment-import")
+}),zod.object({
+  "action": zod.literal("enrollment-accept")
+}),zod.object({
+  "action": zod.literal("join-cohort")
+}),zod.object({
+  "action": zod.literal("enrollment-leave")
+}),zod.object({
+  "action": zod.literal("assignment-save")
+}),zod.object({
+  "action": zod.literal("assignment-open")
+}),zod.object({
+  "action": zod.literal("assignment-extend")
+}),zod.object({
+  "action": zod.literal("assignment-cancel")
+}),zod.object({
+  "action": zod.literal("release-results")
+}),zod.object({
+  "action": zod.literal("accommodation-request")
+}),zod.object({
+  "action": zod.literal("accommodation-approve")
+}),zod.object({
+  "action": zod.literal("sitting-save")
+}),zod.object({
+  "action": zod.literal("sitting-admit")
+}),zod.object({
+  "action": zod.literal("sitting-incident")
+}),zod.object({
+  "action": zod.literal("sitting-attest")
+})])
+
+export const RunEducationActionResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetOrganizationResultsQueryParams = zod.object({
+  "view": zod.enum(['progress', 'results', 'report', 'application', 'export']),
+  "organizationId": zod.uuid().optional(),
+  "id": zod.uuid().optional()
+})
+
+export const GetOrganizationResultsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetCareerChecksQueryParams = zod.object({
+  "view": zod.enum(['job', 'application', 'eligible']),
+  "jobId": zod.uuid().optional(),
+  "applicationId": zod.uuid().optional()
+})
+
+export const GetCareerChecksResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RunCareerChecksActionBody = zod.union([zod.object({
+  "action": zod.literal("job-check-save")
+}),zod.object({
+  "action": zod.literal("job-check-remove")
+}),zod.object({
+  "action": zod.literal("check-invite")
+}),zod.object({
+  "action": zod.literal("credential-attach")
+}),zod.object({
+  "action": zod.literal("credential-detach")
+}),zod.object({
+  "action": zod.literal("external-done")
+})])
+
+export const RunCareerChecksActionResponse = zod.record(zod.string(), zod.unknown())
+
+
 /**
  * Returns server health status
  * @summary Health check

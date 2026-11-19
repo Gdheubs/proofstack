@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info: { title: Platform, version: 1.0.0 }
+paths:
+  /platform:
+    get:
+      operationId: getPlatform
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum: [me, grants, users, organizations, entitlements],
+              },
+          }
+        - { name: q, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200":
+          {
+            description: Platform access data,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /platform/action:
+    post:
+      operationId: runPlatformAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: grant-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: grant-revoke } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties:
+                      { action: { const: organization-account-request } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: organization-verify } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: member-grant-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: member-grant-revoke } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: entitlement-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: entitlement-revoke } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }

@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info: { title: Media, version: 1.0.0 }
+paths:
+  /media:
+    get:
+      operationId: getMedia
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema: { type: string, enum: [mine] },
+          }
+      responses:
+        "200":
+          {
+            description: Owner media and quota,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /media/action:
+    post:
+      operationId: runMediaAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: reserve } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: complete } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: abort } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: delete } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: playback-ticket } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Media action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /media/{id}/content:
+    put:
+      operationId: uploadMediaContent
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream: { schema: { type: string, format: binary } }
+      responses:
+        "201": { description: Upload accepted }
+        default: { description: Unavailable or not authorized }
+  /media/{id}:
+    get:
+      operationId: getMediaItem
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      responses:
+        "200":
+          {
+            description: Authorized media bytes,
+            content:
+              {
+                application/octet-stream:
+                  { schema: { type: string, format: binary } },
+              },
+          }
+        default: { description: Not found or unavailable }

@@ -1700,5 +1700,605 @@ export const GetCommunityFilter = {
   mine: 'mine',
 } as const;
 
+export type GetPlatformParams = {
+view: GetPlatformView;
+/**
+ * @maxLength 120
+ */
+q?: string;
+cursor?: string;
+};
+
+export type GetPlatformView = typeof GetPlatformView[keyof typeof GetPlatformView];
+
+
+export const GetPlatformView = {
+  me: 'me',
+  grants: 'grants',
+  users: 'users',
+  organizations: 'organizations',
+  entitlements: 'entitlements',
+} as const;
+
+export type GetPlatform200 = { [key: string]: unknown };
+
+export type RunPlatformActionBody = {
+  action: 'grant-save';
+  [key: string]: unknown;
+ } | {
+  action: 'grant-revoke';
+  [key: string]: unknown;
+ } | {
+  action: 'organization-account-request';
+  [key: string]: unknown;
+ } | {
+  action: 'organization-verify';
+  [key: string]: unknown;
+ } | {
+  action: 'member-grant-save';
+  [key: string]: unknown;
+ } | {
+  action: 'member-grant-revoke';
+  [key: string]: unknown;
+ } | {
+  action: 'entitlement-save';
+  [key: string]: unknown;
+ } | {
+  action: 'entitlement-revoke';
+  [key: string]: unknown;
+ };
+
+export type RunPlatformAction200 = { [key: string]: unknown };
+
+export type ReceiveMailHookBody = { [key: string]: unknown };
+
+export type GetMediaParams = {
+view: GetMediaView;
+};
+
+export type GetMediaView = typeof GetMediaView[keyof typeof GetMediaView];
+
+
+export const GetMediaView = {
+  mine: 'mine',
+} as const;
+
+export type GetMedia200 = { [key: string]: unknown };
+
+export type RunMediaActionBody = {
+  action: 'reserve';
+  [key: string]: unknown;
+ } | {
+  action: 'complete';
+  [key: string]: unknown;
+ } | {
+  action: 'abort';
+  [key: string]: unknown;
+ } | {
+  action: 'delete';
+  [key: string]: unknown;
+ } | {
+  action: 'playback-ticket';
+  [key: string]: unknown;
+ };
+
+export type RunMediaAction200 = { [key: string]: unknown };
+
+export type ReceiveVideoHookBody = { [key: string]: unknown };
+
+export type GetSocialParams = {
+view: GetSocialView;
+cursor?: string;
+};
+
+export type GetSocialView = typeof GetSocialView[keyof typeof GetSocialView];
+
+
+export const GetSocialView = {
+  feed: 'feed',
+  following: 'following',
+  shorts: 'shorts',
+  topic: 'topic',
+  topics: 'topics',
+  media: 'media',
+  routines: 'routines',
+  post: 'post',
+} as const;
+
+export type GetSocial200 = { [key: string]: unknown };
+
+export type RunSocialActionBody = {
+  action: 'post-create';
+  [key: string]: unknown;
+ } | {
+  action: 'post-delete';
+  [key: string]: unknown;
+ } | {
+  action: 'repost';
+  [key: string]: unknown;
+ } | {
+  action: 'block';
+  [key: string]: unknown;
+ };
+
+export type RunSocialAction200 = { [key: string]: unknown };
+
+export type GetModerationParams = {
+view: GetModerationView;
+id?: string;
+};
+
+export type GetModerationView = typeof GetModerationView[keyof typeof GetModerationView];
+
+
+export const GetModerationView = {
+  queue: 'queue',
+  report: 'report',
+} as const;
+
+export type GetModeration200 = { [key: string]: unknown };
+
+export type RunModerationActionBody = {
+  action: 'report';
+  [key: string]: unknown;
+ } | {
+  action: 'triage';
+  [key: string]: unknown;
+ } | {
+  action: 'restrict';
+  [key: string]: unknown;
+ } | {
+  action: 'lift';
+  [key: string]: unknown;
+ } | {
+  action: 'suspend';
+  [key: string]: unknown;
+ };
+
+export type RunModerationAction200 = { [key: string]: unknown };
+
+export type GetSkillsAuthoringParams = {
+view: GetSkillsAuthoringView;
+id?: string;
+scope?: GetSkillsAuthoringScope;
+organizationId?: string;
+};
+
+export type GetSkillsAuthoringView = typeof GetSkillsAuthoringView[keyof typeof GetSkillsAuthoringView];
+
+
+export const GetSkillsAuthoringView = {
+  templates: 'templates',
+  library: 'library',
+  question: 'question',
+  rubric: 'rubric',
+  'anchor-set': 'anchor-set',
+  series: 'series',
+  test: 'test',
+  version: 'version',
+  diff: 'diff',
+  reviews: 'reviews',
+  stats: 'stats',
+  rulings: 'rulings',
+} as const;
+
+export type GetSkillsAuthoringScope = typeof GetSkillsAuthoringScope[keyof typeof GetSkillsAuthoringScope];
+
+
+export const GetSkillsAuthoringScope = {
+  platform: 'platform',
+  organization: 'organization',
+} as const;
+
+export type GetSkillsAuthoring200 = { [key: string]: unknown };
+
+export type RunSkillsAuthoringActionBody = {
+  action: 'question-save';
+  [key: string]: unknown;
+ } | {
+  action: 'question-variant';
+  [key: string]: unknown;
+ } | {
+  action: 'question-share';
+  [key: string]: unknown;
+ } | {
+  action: 'rubric-save';
+  [key: string]: unknown;
+ } | {
+  action: 'anchor-save';
+  [key: string]: unknown;
+ } | {
+  action: 'pool-save';
+  [key: string]: unknown;
+ } | {
+  action: 'series-create-from-template';
+  [key: string]: unknown;
+ } | {
+  action: 'series-save';
+  [key: string]: unknown;
+ } | {
+  action: 'test-save';
+  [key: string]: unknown;
+ } | {
+  action: 'version-create';
+  [key: string]: unknown;
+ } | {
+  action: 'structure-save';
+  [key: string]: unknown;
+ } | {
+  action: 'template-save';
+  [key: string]: unknown;
+ } | {
+  action: 'question-import';
+  [key: string]: unknown;
+ } | {
+  action: 'ai-draft';
+  [key: string]: unknown;
+ } | {
+  action: 'submit-review';
+  [key: string]: unknown;
+ } | {
+  action: 'review-decide';
+  [key: string]: unknown;
+ } | {
+  action: 'publish';
+  [key: string]: unknown;
+ } | {
+  action: 'retire';
+  [key: string]: unknown;
+ } | {
+  action: 'ruling-propose';
+  [key: string]: unknown;
+ } | {
+  action: 'ruling-approve';
+  [key: string]: unknown;
+ };
+
+export type RunSkillsAuthoringAction200 = { [key: string]: unknown };
+
+export type GetSkillsParams = {
+view: GetSkillsView;
+slug?: string;
+id?: string;
+};
+
+export type GetSkillsView = typeof GetSkillsView[keyof typeof GetSkillsView];
+
+
+export const GetSkillsView = {
+  catalog: 'catalog',
+  series: 'series',
+  me: 'me',
+  assigned: 'assigned',
+  results: 'results',
+  result: 'result',
+  consents: 'consents',
+  sharing: 'sharing',
+  ledger: 'ledger',
+} as const;
+
+export type GetSkills200 = { [key: string]: unknown };
+
+export type RunSkillsActionBody = {
+  action: 'start';
+  [key: string]: unknown;
+ } | {
+  action: 'resume';
+  [key: string]: unknown;
+ } | {
+  action: 'preview-start';
+  [key: string]: unknown;
+ } | {
+  action: 'consent-save';
+  [key: string]: unknown;
+ } | {
+  action: 'consent-withdraw';
+  [key: string]: unknown;
+ } | {
+  action: 'invitation-respond';
+  [key: string]: unknown;
+ } | {
+  action: 'sharing-revoke';
+  [key: string]: unknown;
+ } | {
+  action: 'credential-update';
+  [key: string]: unknown;
+ } | {
+  action: 'appeal-open';
+  [key: string]: unknown;
+ } | {
+  action: 'appeal-withdraw';
+  [key: string]: unknown;
+ };
+
+export type RunSkillsAction200 = { [key: string]: unknown };
+
+export type GetSkillAttemptState200 = { [key: string]: unknown };
+
+export type RunSkillAttemptActionBody = {
+  action: 'sync';
+  [key: string]: unknown;
+ } | {
+  action: 'open-section';
+  [key: string]: unknown;
+ } | {
+  action: 'close-section';
+  [key: string]: unknown;
+ } | {
+  action: 'reveal-item';
+  [key: string]: unknown;
+ } | {
+  action: 'submit';
+  [key: string]: unknown;
+ } | {
+  action: 'record-start';
+  [key: string]: unknown;
+ } | {
+  action: 'record-ticket';
+  [key: string]: unknown;
+ } | {
+  action: 'record-part';
+  [key: string]: unknown;
+ } | {
+  action: 'record-status';
+  [key: string]: unknown;
+ } | {
+  action: 'record-complete';
+  [key: string]: unknown;
+ } | {
+  action: 'take-choose';
+  [key: string]: unknown;
+ };
+
+export type RunSkillAttemptAction200 = { [key: string]: unknown };
+
+export type RunSkillInterviewActionBody = {
+  action: 'start';
+  [key: string]: unknown;
+ } | {
+  action: 'turn';
+  [key: string]: unknown;
+ } | {
+  action: 'end';
+  [key: string]: unknown;
+ };
+
+export type RunSkillInterviewAction200 = { [key: string]: unknown };
+
+export type VerifySkillCredentialParams = {
+/**
+ * @minLength 1
+ * @maxLength 120
+ */
+code: string;
+};
+
+export type VerifySkillCredential200 = { [key: string]: unknown };
+
+export type GetSkillCredentialKeysParams = {
+key_id?: string;
+};
+
+export type GetSkillCredentialKeys200 = { [key: string]: unknown };
+
+export type GetSkillsGradingParams = {
+view: GetSkillsGradingView;
+id?: string;
+};
+
+export type GetSkillsGradingView = typeof GetSkillsGradingView[keyof typeof GetSkillsGradingView];
+
+
+export const GetSkillsGradingView = {
+  queues: 'queues',
+  task: 'task',
+  calibration: 'calibration',
+  appeals: 'appeals',
+  appeal: 'appeal',
+  cases: 'cases',
+  case: 'case',
+  rulings: 'rulings',
+  stats: 'stats',
+} as const;
+
+export type GetSkillsGrading200 = { [key: string]: unknown };
+
+export type RunSkillsGradingActionBody = {
+  action: 'claim-next';
+  [key: string]: unknown;
+ } | {
+  action: 'release';
+  [key: string]: unknown;
+ } | {
+  action: 'declare-conflict';
+  [key: string]: unknown;
+ } | {
+  action: 'identity-revealed';
+  [key: string]: unknown;
+ } | {
+  action: 'grade-submit';
+  [key: string]: unknown;
+ } | {
+  action: 'calibration-start';
+  [key: string]: unknown;
+ } | {
+  action: 'calibration-submit';
+  [key: string]: unknown;
+ } | {
+  action: 'adjudicate';
+  [key: string]: unknown;
+ } | {
+  action: 'appeal-assign';
+  [key: string]: unknown;
+ } | {
+  action: 'appeal-decide';
+  [key: string]: unknown;
+ } | {
+  action: 'integrity-decide';
+  [key: string]: unknown;
+ } | {
+  action: 'incident-grant';
+  [key: string]: unknown;
+ } | {
+  action: 'resume-grant';
+  [key: string]: unknown;
+ } | {
+  action: 'ruling-apply';
+  [key: string]: unknown;
+ } | {
+  action: 'support-view';
+  [key: string]: unknown;
+ };
+
+export type RunSkillsGradingAction200 = { [key: string]: unknown };
+
+export type GetEducationParams = {
+view: GetEducationView;
+id?: string;
+token?: string;
+};
+
+export type GetEducationView = typeof GetEducationView[keyof typeof GetEducationView];
+
+
+export const GetEducationView = {
+  cohorts: 'cohorts',
+  cohort: 'cohort',
+  roster: 'roster',
+  assignments: 'assignments',
+  assignment: 'assignment',
+  sittings: 'sittings',
+  sitting: 'sitting',
+  my: 'my',
+  invite: 'invite',
+} as const;
+
+export type GetEducation200 = { [key: string]: unknown };
+
+export type RunEducationActionBody = {
+  action: 'cohort-save';
+  [key: string]: unknown;
+ } | {
+  action: 'cohort-archive';
+  [key: string]: unknown;
+ } | {
+  action: 'join-code-rotate';
+  [key: string]: unknown;
+ } | {
+  action: 'enrollment-approve';
+  [key: string]: unknown;
+ } | {
+  action: 'enrollment-remove';
+  [key: string]: unknown;
+ } | {
+  action: 'invite-resend';
+  [key: string]: unknown;
+ } | {
+  action: 'enrollment-import';
+  [key: string]: unknown;
+ } | {
+  action: 'enrollment-accept';
+  [key: string]: unknown;
+ } | {
+  action: 'join-cohort';
+  [key: string]: unknown;
+ } | {
+  action: 'enrollment-leave';
+  [key: string]: unknown;
+ } | {
+  action: 'assignment-save';
+  [key: string]: unknown;
+ } | {
+  action: 'assignment-open';
+  [key: string]: unknown;
+ } | {
+  action: 'assignment-extend';
+  [key: string]: unknown;
+ } | {
+  action: 'assignment-cancel';
+  [key: string]: unknown;
+ } | {
+  action: 'release-results';
+  [key: string]: unknown;
+ } | {
+  action: 'accommodation-request';
+  [key: string]: unknown;
+ } | {
+  action: 'accommodation-approve';
+  [key: string]: unknown;
+ } | {
+  action: 'sitting-save';
+  [key: string]: unknown;
+ } | {
+  action: 'sitting-admit';
+  [key: string]: unknown;
+ } | {
+  action: 'sitting-incident';
+  [key: string]: unknown;
+ } | {
+  action: 'sitting-attest';
+  [key: string]: unknown;
+ };
+
+export type RunEducationAction200 = { [key: string]: unknown };
+
+export type GetOrganizationResultsParams = {
+view: GetOrganizationResultsView;
+organizationId?: string;
+id?: string;
+};
+
+export type GetOrganizationResultsView = typeof GetOrganizationResultsView[keyof typeof GetOrganizationResultsView];
+
+
+export const GetOrganizationResultsView = {
+  progress: 'progress',
+  results: 'results',
+  report: 'report',
+  application: 'application',
+  export: 'export',
+} as const;
+
+export type GetOrganizationResults200 = { [key: string]: unknown };
+
+export type GetCareerChecksParams = {
+view: GetCareerChecksView;
+jobId?: string;
+applicationId?: string;
+};
+
+export type GetCareerChecksView = typeof GetCareerChecksView[keyof typeof GetCareerChecksView];
+
+
+export const GetCareerChecksView = {
+  job: 'job',
+  application: 'application',
+  eligible: 'eligible',
+} as const;
+
+export type GetCareerChecks200 = { [key: string]: unknown };
+
+export type RunCareerChecksActionBody = {
+  action: 'job-check-save';
+  [key: string]: unknown;
+ } | {
+  action: 'job-check-remove';
+  [key: string]: unknown;
+ } | {
+  action: 'check-invite';
+  [key: string]: unknown;
+ } | {
+  action: 'credential-attach';
+  [key: string]: unknown;
+ } | {
+  action: 'credential-detach';
+  [key: string]: unknown;
+ } | {
+  action: 'external-done';
+  [key: string]: unknown;
+ };
+
+export type RunCareerChecksAction200 = { [key: string]: unknown };
+
 export type ExportAccount200 = { [key: string]: unknown };
 

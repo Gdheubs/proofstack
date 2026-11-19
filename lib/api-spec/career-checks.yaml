@@ -1,0 +1,87 @@
+openapi: 3.1.0
+info: { title: Career checks, version: 1.0.0 }
+paths:
+  /careers/checks:
+    get:
+      operationId: getCareerChecks
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema: { type: string, enum: [job, application, eligible] },
+          }
+        - { name: jobId, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: applicationId,
+            in: query,
+            schema: { type: string, format: uuid },
+          }
+      responses:
+        "200":
+          {
+            description: Hosted check details,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /careers/checks/action:
+    post:
+      operationId: runCareerChecksAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: job-check-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: job-check-remove } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: check-invite } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: credential-attach } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: credential-detach } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: external-done } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Career check action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }

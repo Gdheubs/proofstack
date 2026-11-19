@@ -1,0 +1,237 @@
+openapi: 3.1.0
+info: { title: Skills, version: 1.0.0 }
+paths:
+  /skills:
+    get:
+      operationId: getSkills
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum:
+                  [
+                    catalog,
+                    series,
+                    me,
+                    assigned,
+                    results,
+                    result,
+                    consents,
+                    sharing,
+                    ledger,
+                  ],
+              },
+          }
+        - { name: slug, in: query, schema: { type: string } }
+        - { name: id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          {
+            description: Skill catalogue or owner data,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /skills/action:
+    post:
+      operationId: runSkillsAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: start } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: resume } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: preview-start } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: consent-save } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: consent-withdraw } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: invitation-respond } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: sharing-revoke } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: credential-update } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: appeal-open } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: appeal-withdraw } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Skill action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /skills/attempts/{attemptId}/state:
+    get:
+      operationId: getSkillAttemptState
+      parameters:
+        - {
+            name: attemptId,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      responses:
+        "200":
+          {
+            description: Candidate's current attempt state,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Not found or unavailable }
+  /skills/attempts/{attemptId}/action:
+    post:
+      operationId: runSkillAttemptAction
+      parameters:
+        - {
+            name: attemptId,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: sync } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: open-section } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: close-section } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: reveal-item } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: submit } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: record-start } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: record-ticket } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: record-part } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: record-status } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: record-complete } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: take-choose } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Attempt action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Not found or unavailable }

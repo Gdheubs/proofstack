@@ -39,6 +39,62 @@ paths:
     $ref: "./community.yaml#/paths/~1community~1assist"
   /community/uploads:
     $ref: "./community.yaml#/paths/~1community~1uploads"
+  /platform:
+    $ref: "./platform.yaml#/paths/~1platform"
+  /platform/action:
+    $ref: "./platform.yaml#/paths/~1platform~1action"
+  /platform/hooks/mail:
+    $ref: "./mail-hooks.yaml#/paths/~1platform~1hooks~1mail"
+  /media:
+    $ref: "./media.yaml#/paths/~1media"
+  /media/action:
+    $ref: "./media.yaml#/paths/~1media~1action"
+  /media/{id}/content:
+    $ref: "./media.yaml#/paths/~1media~1{id}~1content"
+  /media/{id}:
+    $ref: "./media.yaml#/paths/~1media~1{id}"
+  /media/hooks/video:
+    $ref: "./media-hooks.yaml#/paths/~1media~1hooks~1video"
+  /social:
+    $ref: "./social.yaml#/paths/~1social"
+  /social/action:
+    $ref: "./social.yaml#/paths/~1social~1action"
+  /moderation:
+    $ref: "./moderation.yaml#/paths/~1moderation"
+  /moderation/action:
+    $ref: "./moderation.yaml#/paths/~1moderation~1action"
+  /skills/authoring:
+    $ref: "./skills-authoring.yaml#/paths/~1skills~1authoring"
+  /skills/authoring/action:
+    $ref: "./skills-authoring.yaml#/paths/~1skills~1authoring~1action"
+  /skills:
+    $ref: "./skills.yaml#/paths/~1skills"
+  /skills/action:
+    $ref: "./skills.yaml#/paths/~1skills~1action"
+  /skills/attempts/{attemptId}/state:
+    $ref: "./skills.yaml#/paths/~1skills~1attempts~1{attemptId}~1state"
+  /skills/attempts/{attemptId}/action:
+    $ref: "./skills.yaml#/paths/~1skills~1attempts~1{attemptId}~1action"
+  /skills/attempts/{attemptId}/interview:
+    $ref: "./skills-interview.yaml#/paths/~1skills~1attempts~1{attemptId}~1interview"
+  /skills/verify:
+    $ref: "./skills-verify.yaml#/paths/~1skills~1verify"
+  /skills/verify/keys:
+    $ref: "./skills-verify.yaml#/paths/~1skills~1verify~1keys"
+  /skills/grading:
+    $ref: "./skills-grading.yaml#/paths/~1skills~1grading"
+  /skills/grading/action:
+    $ref: "./skills-grading.yaml#/paths/~1skills~1grading~1action"
+  /education:
+    $ref: "./education.yaml#/paths/~1education"
+  /education/action:
+    $ref: "./education.yaml#/paths/~1education~1action"
+  /org-results:
+    $ref: "./org-results.yaml#/paths/~1org-results"
+  /careers/checks:
+    $ref: "./career-checks.yaml#/paths/~1careers~1checks"
+  /careers/checks/action:
+    $ref: "./career-checks.yaml#/paths/~1careers~1checks~1action"
   /healthz:
     get:
       operationId: healthCheck

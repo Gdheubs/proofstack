@@ -66,6 +66,26 @@ describe("ProofStack API boundary", () => {
       expect(r.status).toBe(401);
       expect(r.headers["cache-control"]).toBe("private, no-store");
     }
+    for (const path of [
+      "/api/platform?view=me",
+      "/api/media?view=mine",
+      "/api/moderation?view=queue",
+      "/api/skills/authoring?view=library",
+      "/api/skills?view=me",
+      "/api/skills/attempts/11111111-1111-4111-8111-111111111111/state",
+      "/api/skills/grading?view=queues",
+      "/api/education?view=cohorts",
+      "/api/org-results?view=results",
+      "/api/careers/checks?view=application",
+    ]) {
+      const r = await request(app)
+        .get(path)
+        .set("X-User-ID", "11111111-1111-4111-8111-111111111111")
+        .set("X-Role", "super_admin");
+      expect(r.status).toBe(503);
+      expect(r.body.error.code).toBe("FEATURE_UNAVAILABLE");
+      expect(r.headers["cache-control"]).toBe("private, no-store");
+    }
     vi.stubEnv("AUTH_APP_ORIGIN", "https://allowed.example");
     try {
       for (const path of [
@@ -74,6 +94,19 @@ describe("ProofStack API boundary", () => {
         "/api/repositories/action",
         "/api/pulls/action",
         "/api/intelligence/action",
+        "/api/platform/action",
+        "/api/platform/hooks/mail",
+        "/api/media/action",
+        "/api/media/hooks/video",
+        "/api/social/action",
+        "/api/moderation/action",
+        "/api/skills/authoring/action",
+        "/api/skills/action",
+        "/api/skills/attempts/11111111-1111-4111-8111-111111111111/action",
+        "/api/skills/attempts/11111111-1111-4111-8111-111111111111/interview",
+        "/api/skills/grading/action",
+        "/api/education/action",
+        "/api/careers/checks/action",
       ]) {
         const r = await request(app)
           .post(path)
@@ -81,6 +114,11 @@ describe("ProofStack API boundary", () => {
           .send({ action: "delete", role: "super_admin" });
         expect(r.status).toBe(403);
       }
+      const mediaUpload = await request(app)
+        .put("/api/media/11111111-1111-4111-8111-111111111111/content")
+        .set("Origin", "https://evil.example")
+        .send("image bytes");
+      expect(mediaUpload.status).toBe(403);
     } finally {
       vi.unstubAllEnvs();
     }

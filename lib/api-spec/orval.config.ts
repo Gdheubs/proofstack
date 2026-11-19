@@ -17,7 +17,32 @@ export default defineConfig({
   "api-client-react": {
     input: {
       target: "./openapi.yaml",
-      parserOptions: { externalRefs: { allow: ["./community.yaml", "./careers.yaml", "./repositories.yaml", "./pulls.yaml", "./intelligence.yaml", "./operations.yaml"] } },
+      parserOptions: {
+        externalRefs: {
+          allow: [
+            "./community.yaml",
+            "./careers.yaml",
+            "./repositories.yaml",
+            "./pulls.yaml",
+            "./intelligence.yaml",
+            "./operations.yaml",
+            "./platform.yaml",
+            "./mail-hooks.yaml",
+            "./media.yaml",
+            "./media-hooks.yaml",
+            "./social.yaml",
+            "./moderation.yaml",
+            "./skills-authoring.yaml",
+            "./skills.yaml",
+            "./skills-interview.yaml",
+            "./skills-verify.yaml",
+            "./skills-grading.yaml",
+            "./education.yaml",
+            "./org-results.yaml",
+            "./career-checks.yaml",
+          ],
+        },
+      },
       override: {
         transformer: titleTransformer,
       },
@@ -44,7 +69,32 @@ export default defineConfig({
   zod: {
     input: {
       target: "./openapi.yaml",
-      parserOptions: { externalRefs: { allow: ["./community.yaml", "./careers.yaml", "./repositories.yaml", "./pulls.yaml", "./intelligence.yaml", "./operations.yaml"] } },
+      parserOptions: {
+        externalRefs: {
+          allow: [
+            "./community.yaml",
+            "./careers.yaml",
+            "./repositories.yaml",
+            "./pulls.yaml",
+            "./intelligence.yaml",
+            "./operations.yaml",
+            "./platform.yaml",
+            "./mail-hooks.yaml",
+            "./media.yaml",
+            "./media-hooks.yaml",
+            "./social.yaml",
+            "./moderation.yaml",
+            "./skills-authoring.yaml",
+            "./skills.yaml",
+            "./skills-interview.yaml",
+            "./skills-verify.yaml",
+            "./skills-grading.yaml",
+            "./education.yaml",
+            "./org-results.yaml",
+            "./career-checks.yaml",
+          ],
+        },
+      },
       override: {
         transformer: titleTransformer,
       },

@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info: { title: Social, version: 1.0.0 }
+paths:
+  /social:
+    get:
+      operationId: getSocial
+      parameters:
+        - {
+            name: view,
+            in: query,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum:
+                  [
+                    feed,
+                    following,
+                    shorts,
+                    topic,
+                    topics,
+                    media,
+                    routines,
+                    post,
+                  ],
+              },
+          }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200":
+          {
+            description: Social feed data,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
+  /social/action:
+    post:
+      operationId: runSocialAction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: post-create } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: post-delete } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: repost } },
+                    additionalProperties: true,
+                  }
+                - {
+                    type: object,
+                    required: [action],
+                    properties: { action: { const: block } },
+                    additionalProperties: true,
+                  }
+              discriminator: { propertyName: action }
+      responses:
+        "200":
+          {
+            description: Social action accepted,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, additionalProperties: true } },
+              },
+          }
+        default: { description: Unavailable or not authorized }
