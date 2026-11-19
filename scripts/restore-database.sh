@@ -28,7 +28,10 @@ gpg --batch --yes --quiet --pinentry-mode loopback --decrypt \
 
 # Recreate the dumped schemas exactly as archived. The empty default public
 # schema is replaced only when the archive contains its own.
-if pg_restore --list "$work/restore.dump" | grep -Eq " SCHEMA - public( |$)"; then
+# Read the full TOC before testing it. `grep -q` would close the pipe early;
+# with pipefail that makes pg_restore report SIGPIPE and turns a match into a
+# false condition, leaving the default public schema in place for the restore.
+if pg_restore --list "$work/restore.dump" | grep -E " SCHEMA - public( |$)" >/dev/null; then
   psql "$RESTORE_DATABASE_URL" -qc "DROP SCHEMA IF EXISTS public CASCADE"
 fi
 pg_restore --dbname="$RESTORE_DATABASE_URL" --no-owner --no-privileges \

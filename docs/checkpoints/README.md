@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [CI backup and restore pipe fix](2026-11-20-backup-restore-pipe-fix.md) — fixes the restore drill's short-circuited schema detection; Git Bash syntax check passes, hosted PostgreSQL 17 drill pending.
 - [Skill Check navigation inventory follow-up](2026-11-20-navigation-inventory.md) — fixes the route ownership assertion exposed by hosted CI; focused navigation and full coverage suite pass locally.
 - [Wave 0 formatting follow-up](2026-11-19-wave0-format-fix.md) — fixes the navigation formatting failure reported by hosted CI after the Next.js security update.
 - [Next.js audit remediation](2026-11-19-nextjs-audit-remediation.md) — raises the frontend minimum to the patched 16.4.5 release after hosted CI flagged vulnerable 16.4.2 dependencies; audit, typecheck and lint pass.
