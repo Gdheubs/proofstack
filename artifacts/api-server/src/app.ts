@@ -111,10 +111,11 @@ app.use("/api", (_req, res, next) => {
 });
 // Refuse work against a database that is behind this code (migrations pending).
 app.use("/api", schemaGuard);
-// Probe optional module schemas without making their absence affect core APIs.
-app.use("/api", modulesWarm);
 // Apply protection before parsing, including malformed and oversized requests.
 app.use("/api", apiRateLimit);
+// Probe optional module schemas after request protection; their absence never
+// affects core APIs, and untrusted traffic cannot trigger probe work first.
+app.use("/api", modulesWarm);
 app.use("/api", (req, _res, next) => {
   if (
     process.env.MAINTENANCE_MODE === "true" &&

@@ -1,6 +1,6 @@
 # Skill Check Wave 1: media/social schema and API foundation
 
-Date: 2026-11-20. Status: local implementation and verification complete; hosted CI and native PostgreSQL acceptance remain pending. No migration was applied to a hosted database and no deployment was performed.
+Date: 2026-11-20. Status: CI follow-up fix made after the initial checkpoint push; focused local validation passes. Hosted CI for the follow-up commit and native PostgreSQL acceptance remain pending. No migration was applied to a hosted database and no deployment was performed.
 
 ## Scope
 
@@ -14,6 +14,7 @@ This slice implements the DB-2 media/social schema and FND-1 module readiness, c
 - Adds skill key-ring encryption and bound attempt/ticket verification helpers.
 - Extends account export rules and refuses exports exceeding 5,000 rows; account deletion checks media readiness and queues owned media cleanup before user cascades.
 - Adds `.env.example` safe-off feature defaults and mounts module readiness after the core schema guard.
+- Follow-up after hosted CI: puts module schema warming after the global rate limiter. This prevents unauthenticated requests from triggering schema probe queries before request protection and restores the malformed-body rate-limit behavior.
 - Adds focused DB, readiness, crypto, export, and core-only tests.
 
 ## Validation
@@ -25,10 +26,12 @@ This slice implements the DB-2 media/social schema and FND-1 module readiness, c
 - Embedded database integration suite: 201 passed, 2 skipped across 30 files (29 passed, 1 skipped), including PGlite migration replay.
 - Focused DB-2 PGlite test: 5/5 passed; FND-1 focused unit and integration checks also passed during implementation.
 - `git diff --check`: passed.
+- After the CI-discovered middleware-order fix, `tests/api.test.ts`: 12/12 passed; `tsc --build`, ESLint, Prettier, and `git diff --check`: passed.
 
 ## Remaining gates and limits
 
 - Hosted CI for this change and native PostgreSQL 17 migration/backup-restore acceptance have not run yet.
+- Initial hosted CI `44673787246` failed in the existing API boundary test because module warming consumed the test's first mocked DB response before the limiter. Middleware ordering is corrected locally; follow-up CI must confirm the fix.
 - `/auth/context` keeps the existing object-valued `capabilities` contract consumed by the web client. The separate per-area `features` map described in the platform spec remains an additive API contract task; changing the current shape here would break existing clients.
 - Migration 0023 is not applied to any hosted environment. Platform feature flags remain off by default. Recording, AI evaluation, and voice features must remain disabled until consent text is published, required infrastructure is configured, and operational/legal acceptance is complete.
 - Current platform API route families remain feature-off stubs; this checkpoint does not claim a complete Skill Check platform or security perfection.
