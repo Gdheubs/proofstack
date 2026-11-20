@@ -92,6 +92,37 @@ export const EXPORT_POLICY: Readonly<Record<string, ExportRule>> =
     ),
     "entitlements.granted_by": "none",
     "entitlement_uses.user_id": "full",
+    // 0023_media_social
+    "media_objects.owner_id": only(
+      "id",
+      "kind",
+      "purpose",
+      "content_type",
+      "declared_bytes",
+      "bytes",
+      "width",
+      "height",
+      "duration_ms",
+      "sha256",
+      "created_at",
+      "ready_at",
+    ),
+    "media_objects.created_by": "none",
+    "community_reposts.user_id": "full",
+    "community_routines.author_id": "full",
+    "community_blocks.blocker_id": "full",
+    "community_blocks.blocked_id": "none",
+    "content_reports.reporter_id": "none",
+    "content_reports.handled_by": "none",
+    "content_restrictions.actor_id": "none",
+    "content_restrictions.lifted_by": "none",
+    "content_suspensions.user_id": only(
+      "id",
+      "reason_code",
+      "starts_at",
+      "ends_at",
+    ),
+    "content_suspensions.actor_id": "none",
   });
 
 const rules = new Map<string, ExportRule>([

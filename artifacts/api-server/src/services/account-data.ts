@@ -1,8 +1,11 @@
+import { randomUUID as cryptoRandomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { ApiError } from "../lib/errors";
 import { privateAssetDirectory } from "./community-assets";
 import { DELETED_ACCOUNT_RETENTION_DAYS, TERMS_VERSION } from "./legal";
 import { forgetAccountRepositories, retireHandle } from "./repository-cleanup";
+import { exportRule } from "./export-policy";
+import { mediaCleanupSchemaReady } from "./module-ready";
 
 // Erases an account inside the caller's transaction. Uploaded images are
 // queued for removal from object storage first; everything that references
@@ -50,6 +53,20 @@ export async function eraseAccount(db: PoolClient, userId: string) {
       [userId, bucket, namespace],
     );
   }
+  // Probe the live catalog on every erase. A stale absent/expired readiness
+  // cache must never let a media owner cascade before its cleanup is queued.
+  const mediaSchema = await mediaCleanupSchemaReady((text, values) =>
+    db.query(text, values),
+  );
+  if (mediaSchema === "unavailable")
+    throw new ApiError(
+      503,
+      "MEDIA_CLEANUP_UNAVAILABLE",
+      "Account deletion is temporarily unavailable",
+    );
+  if (mediaSchema === "ready") {
+    await queueOwnedMediaCleanup(db, userId);
+  }
   await db.query(
     `INSERT INTO deleted_accounts(auth_subject,email,phone,registered_at,purge_after)
      VALUES($1,$2,$3,$4,now()+make_interval(days=>$5::int))`,
@@ -88,6 +105,7 @@ const NOT_EXPORTED = new Set([
 // and grading material are not the member's personal data, and exporting
 // them during an open skill check would hand over the answers.
 const NOT_EXPORTED_NESTED = new Set(["correctOptionId"]);
+const MAX_EXPORT_ROWS = 5000;
 function redact(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redact);
   if (value && typeof value === "object" && !(value instanceof Date))
@@ -127,10 +145,27 @@ export async function exportAccount(db: PoolClient, userId: string) {
   ).rows[0];
   const tables: Record<string, Record<string, unknown>[]> = {};
   for (const { table, column } of refs) {
+    const rule = exportRule(table, column);
+    // Unknown policy is a programming/schema error. Never widen access to
+    // SELECT * by default when a new user foreign key is introduced.
+    if (rule === undefined)
+      throw new ApiError(
+        500,
+        "EXPORT_POLICY_MISSING",
+        "Account export is temporarily unavailable",
+      );
+    if (rule === "none") continue;
+    const selected = rule === "full" ? "*" : rule.map(quote).join(",");
     const { rows } = await db.query(
-      `SELECT * FROM ${quote(table)} WHERE ${quote(column)}=$1 LIMIT 5000`,
+      `SELECT ${selected} FROM ${quote(table)} WHERE ${quote(column)}=$1 LIMIT ${MAX_EXPORT_ROWS + 1}`,
       [userId],
     );
+    if (rows.length > MAX_EXPORT_ROWS)
+      throw new ApiError(
+        413,
+        "EXPORT_TOO_LARGE",
+        "Account export exceeds the supported size",
+      );
     if (rows.length)
       tables[`${table}.${column}`] = clean(rows as Record<string, unknown>[]);
   }
@@ -140,6 +175,120 @@ export async function exportAccount(db: PoolClient, userId: string) {
     account,
     data: tables,
   };
+}
+
+type MediaCleanupTarget = {
+  id: string;
+  storage: string;
+  namespace: string;
+  object_path: string | null;
+  external_id: string | null;
+};
+
+async function queueOwnedMediaCleanup(db: PoolClient, userId: string) {
+  const objects = (
+    await db.query<MediaCleanupTarget>(
+      `SELECT id,storage,namespace,object_path,external_id
+       FROM media_objects WHERE owner_id=$1`,
+      [userId],
+    )
+  ).rows;
+  const r2Objects = objects.filter((media) => media.object_path);
+  const mediaIds = objects.map((media) => media.id);
+
+  for (const media of objects) {
+    if (media.storage === "stream" && media.external_id) {
+      await db.query(
+        `INSERT INTO media_cleanup_jobs(provider,external_id)
+         VALUES('stream',$1) ON CONFLICT(provider,external_id) DO NOTHING`,
+        [media.external_id],
+      );
+    }
+  }
+
+  const renditions = mediaIds.length
+    ? (
+        await db.query<{
+          media_id: string;
+          kind: string;
+          namespace: string;
+          object_path: string;
+          storage: string;
+        }>(
+          `SELECT r.media_id,r.kind,r.namespace,r.object_path,m.storage
+           FROM media_renditions r JOIN media_objects m ON m.id=r.media_id
+           WHERE r.media_id=ANY($1::uuid[])`,
+          [mediaIds],
+        )
+      ).rows
+    : [];
+
+  for (const media of r2Objects) {
+    if (!media.object_path) continue;
+    await enqueueMediaObject(
+      db,
+      media.id,
+      media.storage,
+      media.namespace,
+      media.object_path,
+    );
+  }
+  for (const rendition of renditions) {
+    await enqueueMediaObject(
+      db,
+      randomOutboxId(),
+      rendition.storage,
+      rendition.namespace,
+      rendition.object_path,
+    );
+  }
+}
+
+async function enqueueMediaObject(
+  db: PoolClient,
+  id: string,
+  storage: string,
+  namespace: string,
+  objectPath: string,
+) {
+  if (!/^\/objects\/ready\/[0-9a-f-]{36}$/i.test(objectPath))
+    throw new ApiError(
+      503,
+      "MEDIA_CLEANUP_UNAVAILABLE",
+      "Account deletion is temporarily unavailable",
+    );
+  const directory =
+    storage === "r2_evidence"
+      ? process.env.EVIDENCE_OBJECT_DIR
+      : storage === "r2_social"
+        ? privateAssetDirectory()
+        : undefined;
+  if (
+    !directory ||
+    !/^\/[a-z0-9][a-z0-9._-]*(?:\/[A-Za-z0-9._-]+)*$/.test(directory)
+  )
+    throw new ApiError(
+      503,
+      "MEDIA_CLEANUP_UNAVAILABLE",
+      "Account deletion is temporarily unavailable",
+    );
+  const [, bucket] = directory.split("/");
+  if (!/^[a-z0-9][a-z0-9._-]*$/.test(bucket) || !namespace)
+    throw new ApiError(
+      503,
+      "MEDIA_CLEANUP_UNAVAILABLE",
+      "Account deletion is temporarily unavailable",
+    );
+  const objectName = `${namespace}/${objectPath.slice(9)}`;
+  await db.query(
+    `INSERT INTO asset_cleanup_jobs(asset_id,object_path,bucket,namespace,object_name)
+     VALUES($1,$2,$3,$4,$5) ON CONFLICT(asset_id) DO NOTHING`,
+    [id, objectPath, bucket, namespace, objectName],
+  );
+}
+
+function randomOutboxId(): string {
+  return cryptoRandomUUID();
 }
 // Catalog names are trusted, but quote them as identifiers regardless.
 const quote = (name: string) =>

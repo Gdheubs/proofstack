@@ -1,0 +1,38 @@
+# Skill Check Wave 1: media/social schema and API foundation
+
+Date: 2026-11-20. Status: local implementation and verification complete; hosted CI and native PostgreSQL acceptance remain pending. No migration was applied to a hosted database and no deployment was performed.
+
+## Scope
+
+This slice implements the DB-2 media/social schema and FND-1 module readiness, crypto, and account-data foundation from `docs/skill-check-platform.md`. It is an enabling foundation, not the user-facing authoring, assignment, candidate, recruiter, or social experience.
+
+## Changed areas
+
+- Adds Drizzle migration `0023_media_social` with media ownership, upload/ticket metadata, processing and cleanup state, social posts, post/media ordering, and supporting indexes/constraints.
+- Adds media/social module exports and pins the schema inventory in the existing tests.
+- Adds fail-closed readiness middleware with feature flags, required environment configuration, fresh media-processor heartbeat checks for recorded and voice modes, and expected trigger attachment/enabled-state checks.
+- Adds skill key-ring encryption and bound attempt/ticket verification helpers.
+- Extends account export rules and refuses exports exceeding 5,000 rows; account deletion checks media readiness and queues owned media cleanup before user cascades.
+- Adds `.env.example` safe-off feature defaults and mounts module readiness after the core schema guard.
+- Adds focused DB, readiness, crypto, export, and core-only tests.
+
+## Validation
+
+- `tsc --build`: passed.
+- ESLint on changed API, DB, and test files: passed.
+- Prettier check on changed code and tests: passed.
+- Core-only Vitest suite: 73 passed across 2 files.
+- Embedded database integration suite: 201 passed, 2 skipped across 30 files (29 passed, 1 skipped), including PGlite migration replay.
+- Focused DB-2 PGlite test: 5/5 passed; FND-1 focused unit and integration checks also passed during implementation.
+- `git diff --check`: passed.
+
+## Remaining gates and limits
+
+- Hosted CI for this change and native PostgreSQL 17 migration/backup-restore acceptance have not run yet.
+- `/auth/context` keeps the existing object-valued `capabilities` contract consumed by the web client. The separate per-area `features` map described in the platform spec remains an additive API contract task; changing the current shape here would break existing clients.
+- Migration 0023 is not applied to any hosted environment. Platform feature flags remain off by default. Recording, AI evaluation, and voice features must remain disabled until consent text is published, required infrastructure is configured, and operational/legal acceptance is complete.
+- Current platform API route families remain feature-off stubs; this checkpoint does not claim a complete Skill Check platform or security perfection.
+
+## Next safe action
+
+Run hosted CI against the exact published commit. Then proceed to DB-3 (assessment attempts/leases and immutable snapshots) and the compatible auth-context `features` addition before starting the end-user Skill Check Studio.

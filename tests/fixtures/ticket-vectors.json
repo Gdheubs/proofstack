@@ -1,0 +1,14 @@
+{
+  "secret": "test-only-media-ticket-key-0123456789abcdef",
+  "now": "2026-01-01T00:00:00.000Z",
+  "claims": {
+    "aud": "proofstack-media-worker",
+    "purpose": "part",
+    "mediaId": "44444444-4444-4444-8444-444444444444",
+    "owner": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "part": 3,
+    "maxBytes": 5242880,
+    "exp": 1767225900
+  },
+  "token": "eyJ2IjoxLCJhdWQiOiJwcm9vZnN0YWNrLW1lZGlhLXdvcmtlciIsInB1cnBvc2UiOiJwYXJ0IiwibWVkaWFJZCI6IjQ0NDQ0NDQ0LTQ0NDQtNDQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIm93bmVyIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInBhcnQiOjMsIm1heEJ5dGVzIjo1MjQyODgwLCJleHAiOjE3NjcyMjU5MDAsImlhdCI6MTc2NzIyNTYwMH0.6YPjGl9IFnZKfSxvJSS6TAajMsMjE-NnV6C0cvFCbpc"
+}

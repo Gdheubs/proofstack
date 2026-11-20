@@ -18,7 +18,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
         requiredProductSchema: true,
         requiredIndexes: true,
         requiredConstraints: true,
-        expectedTableCount: 66,
+        expectedTableCount: 80,
       });
       expect(await inspectCommunityGrants(pool)).toBe(true);
       expect(await checkReadiness()).toEqual({
@@ -36,7 +36,7 @@ describe.skipIf(process.env.RUN_DB_TESTS !== "1")(
           requiredProductSchema: false,
           requiredIndexes: false,
           requiredConstraints: false,
-          expectedTableCount: 66,
+          expectedTableCount: 80,
         });
       } finally {
         await pool.query(`DROP SCHEMA "${schema}"`);

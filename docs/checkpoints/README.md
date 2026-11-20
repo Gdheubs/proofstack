@@ -4,6 +4,7 @@ Record each meaningful task here, including interrupted or blocked work. The che
 
 ## Latest
 
+- [Skill Check Wave 1 foundation](2026-11-20-skill-check-wave1-foundation.md) — adds media/social schema and module readiness, crypto, export, and erasure foundations; local typecheck/lint/format and 201 embedded integration assertions pass; hosted CI remains pending.
 - [Skill Check API codegen barrel fix](2026-11-20-skill-check-api-codegen-fix.md) — normalizes the Zod package barrel after generation, addressing the collision found in hosted CI for the API contracts checkpoint.
 - [Skill Check platform API contracts](2026-11-20-skill-check-api-contracts.md) — adds contracts and generated clients for the new Skill Check route families; typecheck and focused API tests pass, while the platform handlers remain feature-off stubs.
 - [CI backup and restore pipe fix](2026-11-20-backup-restore-pipe-fix.md) — fixes the restore drill's short-circuited schema detection; full hosted CI passed, including the PostgreSQL 17 backup/restore drill and worker size gate.
